@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ZoneSpace extends Model
 {
@@ -30,5 +31,10 @@ class ZoneSpace extends Model
     public function facilities(): BelongsToMany
     {
         return $this->belongsToMany(Facility::class, 'facility_zone_space', 'zone_space_id', 'facility_id');
+    }
+
+    public function pricingRates(): HasMany
+    {
+        return $this->hasMany(PricingRate::class);
     }
 }
