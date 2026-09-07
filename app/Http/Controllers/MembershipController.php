@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserSubscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,7 +53,6 @@ class MembershipController extends Controller
             ]);
 
         return Inertia::render('memberships/Index', [
-            'subscriptions' => $subscriptions,
             'members' => User::query()
                 ->whereHas('role', fn ($query) => $query->where('name', 'Member'))
                 ->whereNull('deleted_at')
@@ -61,6 +61,7 @@ class MembershipController extends Controller
             'packages' => MembershipPackage::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'price', 'duration_days']),
+            'subscriptions' => $subscriptions,
             'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
                 'total' => UserSubscription::whereHas('user.role', fn ($query) => $query->where('name', 'Member'))->count(),
@@ -76,18 +77,37 @@ class MembershipController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'password' => ['required', 'string', 'min:8'],
             'membership_package_id' => ['required', 'integer', 'exists:membership_packages,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'status' => ['required', 'in:active,expired,cancelled'],
         ]);
 
-        abort_unless(User::query()->whereKey($data['user_id'])->whereHas('role', fn ($query) => $query->where('name', 'Member'))->exists(), 422, 'User yang didaftarkan harus memiliki role Member.');
+        $memberRole = Role::query()->where('name', 'Member')->firstOrFail();
 
-        UserSubscription::create($data);
+        DB::transaction(function () use ($data, $memberRole): void {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+                'password' => $data['password'],
+                'role_id' => $memberRole->id,
+            ]);
 
-        return back()->with('success', 'Membership member berhasil didaftarkan.');
+            UserSubscription::create([
+                'user_id' => $user->id,
+                'membership_package_id' => $data['membership_package_id'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+                'status' => $data['status'],
+            ]);
+        });
+
+        return back()->with('success', 'Member dan membership berhasil didaftarkan.');
     }
 
     public function update(Request $request, UserSubscription $membership): RedirectResponse
@@ -95,18 +115,15 @@ class MembershipController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
             'membership_package_id' => ['required', 'integer', 'exists:membership_packages,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'status' => ['required', 'in:active,expired,cancelled'],
         ]);
 
-        abort_unless(User::query()->whereKey($data['user_id'])->whereHas('role', fn ($query) => $query->where('name', 'Member'))->exists(), 422, 'User yang didaftarkan harus memiliki role Member.');
-
         $membership->update($data);
 
-        return back()->with('success', 'Membership member berhasil diperbarui.');
+        return back()->with('success', 'Membership berhasil diperbarui.');
     }
 
     public function destroy(UserSubscription $membership): RedirectResponse
