@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, CircleDot, CircleDollarSign, Dumbbell, FolderGit2, LayoutGrid, Users, PanelsTopLeft, Building2, PackagePlus, CreditCard } from '@lucide/vue';
+import { BookOpen, CircleDot, CircleDollarSign, Dumbbell, FolderGit2, LayoutGrid, Users, PanelsTopLeft, Building2, PackagePlus, CreditCard, UserRoundPlus } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -11,6 +11,7 @@ import type { NavItem } from '@/types';
 
 const navigationItems: NavItem[] = [
     { title: 'Users', href: '/users', icon: Users },
+    { title: 'Membership', href: '/memberships', icon: UserRoundPlus },
     { title: 'Zones', href: '/zones', icon: CircleDot },
     { title: 'Zone Spaces', href: '/zone-spaces', icon: PanelsTopLeft },
     { title: 'Pricing Rates', href: '/pricing-rates', icon: CircleDollarSign },
@@ -32,29 +33,21 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
-                            <AppLogo />
-                        </Link>
+                        <Link :href="dashboard()"><AppLogo /></Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarHeader>
-
         <SidebarContent>
             <SidebarMenu class="px-2 py-0">
                 <SidebarMenuItem>
                     <SidebarMenuButton as-child :tooltip="'Dashboard'">
-                        <Link :href="dashboard()">
-                            <LayoutGrid />
-                            <span>Dashboard</span>
-                        </Link>
+                        <Link :href="dashboard()"><LayoutGrid /><span>Dashboard</span></Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
-
             <NavMain :items="navigationItems" />
         </SidebarContent>
-
         <SidebarFooter>
             <NavFooter :items="footerNavItems" />
             <NavUser />
