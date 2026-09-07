@@ -77,15 +77,23 @@ class SubscriptionController extends Controller
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'membership_package_id' => ['required', 'integer', 'exists:membership_packages,id'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'status' => ['required', 'in:active,expired,cancelled'],
         ]);
 
         $memberRole = Role::query()->where('name', 'Member')->firstOrFail();
         abort_unless(User::whereKey($data['user_id'])->where('role_id', $memberRole->id)->exists(), 422);
 
-        UserSubscription::create($data);
+        $package = MembershipPackage::query()->findOrFail($data['membership_package_id']);
+        $startDate = now()->startOfDay();
+        $endDate = $startDate->copy()->addDays((int) $package->duration_days);
+
+        UserSubscription::create([
+            'user_id' => $data['user_id'],
+            'membership_package_id' => $data['membership_package_id'],
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString(),
+            'status' => $data['status'],
+        ]);
 
         return back()->with('success', 'Subscription berhasil dibuat.');
     }
@@ -96,12 +104,19 @@ class SubscriptionController extends Controller
 
         $data = $request->validate([
             'membership_package_id' => ['required', 'integer', 'exists:membership_packages,id'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'status' => ['required', 'in:active,expired,cancelled'],
         ]);
 
-        $subscription->update($data);
+        $package = MembershipPackage::query()->findOrFail($data['membership_package_id']);
+        $startDate = now()->startOfDay();
+        $endDate = $startDate->copy()->addDays((int) $package->duration_days);
+
+        $subscription->update([
+            'membership_package_id' => $data['membership_package_id'],
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString(),
+            'status' => $data['status'],
+        ]);
 
         return back()->with('success', 'Subscription berhasil diperbarui.');
     }
