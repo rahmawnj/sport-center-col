@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, CircleDot, FolderGit2, LayoutGrid, Users, PanelsTopLeft } from '@lucide/vue';
+import { BookOpen, CircleDot, CircleDollarSign, FolderGit2, LayoutGrid, Users, PanelsTopLeft } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -22,6 +22,7 @@ const mainNavItems: NavItem[] = [
     { title: 'Users', href: '/users', icon: Users },
     { title: 'Zones', href: '/zones', icon: CircleDot },
     { title: 'Zone Spaces', href: '/zone-spaces', icon: PanelsTopLeft },
+    { title: 'Pricing Rates', href: '/pricing-rates', icon: CircleDollarSign },
 ];
 
 const footerNavItems: NavItem[] = [
