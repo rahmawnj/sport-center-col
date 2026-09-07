@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PricingRateController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZoneController;
 use App\Http\Controllers\ZoneSpaceController;
@@ -26,6 +27,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('zone-spaces', [ZoneSpaceController::class, 'store'])->name('zone-spaces.store');
     Route::put('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'update'])->name('zone-spaces.update');
     Route::delete('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'destroy'])->name('zone-spaces.destroy');
+
+    Route::get('pricing-rates', [PricingRateController::class, 'index'])->name('pricing-rates.index');
+    Route::post('pricing-rates', [PricingRateController::class, 'store'])->name('pricing-rates.store');
+    Route::put('pricing-rates/{pricingRate}', [PricingRateController::class, 'update'])->name('pricing-rates.update');
+    Route::delete('pricing-rates/{pricingRate}', [PricingRateController::class, 'destroy'])->name('pricing-rates.destroy');
 });
 
 require __DIR__.'/settings.php';
