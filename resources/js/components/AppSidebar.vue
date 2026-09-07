@@ -9,9 +9,8 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const navigationItems: NavItem[] = [
+const masterDataItems: NavItem[] = [
     { title: 'Users', href: '/users', icon: Users },
-    { title: 'Membership', href: '/memberships', icon: UserRoundPlus },
     { title: 'Zones', href: '/zones', icon: CircleDot },
     { title: 'Zone Spaces', href: '/zone-spaces', icon: PanelsTopLeft },
     { title: 'Pricing Rates', href: '/pricing-rates', icon: CircleDollarSign },
@@ -19,6 +18,10 @@ const navigationItems: NavItem[] = [
     { title: 'Trainers', href: '/trainers', icon: Dumbbell },
     { title: 'Facilities', href: '/facilities', icon: Building2 },
     { title: 'Add-ons', href: '/add-ons', icon: PackagePlus },
+];
+
+const navigationItems: NavItem[] = [
+    { title: 'Membership', href: '/memberships', icon: UserRoundPlus },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -46,7 +49,8 @@ const footerNavItems: NavItem[] = [
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <NavMain :items="navigationItems" />
+            <NavMain :items="masterDataItems" label="Master Data" />
+            <NavMain :items="navigationItems" label="Navigation" />
         </SidebarContent>
         <SidebarFooter>
             <NavFooter :items="footerNavItems" />
