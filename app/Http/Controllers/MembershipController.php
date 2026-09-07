@@ -53,11 +53,6 @@ class MembershipController extends Controller
             ]);
 
         return Inertia::render('memberships/Index', [
-            'members' => User::query()
-                ->whereHas('role', fn ($query) => $query->where('name', 'Member'))
-                ->whereNull('deleted_at')
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']),
             'packages' => MembershipPackage::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'price', 'duration_days']),
