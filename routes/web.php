@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZoneController;
+use App\Http\Controllers\ZoneSpaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -20,6 +21,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('zones/{zone}', [ZoneController::class, 'show'])->name('zones.show');
     Route::put('zones/{zone}', [ZoneController::class, 'update'])->name('zones.update');
     Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
+
+    Route::get('zone-spaces', [ZoneSpaceController::class, 'index'])->name('zone-spaces.index');
+    Route::post('zone-spaces', [ZoneSpaceController::class, 'store'])->name('zone-spaces.store');
+    Route::put('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'update'])->name('zone-spaces.update');
+    Route::delete('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'destroy'])->name('zone-spaces.destroy');
 });
 
 require __DIR__.'/settings.php';
