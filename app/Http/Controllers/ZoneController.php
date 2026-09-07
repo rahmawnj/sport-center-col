@@ -50,6 +50,33 @@ class ZoneController extends Controller
         ]);
     }
 
+    public function show(Zone $zone): Response
+    {
+        $this->authorizeAdmin();
+
+        $zone->load([
+            'zoneSpaces' => fn ($query) => $query->latest(),
+        ]);
+
+        return Inertia::render('zones/Show', [
+            'zone' => [
+                'id' => $zone->id,
+                'name' => $zone->name,
+                'pricing_model' => $zone->pricing_model,
+                'is_online_bookable' => (bool) $zone->is_online_bookable,
+                'created_at' => $zone->created_at?->toISOString(),
+                'updated_at' => $zone->updated_at?->toISOString(),
+                'zone_spaces' => $zone->zoneSpaces->map(fn ($space) => [
+                    'id' => $space->id,
+                    'name' => $space->name,
+                    'capacity' => $space->capacity,
+                    'status' => $space->status,
+                    'created_at' => $space->created_at?->toISOString(),
+                ])->values(),
+            ],
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->authorizeAdmin();
