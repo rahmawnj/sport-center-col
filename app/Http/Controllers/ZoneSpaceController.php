@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Facility;
 use App\Models\Zone;
 use App\Models\ZoneSpace;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +26,7 @@ class ZoneSpaceController extends Controller
         $zoneId = $request->input('zone_id', 'all');
 
         $spaces = ZoneSpace::query()
-            ->with('zone:id,name')
+            ->with(['zone:id,name', 'facilities:id,name'])
             ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->when($status !== 'all', fn ($query) => $query->where('status', $status))
             ->when($zoneId !== 'all' && is_numeric($zoneId), fn ($query) => $query->where('zone_id', (int) $zoneId))
@@ -39,12 +40,17 @@ class ZoneSpaceController extends Controller
                 'name' => $space->name,
                 'capacity' => $space->capacity,
                 'status' => $space->status,
+                'facilities' => $space->facilities->map(fn (Facility $facility) => [
+                    'id' => $facility->id,
+                    'name' => $facility->name,
+                ])->values()->all(),
                 'created_at' => $space->created_at?->toISOString(),
             ]);
 
         return Inertia::render('zone-spaces/Index', [
             'spaces' => $spaces,
             'zones' => Zone::query()->orderBy('name')->get(['id', 'name']),
+            'facilities' => Facility::query()->orderBy('name')->get(['id', 'name']),
             'filters' => ['search' => $search, 'status' => $status, 'zone_id' => $zoneId],
             'stats' => [
                 'total' => ZoneSpace::count(),
@@ -63,9 +69,16 @@ class ZoneSpaceController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:available,maintenance'],
+            'facility_ids' => ['nullable', 'array'],
+            'facility_ids.*' => ['integer', 'exists:facilities,id'],
         ]);
 
-        ZoneSpace::create($data);
+        $facilityIds = $data['facility_ids'] ?? [];
+        unset($data['facility_ids']);
+
+        $zoneSpace = ZoneSpace::create($data);
+        $zoneSpace->facilities()->sync($facilityIds);
+
         return back()->with('success', 'Zone space berhasil dibuat.');
     }
 
@@ -78,9 +91,16 @@ class ZoneSpaceController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:available,maintenance'],
+            'facility_ids' => ['nullable', 'array'],
+            'facility_ids.*' => ['integer', 'exists:facilities,id'],
         ]);
 
+        $facilityIds = $data['facility_ids'] ?? [];
+        unset($data['facility_ids']);
+
         $zoneSpace->update($data);
+        $zoneSpace->facilities()->sync($facilityIds);
+
         return back()->with('success', 'Zone space berhasil diperbarui.');
     }
 
