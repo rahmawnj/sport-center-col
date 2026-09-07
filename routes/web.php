@@ -5,6 +5,7 @@ use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\MembershipPackageController;
 use App\Http\Controllers\MembershipRegistrationController;
 use App\Http\Controllers\PricingRateController;
+use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\UserController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\ZoneSpaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
+Route::get('booking', [PublicBookingController::class, 'index'])->name('booking.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
@@ -21,10 +23,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('zone-spaces', [ZoneSpaceController::class, 'index'])->name('zone-spaces.index'); Route::post('zone-spaces', [ZoneSpaceController::class, 'store'])->name('zone-spaces.store'); Route::put('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'update'])->name('zone-spaces.update'); Route::delete('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'destroy'])->name('zone-spaces.destroy');
     Route::get('pricing-rates', [PricingRateController::class, 'index'])->name('pricing-rates.index'); Route::post('pricing-rates', [PricingRateController::class, 'store'])->name('pricing-rates.store'); Route::put('pricing-rates/{pricingRate}', [PricingRateController::class, 'update'])->name('pricing-rates.update'); Route::delete('pricing-rates/{pricingRate}', [PricingRateController::class, 'destroy'])->name('pricing-rates.destroy');
     Route::get('membership-packages', [MembershipPackageController::class, 'index'])->name('membership-packages.index'); Route::get('membership-packages/{membershipPackage}', [MembershipPackageController::class, 'show'])->name('membership-packages.show'); Route::post('membership-packages', [MembershipPackageController::class, 'store'])->name('membership-packages.store'); Route::put('membership-packages/{membershipPackage}', [MembershipPackageController::class, 'update'])->name('membership-packages.update'); Route::delete('membership-packages/{membershipPackage}', [MembershipPackageController::class, 'destroy'])->name('membership-packages.destroy');
-
     Route::get('memberships', [MembershipRegistrationController::class, 'index'])->name('memberships.index'); Route::post('memberships', [MembershipRegistrationController::class, 'store'])->name('memberships.store'); Route::put('memberships/{member}', [MembershipRegistrationController::class, 'update'])->name('memberships.update'); Route::delete('memberships/{member}', [MembershipRegistrationController::class, 'destroy'])->name('memberships.destroy');
     Route::get('subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index'); Route::post('subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store'); Route::put('subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update'); Route::delete('subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
-
     Route::get('trainers', [TrainerController::class, 'index'])->name('trainers.index'); Route::get('trainers/{trainer}', [TrainerController::class, 'show'])->name('trainers.show'); Route::post('trainers', [TrainerController::class, 'store'])->name('trainers.store'); Route::put('trainers/{trainer}', [TrainerController::class, 'update'])->name('trainers.update'); Route::delete('trainers/{trainer}', [TrainerController::class, 'destroy'])->name('trainers.destroy');
     Route::get('facilities', [FacilityController::class, 'index'])->name('facilities.index'); Route::get('facilities/{facility}', [FacilityController::class, 'show'])->name('facilities.show'); Route::post('facilities', [FacilityController::class, 'store'])->name('facilities.store'); Route::put('facilities/{facility}', [FacilityController::class, 'update'])->name('facilities.update'); Route::delete('facilities/{facility}', [FacilityController::class, 'destroy'])->name('facilities.destroy');
     Route::get('add-ons', [AddOnController::class, 'index'])->name('add-ons.index'); Route::get('add-ons/{addOn}', [AddOnController::class, 'show'])->name('add-ons.show'); Route::post('add-ons', [AddOnController::class, 'store'])->name('add-ons.store'); Route::put('add-ons/{addOn}', [AddOnController::class, 'update'])->name('add-ons.update'); Route::delete('add-ons/{addOn}', [AddOnController::class, 'destroy'])->name('add-ons.destroy');
