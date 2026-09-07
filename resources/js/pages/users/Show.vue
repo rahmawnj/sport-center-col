@@ -1,0 +1,110 @@
+<script setup lang="ts">
+import { Head, Link } from '@inertiajs/vue3';
+import { ArrowLeft, CheckCircle2, CreditCard, Mail, Phone, Shield, UserRound, CalendarDays, ReceiptText } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+
+type Subscription = {
+    id: number;
+    package: string | null;
+    start_date: string;
+    end_date: string;
+    status: string;
+    used_sessions: number;
+    session_quota: number | null;
+};
+type Transaction = {
+    id: number;
+    booking_code: string;
+    payment_method: string;
+    payment_status: string;
+    total_amount: string | number;
+    created_at: string | null;
+};
+type User = {
+    id: number;
+    name: string;
+    email: string;
+    phone: string | null;
+    email_verified_at: string | null;
+    created_at: string | null;
+    role: { id: number; name: string } | null;
+    subscriptions: Subscription[];
+    transactions: Transaction[];
+};
+
+const props = defineProps<{ user: User }>();
+
+function initials(name: string) {
+    return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+}
+function date(value: string | null) {
+    if (!value) return '—';
+    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(value));
+}
+function money(value: string | number) {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value));
+}
+function subscriptionStatus(status: string) {
+    return status === 'active' ? 'Active' : status === 'expired' ? 'Expired' : 'Cancelled';
+}
+</script>
+
+<template>
+    <Head :title="`${props.user.name} · User`" />
+
+    <div class="space-y-6 p-4 md:p-6">
+        <div class="flex items-center gap-3">
+            <Button variant="ghost" size="icon" as-child><Link href="/users"><ArrowLeft class="size-4" /></Link></Button>
+            <div>
+                <p class="text-sm text-muted-foreground">Users / Detail</p>
+                <h1 class="text-xl font-semibold">User profile</h1>
+            </div>
+        </div>
+
+        <section class="overflow-hidden rounded-3xl border bg-card shadow-sm">
+            <div class="h-28 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent" />
+            <div class="px-5 pb-6 md:px-7">
+                <div class="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div class="flex items-end gap-4">
+                        <div class="flex size-20 shrink-0 items-center justify-center rounded-2xl border-4 border-background bg-primary/10 text-xl font-bold text-primary shadow-sm">{{ initials(props.user.name) }}</div>
+                        <div class="pb-1">
+                            <div class="flex flex-wrap items-center gap-2"><h2 class="text-2xl font-semibold">{{ props.user.name }}</h2><span class="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{{ props.user.role?.name ?? 'No role' }}</span></div>
+                            <p class="mt-1 text-sm text-muted-foreground">Member since {{ date(props.user.created_at) }}</p>
+                        </div>
+                    </div>
+                    <Button variant="outline" as-child><Link :href="`/users`">Back to users</Link></Button>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <section class="rounded-2xl border bg-card p-5 shadow-sm">
+                <div class="flex items-center gap-2"><UserRound class="size-4 text-primary" /><h3 class="font-semibold">Account information</h3></div>
+                <div class="mt-5 space-y-4">
+                    <div class="flex gap-3"><Mail class="mt-0.5 size-4 text-muted-foreground" /><div><p class="text-xs text-muted-foreground">Email</p><p class="mt-1 text-sm font-medium break-all">{{ props.user.email }}</p><p v-if="props.user.email_verified_at" class="mt-1 flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 class="size-3" /> Verified {{ date(props.user.email_verified_at) }}</p></div></div>
+                    <div class="flex gap-3"><Phone class="mt-0.5 size-4 text-muted-foreground" /><div><p class="text-xs text-muted-foreground">Phone</p><p class="mt-1 text-sm font-medium">{{ props.user.phone || 'Not provided' }}</p></div></div>
+                    <div class="flex gap-3"><Shield class="mt-0.5 size-4 text-muted-foreground" /><div><p class="text-xs text-muted-foreground">Access role</p><p class="mt-1 text-sm font-medium">{{ props.user.role?.name ?? 'No role assigned' }}</p></div></div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border bg-card p-5 shadow-sm">
+                <div class="flex items-center gap-2"><CreditCard class="size-4 text-primary" /><h3 class="font-semibold">Membership subscriptions</h3></div>
+                <div v-if="props.user.subscriptions.length" class="mt-4 space-y-3">
+                    <div v-for="subscription in props.user.subscriptions" :key="subscription.id" class="rounded-xl border p-4">
+                        <div class="flex items-start justify-between gap-3"><div><p class="font-medium">{{ subscription.package || 'Membership package' }}</p><p class="mt-1 text-xs text-muted-foreground">{{ date(subscription.start_date) }} — {{ date(subscription.end_date) }}</p></div><span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="subscription.status === 'active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">{{ subscriptionStatus(subscription.status) }}</span></div>
+                        <div class="mt-3 flex items-center justify-between text-xs text-muted-foreground"><span>Sessions used</span><span class="font-medium text-foreground">{{ subscription.used_sessions }} / {{ subscription.session_quota === null ? '∞' : subscription.session_quota }}</span></div>
+                    </div>
+                </div>
+                <div v-else class="mt-6 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">No membership history yet.</div>
+            </section>
+        </div>
+
+        <section class="rounded-2xl border bg-card shadow-sm">
+            <div class="border-b p-5"><div class="flex items-center gap-2"><ReceiptText class="size-4 text-primary" /><h3 class="font-semibold">Recent transactions</h3></div><p class="mt-1 text-sm text-muted-foreground">8 transaksi terakhir yang terhubung dengan akun ini.</p></div>
+            <div v-if="props.user.transactions.length" class="overflow-x-auto">
+                <table class="w-full text-sm"><thead class="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th class="px-5 py-3 font-medium">Booking</th><th class="px-5 py-3 font-medium">Date</th><th class="px-5 py-3 font-medium">Payment</th><th class="px-5 py-3 text-right font-medium">Total</th></tr></thead><tbody class="divide-y"><tr v-for="transaction in props.user.transactions" :key="transaction.id"><td class="px-5 py-4 font-medium">{{ transaction.booking_code }}</td><td class="px-5 py-4 text-muted-foreground">{{ date(transaction.created_at) }}</td><td class="px-5 py-4"><span class="rounded-full bg-muted px-2 py-1 text-xs">{{ transaction.payment_status.replace('_', ' ') }}</span><span class="ml-2 text-xs text-muted-foreground">{{ transaction.payment_method.replace('_', ' ') }}</span></td><td class="px-5 py-4 text-right font-medium">{{ money(transaction.total_amount) }}</td></tr></tbody></table>
+            </div>
+            <div v-else class="p-10 text-center text-sm text-muted-foreground"><CalendarDays class="mx-auto size-8 opacity-50" /><p class="mt-2">Belum ada transaksi.</p></div>
+        </section>
+    </div>
+</template>
