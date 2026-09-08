@@ -36,6 +36,11 @@ class PublicBookingController extends Controller
         ]);
     }
 
+    public function payment(): Response
+    {
+        return Inertia::render('booking/Payment');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
