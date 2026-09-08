@@ -9,8 +9,10 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class PublicBookingController extends Controller
 {
@@ -52,84 +54,108 @@ class PublicBookingController extends Controller
             'payment_proof' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
-        $space = \App\Models\ZoneSpace::query()
-            ->where('id', $data['zone_space_id'])
-            ->where('status', 'available')
-            ->whereHas('zone', fn ($query) => $query->where('is_online_bookable', true))
-            ->with(['zone:id,name', 'pricingRates:id,zone_space_id,rental_type,price'])
-            ->firstOrFail();
+        try {
+            $space = \App\Models\ZoneSpace::query()
+                ->where('id', $data['zone_space_id'])
+                ->where('status', 'available')
+                ->whereHas('zone', fn ($query) => $query->where('is_online_bookable', true))
+                ->with(['zone:id,name', 'pricingRates:id,zone_space_id,rental_type,price'])
+                ->first();
 
-        $rate = $space->pricingRates->first();
-        abort_unless($rate, 422, 'Harga booking belum tersedia untuk space ini.');
+            if (!$space) {
+                throw ValidationException::withMessages([
+                    'zone_space_id' => 'Space yang dipilih tidak tersedia untuk online booking.',
+                ]);
+            }
 
-        $start = Carbon::createFromFormat('Y-m-d H:i', $data['booking_date'].' '.$data['start_time']);
-        $end = $start->copy()->addHour();
+            $rate = $space->pricingRates->first();
+            if (!$rate) {
+                throw ValidationException::withMessages([
+                    'zone_space_id' => 'Harga booking belum tersedia untuk space ini.',
+                ]);
+            }
 
-        $alreadyBooked = Transaction::query()
-            ->whereIn('booking_status', ['pending', 'approved'])
-            ->whereHas('details', fn ($query) => $query
-                ->where('zone_space_id', $space->id)
-                ->where('start_time', '<', $end)
-                ->where('end_time', '>', $start))
-            ->exists();
+            $start = Carbon::createFromFormat('Y-m-d H:i', $data['booking_date'].' '.$data['start_time']);
+            $end = $start->copy()->addHour();
 
-        abort_if($alreadyBooked, 422, 'Jadwal tersebut sudah dipesan atau sedang menunggu persetujuan admin.');
+            $alreadyBooked = Transaction::query()
+                ->whereIn('booking_status', ['pending', 'approved'])
+                ->whereHas('details', fn ($query) => $query
+                    ->where('zone_space_id', $space->id)
+                    ->where('start_time', '<', $end)
+                    ->where('end_time', '>', $start))
+                ->exists();
 
-        $total = (float) $rate->price;
-        $amountPaid = match ($data['payment_option']) {
-            'full_payment' => $total,
-            'half_payment' => $total / 2,
-            default => 0,
-        };
+            if ($alreadyBooked) {
+                throw ValidationException::withMessages([
+                    'start_time' => 'Jadwal tersebut sudah dipesan atau sedang menunggu persetujuan admin.',
+                ]);
+            }
 
-        $paymentStatus = match ($data['payment_option']) {
-            'full_payment' => 'fully_paid',
-            'half_payment' => 'dp_paid',
-            default => 'unpaid',
-        };
+            $total = (float) $rate->price;
+            $amountPaid = match ($data['payment_option']) {
+                'full_payment' => $total,
+                'half_payment' => $total / 2,
+                default => 0,
+            };
 
-        abort_if(
-            $data['payment_option'] !== 'pay_later' && !$request->hasFile('payment_proof'),
-            422,
-            'Bukti pembayaran wajib diupload untuk pilihan pembayaran ini.'
-        );
+            $paymentStatus = match ($data['payment_option']) {
+                'full_payment' => 'fully_paid',
+                'half_payment' => 'dp_paid',
+                default => 'unpaid',
+            };
 
-        $transaction = DB::transaction(function () use ($data, $space, $rate, $start, $end, $total, $paymentStatus, $amountPaid, $request) {
-            $bookingCode = 'BK-'.now()->format('ymd').'-'.strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+            if ($data['payment_option'] !== 'pay_later' && !$request->hasFile('payment_proof')) {
+                throw ValidationException::withMessages([
+                    'payment_proof' => 'Bukti pembayaran wajib diupload untuk pilihan pembayaran ini.',
+                ]);
+            }
 
-            $transaction = new Transaction();
-            $transaction->booking_code = $bookingCode;
-            $transaction->customer_type = 'general';
-            $transaction->guest_name = $data['guest_name'];
-            $transaction->payment_method = 'bank_transfer';
-            $transaction->total_amount = $total;
-            $transaction->payment_status = $paymentStatus;
-            $transaction->booking_status = 'pending';
-            $transaction->save();
+            $transaction = DB::transaction(function () use ($data, $space, $rate, $start, $end, $total, $paymentStatus, $amountPaid, $request) {
+                $bookingCode = 'BK-'.now()->format('ymd').'-'.strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
 
-            $transaction->details()->create([
-                'zone_space_id' => $space->id,
-                'qty' => 1,
-                'start_time' => $start,
-                'end_time' => $end,
-                'price_rate' => $rate->price,
-                'subtotal' => $total,
-            ]);
+                $transaction = new Transaction();
+                $transaction->booking_code = $bookingCode;
+                $transaction->customer_type = 'general';
+                $transaction->guest_name = $data['guest_name'];
+                $transaction->payment_method = 'bank_transfer';
+                $transaction->total_amount = $total;
+                $transaction->payment_status = $paymentStatus;
+                $transaction->booking_status = 'pending';
+                $transaction->save();
 
-            $proofPath = $request->hasFile('payment_proof')
-                ? $request->file('payment_proof')->store('payment-proofs', 'public')
-                : null;
+                $transaction->details()->create([
+                    'zone_space_id' => $space->id,
+                    'qty' => 1,
+                    'start_time' => $start,
+                    'end_time' => $end,
+                    'price_rate' => $rate->price,
+                    'subtotal' => $total,
+                ]);
 
-            TransactionPaymentProof::create([
-                'transaction_id' => $transaction->id,
-                'payment_option' => $data['payment_option'],
-                'amount_paid' => $amountPaid,
-                'proof_path' => $proofPath,
-            ]);
+                $proofPath = $request->hasFile('payment_proof')
+                    ? $request->file('payment_proof')->store('payment-proofs', 'public')
+                    : null;
 
-            return $transaction;
-        });
+                TransactionPaymentProof::create([
+                    'transaction_id' => $transaction->id,
+                    'payment_option' => $data['payment_option'],
+                    'amount_paid' => $amountPaid,
+                    'proof_path' => $proofPath,
+                ]);
 
-        return redirect()->route('booking.ticket', ['transaction' => $transaction->booking_code]);
+                return $transaction;
+            });
+
+            return redirect()->route('booking.ticket', ['transaction' => $transaction->booking_code]);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->withErrors([
+                'booking' => 'Booking gagal disimpan. Periksa database dan konfigurasi server, lalu coba lagi.',
+            ])->withInput();
+        }
     }
 }
