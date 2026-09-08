@@ -13,8 +13,8 @@ use App\Http\Controllers\ZoneController;
 use App\Http\Controllers\ZoneSpaceController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
-Route::get('booking', [PublicBookingController::class, 'index'])->name('booking.index');
+Route::get('/', [PublicBookingController::class, 'index'])->name('home');
+Route::redirect('booking', '/');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
