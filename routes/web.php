@@ -14,6 +14,7 @@ use App\Http\Controllers\ZoneSpaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicBookingController::class, 'index'])->name('home');
+Route::post('booking', [PublicBookingController::class, 'store'])->name('booking.store');
 Route::redirect('booking', '/');
 
 Route::middleware(['auth', 'verified'])->group(function () {
