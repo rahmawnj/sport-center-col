@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, CircleDot, CircleDollarSign, Dumbbell, FolderGit2, LayoutGrid, Users, PanelsTopLeft, Building2, PackagePlus, CreditCard, UserRoundPlus, Repeat2 } from '@lucide/vue';
+import { BookOpen, CalendarCheck, CircleDollarSign, CircleDot, Dumbbell, FolderGit2, LayoutGrid, Users, PanelsTopLeft, Building2, PackagePlus, CreditCard, UserRoundPlus, Repeat2 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -21,6 +21,7 @@ const masterDataItems: NavItem[] = [
 ];
 
 const navigationItems: NavItem[] = [
+    { title: 'Booking', href: '/bookings', icon: CalendarCheck },
     { title: 'Membership', href: '/memberships', icon: UserRoundPlus },
     { title: 'Subscription', href: '/subscriptions', icon: Repeat2 },
 ];
@@ -50,8 +51,8 @@ const footerNavItems: NavItem[] = [
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
+            <NavMain :items="navigationItems" label="Operations" />
             <NavMain :items="masterDataItems" label="Master Data" />
-            <NavMain :items="navigationItems" label="Navigation" />
         </SidebarContent>
         <SidebarFooter>
             <NavFooter :items="footerNavItems" />
