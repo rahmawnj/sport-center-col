@@ -18,12 +18,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicBookingController::class, 'index'])->name('home');
 Route::post('booking', [PublicBookingController::class, 'store'])->name('booking.store');
-Route::get('booking/payment', [PublicBookingController::class, 'payment'])->name('booking.payment');
 Route::get('booking/ticket/{transaction:booking_code}', [PublicBookingTicketController::class, 'show'])->name('booking.ticket');
 Route::redirect('booking', '/');
 
-// Public read-only endpoint for the IoT device/integration.
-// Approved bookings are exposed with status=1.
 Route::get('api/iot/bookings', [IoTBookingController::class, 'index'])->name('api.iot.bookings');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -38,7 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('membership-packages', [MembershipPackageController::class, 'index'])->name('membership-packages.index'); Route::get('membership-packages/{membershipPackage}', [MembershipPackageController::class, 'show'])->name('membership-packages.show'); Route::post('membership-packages', [MembershipPackageController::class, 'store'])->name('membership-packages.store'); Route::put('membership-packages/{membershipPackage}', [MembershipPackageController::class, 'update'])->name('membership-packages.update'); Route::delete('membership-packages/{membershipPackage}', [MembershipPackageController::class, 'destroy'])->name('membership-packages.destroy');
     Route::get('memberships', [MembershipRegistrationController::class, 'index'])->name('memberships.index'); Route::post('memberships', [MembershipRegistrationController::class, 'store'])->name('memberships.store'); Route::put('memberships/{member}', [MembershipRegistrationController::class, 'update'])->name('memberships.update'); Route::delete('memberships/{member}', [MembershipRegistrationController::class, 'destroy'])->name('memberships.destroy');
     Route::get('subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index'); Route::post('subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store'); Route::put('subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update'); Route::delete('subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
-    Route::get('trainers', [TrainerController::class, 'index'])->name('trainers.index'); Route::get('trainers/{trainer}', [TrainerController::class, 'show'])->name('trainers.index');
+    Route::get('trainers', [TrainerController::class, 'index'])->name('trainers.index'); Route::get('trainers/{trainer}', [TrainerController::class, 'show'])->name('trainers.show');
     Route::post('trainers', [TrainerController::class, 'store'])->name('trainers.store'); Route::put('trainers/{trainer}', [TrainerController::class, 'update'])->name('trainers.update'); Route::delete('trainers/{trainer}', [TrainerController::class, 'destroy'])->name('trainers.destroy');
     Route::get('facilities', [FacilityController::class, 'index'])->name('facilities.index'); Route::get('facilities/{facility}', [FacilityController::class, 'show'])->name('facilities.show'); Route::post('facilities', [FacilityController::class, 'store'])->name('facilities.store'); Route::put('facilities/{facility}', [FacilityController::class, 'update'])->name('facilities.update'); Route::delete('facilities/{facility}', [FacilityController::class, 'destroy'])->name('facilities.destroy');
     Route::get('add-ons', [AddOnController::class, 'index'])->name('add-ons.index'); Route::get('add-ons/{addOn}', [AddOnController::class, 'show'])->name('add-ons.show'); Route::post('add-ons', [AddOnController::class, 'store'])->name('add-ons.store'); Route::put('add-ons/{addOn}', [AddOnController::class, 'update'])->name('add-ons.update'); Route::delete('add-ons/{addOn}', [AddOnController::class, 'destroy'])->name('add-ons.destroy');
