@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 
 class IoTBookingController extends Controller
 {
@@ -33,20 +32,13 @@ class IoTBookingController extends Controller
                 ])->values(),
             ])->values();
 
-        // Once the IoT endpoint has successfully delivered the approved bookings,
-        // consume them so the same approval is not returned again.
-        if ($bookings->isNotEmpty()) {
-            DB::transaction(function () use ($bookings) {
-                Transaction::whereIn('id', $bookings->pluck('id'))
-                    ->where('booking_status', 'approved')
-                    ->update(['booking_status' => 'pending']);
-            });
-        }
-
+        // The booking status is intentionally NOT changed here.
+        // The IoT device is responsible for changing its own local status
+        // from 1 (new command) back to 0 after processing the API response.
         return response()->json([
             'success' => true,
             'status' => 1,
-            'message' => 'Approved bookings consumed by IoT',
+            'message' => 'Approved bookings',
             'data' => $bookings,
         ]);
     }
