@@ -125,6 +125,6 @@ class PublicBookingController extends Controller
             return $transaction;
         });
 
-        return back()->with('success', "Booking {$transaction->booking_code} berhasil dikirim dan menunggu persetujuan admin.");
+        return redirect()->route('booking.ticket', ['transaction' => $transaction->booking_code]);
     }
 }
