@@ -8,6 +8,7 @@ use App\Http\Controllers\MembershipPackageController;
 use App\Http\Controllers\MembershipRegistrationController;
 use App\Http\Controllers\PricingRateController;
 use App\Http\Controllers\PublicBookingController;
+use App\Http\Controllers\PublicBookingTicketController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\UserController;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicBookingController::class, 'index'])->name('home');
 Route::post('booking', [PublicBookingController::class, 'store'])->name('booking.store');
+Route::get('booking/ticket/{transaction:booking_code}', [PublicBookingTicketController::class, 'show'])->name('booking.ticket');
 Route::redirect('booking', '/');
 
 // Public read-only endpoint for the IoT device/integration.
