@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddOnController;
+use App\Http\Controllers\BookingManagementController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\MembershipPackageController;
 use App\Http\Controllers\MembershipRegistrationController;
@@ -19,6 +20,9 @@ Route::redirect('booking', '/');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('bookings', [BookingManagementController::class, 'index'])->name('bookings.index');
+    Route::put('bookings/{transaction}/status', [BookingManagementController::class, 'updateStatus'])->name('bookings.status');
+    Route::put('bookings/{transaction}/payment-status', [BookingManagementController::class, 'updatePaymentStatus'])->name('bookings.payment-status');
     Route::get('users', [UserController::class, 'index'])->name('users.index'); Route::post('users', [UserController::class, 'store'])->name('users.store'); Route::get('users/{user}', [UserController::class, 'show'])->name('users.show'); Route::put('users/{user}', [UserController::class, 'update'])->name('users.update'); Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('zones', [ZoneController::class, 'index'])->name('zones.index'); Route::post('zones', [ZoneController::class, 'store'])->name('zones.store'); Route::get('zones/{zone}', [ZoneController::class, 'show'])->name('zones.show'); Route::put('zones/{zone}', [ZoneController::class, 'update'])->name('zones.update'); Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
     Route::get('zone-spaces', [ZoneSpaceController::class, 'index'])->name('zone-spaces.index'); Route::post('zone-spaces', [ZoneSpaceController::class, 'store'])->name('zone-spaces.store'); Route::put('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'update'])->name('zone-spaces.update'); Route::delete('zone-spaces/{zoneSpace}', [ZoneSpaceController::class, 'destroy'])->name('zone-spaces.destroy');
