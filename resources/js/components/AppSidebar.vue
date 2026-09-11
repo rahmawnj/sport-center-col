@@ -10,25 +10,25 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
 const masterDataItems: NavItem[] = [
-    { title: 'Users', href: '/users', icon: Users },
-    { title: 'Zones', href: '/zones', icon: CircleDot },
-    { title: 'Zone Spaces', href: '/zone-spaces', icon: PanelsTopLeft },
-    { title: 'Pricing Rates', href: '/pricing-rates', icon: CircleDollarSign },
-    { title: 'Membership Packages', href: '/membership-packages', icon: CreditCard },
-    { title: 'Trainers', href: '/trainers', icon: Dumbbell },
-    { title: 'Facilities', href: '/facilities', icon: Building2 },
-    { title: 'Add-ons', href: '/add-ons', icon: PackagePlus },
+    { title: 'Pengguna', href: '/users', icon: Users },
+    { title: 'Zona', href: '/zones', icon: CircleDot },
+    { title: 'Area Lapangan', href: '/zone-spaces', icon: PanelsTopLeft },
+    { title: 'Tarif Harga', href: '/pricing-rates', icon: CircleDollarSign },
+    { title: 'Paket Keanggotaan', href: '/membership-packages', icon: CreditCard },
+    { title: 'Pelatih', href: '/trainers', icon: Dumbbell },
+    { title: 'Fasilitas', href: '/facilities', icon: Building2 },
+    { title: 'Layanan Tambahan', href: '/add-ons', icon: PackagePlus },
 ];
 
 const navigationItems: NavItem[] = [
-    { title: 'Booking', href: '/bookings', icon: CalendarCheck },
-    { title: 'Membership', href: '/memberships', icon: UserRoundPlus },
-    { title: 'Subscription', href: '/subscriptions', icon: Repeat2 },
+    { title: 'Pemesanan', href: '/bookings', icon: CalendarCheck },
+    { title: 'Keanggotaan', href: '/memberships', icon: UserRoundPlus },
+    { title: 'Langganan', href: '/subscriptions', icon: Repeat2 },
 ];
 
 const footerNavItems: NavItem[] = [
-    { title: 'Repository', href: 'https://github.com/rahmawnj/sport-center-col', icon: FolderGit2 },
-    { title: 'Documentation', href: 'https://laravel.com/docs/starter-kits#vue', icon: BookOpen },
+    { title: 'Repositori', href: 'https://github.com/rahmawnj/sport-center-col', icon: FolderGit2 },
+    { title: 'Dokumentasi', href: 'https://laravel.com/docs/starter-kits#vue', icon: BookOpen },
 ];
 </script>
 
@@ -46,13 +46,13 @@ const footerNavItems: NavItem[] = [
         <SidebarContent>
             <SidebarMenu class="px-2 py-0">
                 <SidebarMenuItem>
-                    <SidebarMenuButton as-child :tooltip="'Dashboard'">
-                        <Link :href="dashboard()"><LayoutGrid /><span>Dashboard</span></Link>
+                    <SidebarMenuButton as-child :tooltip="'Dasbor'">
+                        <Link :href="dashboard()"><LayoutGrid /><span>Dasbor</span></Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <NavMain :items="navigationItems" label="Operations" />
-            <NavMain :items="masterDataItems" label="Master Data" />
+            <NavMain :items="navigationItems" label="Operasional" />
+            <NavMain :items="masterDataItems" label="Data Master" />
         </SidebarContent>
         <SidebarFooter>
             <NavFooter :items="footerNavItems" />
