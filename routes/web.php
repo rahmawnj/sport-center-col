@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PublicBookingController::class, 'index'])->name('home');
 Route::post('booking', [PublicBookingController::class, 'store'])->name('booking.store');
 Route::get('booking/ticket/{transaction:booking_code}', [PublicBookingTicketController::class, 'show'])->name('booking.ticket');
+Route::get('booking/{zone}', [PublicBookingController::class, 'show'])->name('booking.show');
 Route::redirect('booking', '/');
 
 Route::get('api/iot/bookings', [IoTBookingController::class, 'index'])->name('api.iot.bookings');
