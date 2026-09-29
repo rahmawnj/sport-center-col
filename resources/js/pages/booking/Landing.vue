@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowRight, MapPin, Users } from 'lucide-vue';
+import { ArrowRight, MapPin, Users } from '@lucide/vue';
 
 interface Space { id: number; name: string; capacity: number | null; }
 interface Zone { id: number; name: string; pricing_model: string; zone_spaces: Space[]; }
