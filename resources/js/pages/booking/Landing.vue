@@ -78,8 +78,7 @@ const imageForSport = (name: string) => {
             <section id="sports" class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:py-16">
                 <div class="mb-8 flex items-end justify-between gap-5">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Pilihan olahraga</p>
-                        <h2 class="mt-2 text-3xl font-black tracking-tight">Pilih sport</h2>
+                        <h2 class="text-3xl font-black tracking-tight">Pilihan olahraga</h2>
                     </div>
                     <p class="hidden text-sm text-slate-400 sm:block">{{ zones.length }} olahraga tersedia</p>
                 </div>
