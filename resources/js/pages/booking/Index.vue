@@ -36,7 +36,15 @@ const saveDraft = () => localStorage.setItem(storageKey, JSON.stringify({ zone_s
 onMounted(() => {
     try {
         const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
-        if (saved) { selectedZoneId.value = saved.zone_id ?? selectedZoneId.value; selectedSpaceId.value = saved.zone_space_id ?? null; bookingDate.value = saved.booking_date ?? ''; selectedTime.value = saved.start_time ?? ''; guestName.value = saved.guest_name ?? ''; paymentOption.value = saved.payment_option ?? 'full_payment'; }
+        if (saved) {
+            const sameSport = Number(saved.zone_id) === props.selectedZoneId;
+            selectedZoneId.value = props.selectedZoneId;
+            selectedSpaceId.value = sameSport ? (saved.zone_space_id ?? null) : null;
+            bookingDate.value = saved.booking_date ?? '';
+            selectedTime.value = saved.start_time ?? '';
+            guestName.value = saved.guest_name ?? '';
+            paymentOption.value = saved.payment_option ?? 'full_payment';
+        }
     } catch { localStorage.removeItem(storageKey); }
 });
 watch([selectedZoneId, selectedSpaceId, bookingDate, selectedTime, guestName, paymentOption], saveDraft);
