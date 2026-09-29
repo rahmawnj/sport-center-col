@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    Options -Indexes
+
+    # Asset Vite -> public/build
+    RewriteRule ^build/(.*)$ public/build/$1 [L]
+
+    # File public lainnya -> public
+    RewriteRule ^(.*\.(css|js|map|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot))$ public/$1 [L]
+
+    # Semua route Laravel masuk root index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
