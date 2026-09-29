@@ -8,10 +8,10 @@ interface Facility { id: number; name: string; }
 interface Space { id: number; name: string; capacity: number | null; status: string; facilities: Facility[]; pricing_rates: Rate[]; }
 interface Zone { id: number; name: string; pricing_model: string; is_online_bookable: boolean; zone_spaces: Space[]; }
 
-const props = defineProps<{ zones: Zone[]; initial: { date?: string; zone_id?: string } }>();
+const props = defineProps<{ zones: Zone[]; selectedZoneId: number; initial: { date?: string; zone_id?: string } }>();
 const storageKey = 'sport-center-booking-draft';
 const step = ref(new URLSearchParams(window.location.search).get('step') === '2' ? 2 : 1);
-const selectedZoneId = ref<number | null>(props.zones[0]?.id ?? null);
+const selectedZoneId = ref<number | null>(props.selectedZoneId ?? null);
 const selectedSpaceId = ref<number | null>(null);
 const bookingDate = ref('');
 const selectedTime = ref('');
@@ -54,13 +54,80 @@ const submitBooking = () => { if (!selectedSpace.value || submitting.value) retu
 <div class="min-h-screen bg-[#f7f8f6] text-slate-900">
 <header class="sticky top-0 z-30 border-b border-white/60 bg-[#f7f8f6]/90 backdrop-blur-xl"><div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8"><Link href="/" class="flex items-center gap-3"><div class="flex size-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-black text-white">SC</div><div><p class="text-sm font-bold">Sport Center</p><p class="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">Play. Move. Connect.</p></div></Link><span class="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white">Step {{ step }} of 2</span></div></header>
 
-<main v-if="step === 1"><section class="bg-slate-950 text-white"><div class="mx-auto max-w-7xl px-5 py-14 sm:px-8"><div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold"><span class="size-1.5 rounded-full bg-emerald-400"></span> Online booking is open</div><h1 class="max-w-3xl text-4xl font-black leading-[1.05] tracking-[-0.04em] sm:text-6xl">Book your<br /><span class="text-slate-400">game time.</span></h1><p class="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">Pilih fasilitas dan jadwal terlebih dahulu. Nama lengkap diisi pada langkah pembayaran.</p></div></section>
-<section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:py-16"><div v-if="zones.length" class="grid gap-10 lg:grid-cols-[1fr_380px]"><div class="space-y-10">
-<div><div class="mb-5"><p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Step 01</p><h2 class="mt-1 text-2xl font-black">Choose your area</h2></div><div class="grid gap-4 sm:grid-cols-3"><button v-for="zone in zones" :key="zone.id" type="button" class="rounded-3xl border bg-white p-5 text-left transition hover:shadow-lg" :class="selectedZoneId === zone.id ? 'border-slate-900 ring-2 ring-slate-900/10' : 'border-slate-200'" @click="selectZone(zone)"><div class="mb-6 flex items-center justify-between"><div class="flex size-11 items-center justify-center rounded-2xl bg-slate-100"><MapPin class="size-5" /></div><Check v-if="selectedZoneId === zone.id" class="size-5" /></div><p class="font-bold">{{ zone.name }}</p><p class="mt-1 text-xs text-slate-400">{{ zone.zone_spaces.length }} space tersedia</p></button></div></div>
-<div v-if="selectedZone"><div class="mb-5"><p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Step 02</p><h2 class="mt-1 text-2xl font-black">Choose your space</h2></div><div class="grid gap-4 sm:grid-cols-2"><button v-for="space in selectedZone.zone_spaces" :key="space.id" type="button" class="rounded-3xl border bg-white p-6 text-left transition hover:shadow-lg" :class="selectedSpaceId === space.id ? 'border-slate-900 ring-2 ring-slate-900/10' : 'border-slate-200'" @click="selectedSpaceId = space.id"><div class="flex items-start justify-between"><div><p class="font-bold">{{ space.name }}</p><div class="mt-3 flex gap-3 text-xs text-slate-400"><span v-if="space.capacity" class="inline-flex items-center gap-1"><Users class="size-3.5" /> {{ space.capacity }} orang</span><span class="inline-flex items-center gap-1"><Clock3 class="size-3.5" /> Available</span></div></div><div class="flex size-7 items-center justify-center rounded-full border" :class="selectedSpaceId === space.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200'"><Check v-if="selectedSpaceId === space.id" class="size-4" /></div></div><div v-if="space.facilities.length" class="mt-5 flex flex-wrap gap-1.5"><span v-for="facility in space.facilities" :key="facility.id" class="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] text-slate-500">{{ facility.name }}</span></div></button></div></div>
-<div><div class="mb-5"><p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Step 03</p><h2 class="mt-1 text-2xl font-black">Choose your schedule</h2></div><div class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 sm:grid-cols-2"><label><span class="mb-2 block text-sm font-bold">Tanggal</span><input v-model="bookingDate" :min="today" type="date" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none focus:border-slate-900" /></label><label><span class="mb-2 block text-sm font-bold">Jam</span><input v-model="selectedTime" type="time" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none focus:border-slate-900" /></label></div></div><p v-if="error" class="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-600">{{ error }}</p></div>
-<aside class="lg:sticky lg:top-24 lg:self-start"><div class="rounded-[2rem] bg-slate-900 text-white shadow-2xl"><div class="p-7 sm:p-8"><p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Ringkasan Booking</p><h2 class="mt-2 text-2xl font-black">{{ selectedSpace?.name ?? 'Pilih Lapangan' }}</h2><div class="my-7 space-y-4 border-y border-white/10 py-6 text-sm"><div class="flex justify-between"><span class="text-slate-500">Area</span><span class="font-semibold">{{ selectedZone?.name ?? '—' }}</span></div><div class="flex justify-between"><span class="text-slate-500">Tanggal</span><span class="font-semibold">{{ bookingDate || '—' }}</span></div><div class="flex justify-between"><span class="text-slate-500">Jam</span><span class="font-semibold">{{ selectedTime || '—' }}</span></div></div><p class="text-xs uppercase tracking-widest text-slate-500">Total booking</p><p class="mt-1 text-3xl font-black">{{ formatPrice(totalAmount) }}</p><button type="button" :disabled="!canContinue" class="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 text-sm font-bold text-slate-900" :class="!canContinue ? 'cursor-not-allowed opacity-40' : 'hover:bg-slate-100'" @click="goPayment">Lanjut ke Pembayaran <ChevronRight class="size-4" /></button></div></div></aside></div></section></main>
+<main v-if="step === 1">
+<section class="bg-slate-950 text-white">
+    <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:py-16">
+        <Link href="/" class="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-white"><ArrowLeft class="size-4" /> Kembali pilih olahraga</Link>
+        <div class="max-w-3xl">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Booking online</p>
+            <h1 class="mt-2 text-4xl font-black leading-[1.05] tracking-[-0.04em] sm:text-6xl">{{ selectedZone?.name }}</h1>
+            <p class="mt-5 text-base leading-7 text-slate-300">Pilih lapangan, tanggal, dan jam yang kamu inginkan untuk melanjutkan pemesanan.</p>
+        </div>
+    </div>
+</section>
 
+<section class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:py-14">
+    <div v-if="selectedZone" class="grid gap-10 lg:grid-cols-[1fr_380px]">
+        <div class="space-y-8">
+            <div>
+                <div class="mb-5">
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Step 01</p>
+                    <h2 class="mt-1 text-2xl font-black">Pilih lapangan</h2>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <button v-for="space in selectedZone.zone_spaces" :key="space.id" type="button" class="rounded-3xl border bg-white p-6 text-left transition hover:shadow-lg" :class="selectedSpaceId === space.id ? 'border-slate-900 ring-2 ring-slate-900/10' : 'border-slate-200'" @click="selectedSpaceId = space.id">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="font-bold">{{ space.name }}</p>
+                                <div class="mt-3 flex gap-3 text-xs text-slate-400">
+                                    <span v-if="space.capacity" class="inline-flex items-center gap-1"><Users class="size-3.5" /> {{ space.capacity }} orang</span>
+                                    <span class="inline-flex items-center gap-1"><Clock3 class="size-3.5" /> Tersedia</span>
+                                </div>
+                            </div>
+                            <div class="flex size-7 items-center justify-center rounded-full border" :class="selectedSpaceId === space.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200'">
+                                <Check v-if="selectedSpaceId === space.id" class="size-4" />
+                            </div>
+                        </div>
+                        <div v-if="space.facilities.length" class="mt-5 flex flex-wrap gap-1.5">
+                            <span v-for="facility in space.facilities" :key="facility.id" class="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] text-slate-500">{{ facility.name }}</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="mb-5">
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Step 02</p>
+                    <h2 class="mt-1 text-2xl font-black">Pilih jadwal</h2>
+                </div>
+                <div class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 sm:grid-cols-2">
+                    <label><span class="mb-2 block text-sm font-bold">Tanggal</span><input v-model="bookingDate" :min="today" type="date" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none focus:border-slate-900" /></label>
+                    <label><span class="mb-2 block text-sm font-bold">Jam</span><input v-model="selectedTime" type="time" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none focus:border-slate-900" /></label>
+                </div>
+            </div>
+
+            <p v-if="error" class="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-600">{{ error }}</p>
+        </div>
+
+        <aside class="lg:sticky lg:top-24 lg:self-start">
+            <div class="rounded-[2rem] bg-slate-900 text-white shadow-2xl">
+                <div class="p-7 sm:p-8">
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Ringkasan Booking</p>
+                    <h2 class="mt-2 text-2xl font-black">{{ selectedSpace?.name ?? 'Pilih Lapangan' }}</h2>
+                    <div class="my-7 space-y-4 border-y border-white/10 py-6 text-sm">
+                        <div class="flex justify-between"><span class="text-slate-500">Olahraga</span><span class="font-semibold">{{ selectedZone.name }}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Tanggal</span><span class="font-semibold">{{ bookingDate || '—' }}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Jam</span><span class="font-semibold">{{ selectedTime || '—' }}</span></div>
+                    </div>
+                    <p class="text-xs uppercase tracking-widest text-slate-500">Total booking</p>
+                    <p class="mt-1 text-3xl font-black">{{ formatPrice(totalAmount) }}</p>
+                    <button type="button" :disabled="!canContinue" class="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 text-sm font-bold text-slate-900" :class="!canContinue ? 'cursor-not-allowed opacity-40' : 'hover:bg-slate-100'" @click="goPayment">Lanjut ke Pembayaran <ChevronRight class="size-4" /></button>
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>
+</main>
 <main v-else class="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:py-14"><div class="grid gap-8 lg:grid-cols-[1fr_360px]"><div><button type="button" class="mb-6 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900" @click="backToBooking"><ArrowLeft class="size-4" /> Kembali ke booking</button><div class="mb-7"><p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Step 2</p><h1 class="mt-1 text-3xl font-black sm:text-4xl">Data pemesan & pembayaran</h1></div><div class="space-y-5"><div class="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7"><label><span class="mb-2 block text-sm font-bold">Nama lengkap</span><input v-model="guestName" type="text" autocomplete="name" placeholder="Masukkan nama lengkap" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm outline-none focus:border-slate-900" /></label></div><div class="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7"><p class="text-sm font-bold">Metode pembayaran</p><div class="mt-4 grid gap-3 sm:grid-cols-3"><button type="button" class="rounded-2xl border p-4 text-left" :class="paymentOption === 'full_payment' ? 'border-slate-900 bg-slate-50' : 'border-slate-200'" @click="paymentOption = 'full_payment'"><b>Full payment</b><p class="mt-1 text-xs text-slate-500">Bayar 100%</p></button><button type="button" class="rounded-2xl border p-4 text-left" :class="paymentOption === 'half_payment' ? 'border-slate-900 bg-slate-50' : 'border-slate-200'" @click="paymentOption = 'half_payment'"><b>Half payment</b><p class="mt-1 text-xs text-slate-500">Bayar 50% / DP</p></button><button type="button" class="rounded-2xl border p-4 text-left" :class="paymentOption === 'pay_later' ? 'border-slate-900 bg-slate-50' : 'border-slate-200'" @click="paymentOption = 'pay_later'"><b>Bayar nanti</b><p class="mt-1 text-xs text-slate-500">Belum bayar</p></button></div><div v-if="paymentOption !== 'pay_later'" class="mt-6"><input id="payment-proof" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="handleProofUpload" /><label for="payment-proof" class="flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center"><Upload class="size-7 text-slate-400" /><p class="mt-3 text-sm font-bold">Upload bukti pembayaran</p><p class="mt-1 text-xs text-slate-400">JPG, PNG, WebP • maksimal 5 MB</p></label><div v-if="paymentProofPreview" class="relative mt-4 overflow-hidden rounded-2xl border"><img :src="paymentProofPreview" alt="Bukti pembayaran" class="max-h-80 w-full object-contain" /><button type="button" class="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-white shadow" @click="removeProof"><X class="size-4" /></button></div></div><p v-if="error" class="mt-5 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-600">{{ error }}</p></div></div></div><aside class="lg:sticky lg:top-24 lg:self-start"><div class="rounded-[2rem] bg-slate-900 text-white shadow-2xl p-7 sm:p-8"><p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Ringkasan Booking</p><h2 class="mt-2 text-2xl font-black">{{ selectedSpace?.name }}</h2><div class="my-7 space-y-4 border-y border-white/10 py-6 text-sm"><div class="flex justify-between"><span class="text-slate-500">Nama</span><span class="font-semibold">{{ guestName || '—' }}</span></div><div class="flex justify-between"><span class="text-slate-500">Area</span><span class="font-semibold">{{ selectedZone?.name }}</span></div><div class="flex justify-between"><span class="text-slate-500">Tanggal</span><span class="font-semibold">{{ bookingDate }}</span></div><div class="flex justify-between"><span class="text-slate-500">Jam</span><span class="font-semibold">{{ selectedTime }}</span></div></div><div class="flex justify-between text-sm"><span class="text-slate-500">Total</span><b>{{ formatPrice(totalAmount) }}</b></div><div class="mt-2 flex justify-between text-sm"><span class="text-slate-500">Bayar sekarang</span><b>{{ formatPrice(amountToPay) }}</b></div><button type="button" :disabled="submitting" class="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 text-sm font-bold text-slate-900" @click="submitBooking">{{ submitting ? 'Mengirim...' : 'Konfirmasi Booking' }} <ChevronRight class="size-4" /></button></div></aside></div></main>
 </div>
 </template>
