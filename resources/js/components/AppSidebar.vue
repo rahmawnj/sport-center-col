@@ -41,7 +41,7 @@ const navigationItems: NavItem[] = [
             <SidebarMenu class="px-2 py-0">
                 <SidebarMenuItem>
                     <SidebarMenuButton as-child :tooltip="'Dasbor'">
-                        <Link :href="dashboard()"><LayoutGrid /><span>Dasbor</span></Link>
+                        <Link :href="dashboard()" aria-label="Dasbor"><LayoutGrid /><span>Dasbor</span></Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
