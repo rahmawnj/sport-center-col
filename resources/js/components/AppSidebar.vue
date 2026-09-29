@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, CalendarCheck, CircleDollarSign, CircleDot, Dumbbell, FolderGit2, LayoutGrid, Users, PanelsTopLeft, Building2, PackagePlus, CreditCard, UserRoundPlus, Repeat2 } from '@lucide/vue';
+import { CalendarCheck, CircleDollarSign, CircleDot, Dumbbell, LayoutGrid, Users, PanelsTopLeft, Building2, PackagePlus, CreditCard, UserRoundPlus, Repeat2 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
-import NavFooter from '@/components/NavFooter.vue';
-import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import NavMain from '@/components/NavMain.vue';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
@@ -24,11 +23,6 @@ const navigationItems: NavItem[] = [
     { title: 'Pemesanan', href: '/bookings', icon: CalendarCheck },
     { title: 'Keanggotaan', href: '/memberships', icon: UserRoundPlus },
     { title: 'Langganan', href: '/subscriptions', icon: Repeat2 },
-];
-
-const footerNavItems: NavItem[] = [
-    { title: 'Repositori', href: 'https://github.com/rahmawnj/sport-center-col', icon: FolderGit2 },
-    { title: 'Dokumentasi', href: 'https://laravel.com/docs/starter-kits#vue', icon: BookOpen },
 ];
 </script>
 
@@ -50,12 +44,11 @@ const footerNavItems: NavItem[] = [
                         <Link :href="dashboard()"><LayoutGrid /><span>Dasbor</span></Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-            </SidebarMenu>
+            </SidebarContent>
             <NavMain :items="navigationItems" label="Operasional" />
             <NavMain :items="masterDataItems" label="Data Master" />
         </SidebarContent>
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>
