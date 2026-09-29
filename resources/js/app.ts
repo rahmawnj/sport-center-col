@@ -13,14 +13,24 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
+            // Public landing page: no dashboard/sidebar layout.
             case name === 'Welcome':
+            case name === 'booking/Landing':
                 return null;
+
+            // Public booking flow uses its own layout.
             case name === 'booking/Index':
                 return BookingLayout;
+
+            // Authentication pages.
             case name.startsWith('auth/'):
                 return name === 'auth/Login' ? AuthSplitLayout : AuthLayout;
+
+            // Dashboard settings keeps the authenticated dashboard layout.
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
+
+            // All other authenticated/dashboard pages.
             default:
                 return AppLayout;
         }
