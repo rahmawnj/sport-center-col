@@ -7,6 +7,16 @@ interface Zone { id: number; name: string; pricing_model: string; zone_spaces: S
 
 defineProps<{ zones: Zone[] }>();
 
+const heroImages = [
+    'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=2200&q=85',
+    'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=2200&q=85',
+    'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=2200&q=85',
+    'https://images.unsplash.com/photo-1622163642998-1ea32b0bbc67?auto=format&fit=crop&w=2200&q=85',
+    'https://images.unsplash.com/photo-1775993167284-8e6a6e56ab69?auto=format&fit=crop&w=2200&q=85',
+];
+
+const heroImage = heroImages[Math.floor(Math.random() * heroImages.length)];
+
 const imageForSport = (name: string) => {
     const value = name.toLowerCase();
 
@@ -24,38 +34,48 @@ const imageForSport = (name: string) => {
     <Head title="Sport Center" />
 
     <div class="min-h-screen bg-[#f7f8f6] text-slate-900">
-        <header class="border-b border-white/60 bg-[#f7f8f6]/90 backdrop-blur-xl">
+        <header class="absolute inset-x-0 top-0 z-20 border-b border-white/10 bg-slate-950/20 text-white backdrop-blur-md">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
                 <Link href="/" class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-black text-white">SC</div>
+                    <div class="flex size-10 items-center justify-center rounded-2xl bg-white text-sm font-black text-slate-900">SC</div>
                     <div>
                         <p class="text-sm font-bold">Sport Center</p>
-                        <p class="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">Play. Move. Connect.</p>
+                        <p class="text-[10px] font-medium uppercase tracking-[0.2em] text-white/60">Play. Move. Connect.</p>
                     </div>
                 </Link>
-                <span class="rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-700">Booking Online</span>
+                <span class="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white backdrop-blur-md">Booking Online</span>
             </div>
         </header>
 
         <main>
-            <section class="bg-slate-950 text-white">
-                <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
-                    <div class="max-w-3xl">
-                        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold">
+            <section class="relative flex min-h-[680px] items-center overflow-hidden bg-slate-950 text-white lg:min-h-[760px]">
+                <img :src="heroImage" alt="Sport Center" class="absolute inset-0 h-full w-full object-cover" />
+                <div class="absolute inset-0 bg-slate-950/65"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-slate-950/35"></div>
+
+                <div class="relative z-10 mx-auto w-full max-w-7xl px-5 pt-24 sm:px-8 lg:pt-28">
+                    <div class="max-w-4xl">
+                        <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold backdrop-blur-md">
                             <span class="size-1.5 rounded-full bg-emerald-400"></span>
-                            Pilih olahraga
+                            Booking lapangan online
                         </div>
-                        <h1 class="text-4xl font-black leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
-                            Main apa hari ini?
+                        <h1 class="text-5xl font-black leading-[0.95] tracking-[-0.05em] sm:text-7xl lg:text-8xl">
+                            Main lebih.
+                            <br />
+                            <span class="text-emerald-400">Hidup lebih.</span>
                         </h1>
-                        <p class="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                            Pilih jenis olahraga yang ingin kamu mainkan. Lihat detail lapangan dan lanjutkan pemesanan dari halaman olahraga pilihanmu.
+                        <p class="mt-7 max-w-2xl text-base leading-7 text-white/75 sm:text-xl sm:leading-8">
+                            Temukan lapangan favoritmu, pilih jadwal yang tersedia, dan booking langsung tanpa ribet.
                         </p>
+                        <a href="#sports" class="mt-9 inline-flex items-center gap-3 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">
+                            Lihat pilihan olahraga
+                            <ArrowRight class="size-4" />
+                        </a>
                     </div>
                 </div>
             </section>
 
-            <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:py-16">
+            <section id="sports" class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:py-16">
                 <div class="mb-8 flex items-end justify-between gap-5">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Pilihan olahraga</p>
