@@ -44,7 +44,7 @@ const navigationItems: NavItem[] = [
                         <Link :href="dashboard()"><LayoutGrid /><span>Dasbor</span></Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-            </SidebarContent>
+            </SidebarMenu>
             <NavMain :items="navigationItems" label="Operasional" />
             <NavMain :items="masterDataItems" label="Data Master" />
         </SidebarContent>
