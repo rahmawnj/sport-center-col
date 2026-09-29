@@ -18,7 +18,28 @@ class PublicBookingController extends Controller
 {
     public function index(Request $request): Response
     {
-        $zones = Zone::query()
+        return Inertia::render('booking/Landing', [
+            'zones' => $this->bookableZones(),
+        ]);
+    }
+
+    public function show(Request $request, Zone $zone): Response
+    {
+        abort_unless($zone->is_online_bookable, 404);
+
+        return Inertia::render('booking/Index', [
+            'zones' => $this->bookableZones(),
+            'selectedZoneId' => $zone->id,
+            'initial' => [
+                'date' => $request->input('date'),
+                'zone_id' => (string) $zone->id,
+            ],
+        ]);
+    }
+
+    private function bookableZones()
+    {
+        return Zone::query()
             ->where('is_online_bookable', true)
             ->with(['zoneSpaces' => fn ($query) => $query
                 ->where('status', 'available')
@@ -28,14 +49,6 @@ class PublicBookingController extends Controller
             ])
             ->orderBy('name')
             ->get(['id', 'name', 'pricing_model', 'is_online_bookable']);
-
-        return Inertia::render('booking/Index', [
-            'zones' => $zones,
-            'initial' => [
-                'date' => $request->input('date'),
-                'zone_id' => $request->input('zone_id'),
-            ],
-        ]);
     }
 
     public function payment(): Response
