@@ -9,10 +9,19 @@ const currentYear = new Date().getFullYear();
     <Head title="Sport Center" />
 
     <div class="min-h-screen bg-slate-950 text-white">
-        <header class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
+        <header
+            class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-8"
+        >
             <div class="text-xl font-bold tracking-tight">Sport Center</div>
 
             <nav class="flex items-center gap-2 sm:gap-3">
+                <Link
+                    href="/book"
+                    class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                    Booking
+                </Link>
+
                 <Link
                     v-if="$page.props.auth.user"
                     :href="dashboard()"
@@ -39,16 +48,23 @@ const currentYear = new Date().getFullYear();
         </header>
 
         <main>
-            <section class="mx-auto grid min-h-[70vh] w-full max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-2 lg:px-8">
+            <section
+                class="mx-auto grid min-h-[70vh] w-full max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-2 lg:px-8"
+            >
                 <div>
-                    <p class="mb-4 text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">
+                    <p
+                        class="mb-4 text-sm font-semibold tracking-[0.25em] text-cyan-300 uppercase"
+                    >
                         Pusat Olahraga
                     </p>
-                    <h1 class="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+                    <h1
+                        class="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
+                    >
                         Kelola aktivitas olahraga dengan lebih mudah.
                     </h1>
                     <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-                        Temukan lapangan, kelola pemesanan, keanggotaan, fasilitas, dan layanan olahraga dalam satu platform.
+                        Temukan lapangan, kelola pemesanan, keanggotaan,
+                        fasilitas, dan layanan olahraga dalam satu platform.
                     </p>
 
                     <div class="mt-8 flex flex-wrap gap-3">
@@ -76,15 +92,21 @@ const currentYear = new Date().getFullYear();
                     </div>
                 </div>
 
-                <div class="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
+                <div
+                    class="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur"
+                >
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="rounded-2xl bg-white/5 p-5">
                             <p class="text-sm text-slate-400">Pemesanan</p>
-                            <p class="mt-2 text-xl font-semibold">Lebih praktis</p>
+                            <p class="mt-2 text-xl font-semibold">
+                                Lebih praktis
+                            </p>
                         </div>
                         <div class="rounded-2xl bg-white/5 p-5">
                             <p class="text-sm text-slate-400">Keanggotaan</p>
-                            <p class="mt-2 text-xl font-semibold">Terorganisir</p>
+                            <p class="mt-2 text-xl font-semibold">
+                                Terorganisir
+                            </p>
                         </div>
                         <div class="rounded-2xl bg-white/5 p-5">
                             <p class="text-sm text-slate-400">Fasilitas</p>
@@ -99,23 +121,32 @@ const currentYear = new Date().getFullYear();
             </section>
 
             <section class="border-t border-white/10 bg-slate-900/70">
-                <div class="mx-auto grid w-full max-w-7xl gap-8 px-6 py-16 md:grid-cols-3 lg:px-8">
+                <div
+                    class="mx-auto grid w-full max-w-7xl gap-8 px-6 py-16 md:grid-cols-3 lg:px-8"
+                >
                     <div>
-                        <h2 class="text-lg font-semibold">Pemesanan Lapangan</h2>
+                        <h2 class="text-lg font-semibold">
+                            Pemesanan Lapangan
+                        </h2>
                         <p class="mt-2 text-sm leading-6 text-slate-400">
-                            Atur jadwal dan pemesanan lapangan dengan lebih mudah.
+                            Atur jadwal dan pemesanan lapangan dengan lebih
+                            mudah.
                         </p>
                     </div>
                     <div>
-                        <h2 class="text-lg font-semibold">Manajemen Keanggotaan</h2>
+                        <h2 class="text-lg font-semibold">
+                            Manajemen Keanggotaan
+                        </h2>
                         <p class="mt-2 text-sm leading-6 text-slate-400">
-                            Kelola paket, langganan, dan status anggota dalam satu tempat.
+                            Kelola paket, langganan, dan status anggota dalam
+                            satu tempat.
                         </p>
                     </div>
                     <div>
                         <h2 class="text-lg font-semibold">Data Operasional</h2>
                         <p class="mt-2 text-sm leading-6 text-slate-400">
-                            Pantau data fasilitas, tarif, pelatih, dan layanan tambahan secara terpusat.
+                            Pantau data fasilitas, tarif, pelatih, dan layanan
+                            tambahan secara terpusat.
                         </p>
                     </div>
                 </div>
@@ -123,7 +154,9 @@ const currentYear = new Date().getFullYear();
         </main>
 
         <footer class="border-t border-white/10">
-            <div class="mx-auto flex w-full max-w-7xl flex-col gap-2 px-6 py-6 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+            <div
+                class="mx-auto flex w-full max-w-7xl flex-col gap-2 px-6 py-6 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between lg:px-8"
+            >
                 <span>© {{ currentYear }} Sport Center</span>
                 <span>Platform pengelolaan pusat olahraga</span>
             </div>

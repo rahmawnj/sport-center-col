@@ -61,14 +61,6 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
     *,
     ::after,
@@ -90,76 +82,111 @@
 }
 
 :root {
-    --background: hsl(0 0% 100%);
-    --foreground: hsl(0 0% 3.9%);
-    --card: hsl(0 0% 100%);
-    --card-foreground: hsl(0 0% 3.9%);
-    --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(0 0% 3.9%);
-    --primary: hsl(22 97% 51%);
-    --primary-foreground: hsl(0 0% 100%);
-    --secondary: hsl(22 30% 94%);
-    --secondary-foreground: hsl(22 60% 30%);
-    --muted: hsl(22 30% 96%);
-    --muted-foreground: hsl(22 15% 45%);
-    --accent: hsl(22 70% 95%);
-    --accent-foreground: hsl(22 70% 40%);
-    --destructive: hsl(0 84.2% 60.2%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(22 20% 90%);
-    --input: hsl(22 20% 88%);
-    --ring: hsl(22 97% 51%);
-    --chart-1: hsl(22 97% 51%);
-    --chart-2: hsl(35 90% 55%);
-    --chart-3: hsl(10 80% 55%);
-    --chart-4: hsl(160 50% 45%);
-    --chart-5: hsl(200 60% 45%);
+    /* Background Soft Off-White & Text Charcoal */
+    --background: #f8fafc;
+    --foreground: #334155;
+
+    /* Card & Popover Pure White */
+    --card: #ffffff;
+    --card-foreground: #334155;
+    --popover: #ffffff;
+    --popover-foreground: #334155;
+
+    /* Emerald Green Primary */
+    --primary: #059669;
+    --primary-foreground: #ffffff;
+
+    /* Mint Green Secondary */
+    --secondary: #d1fae5;
+    --secondary-foreground: #064e3b;
+
+    /* Soft Gray for muted elements */
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+
+    /* Emerald accents for hover states */
+    --accent: #ecfdf5;
+    --accent-foreground: #059669;
+
+    /* Destructive/Error states */
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Slate Borders & Inputs */
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #059669;
+
+    /* Sporty Chart Colors (Green, Teal, Cyan, Slate) */
+    --chart-1: #059669;
+    --chart-2: #0d9488;
+    --chart-3: #0891b2;
+    --chart-4: #2563eb;
+    --chart-5: #64748b;
+
     --radius: 0.5rem;
-    --sidebar-background: hsl(0 0% 98%);
-    --sidebar-foreground: hsl(240 5.3% 26.1%);
-    --sidebar-primary: hsl(22 97% 51%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(22 70% 95%);
-    --sidebar-accent-foreground: hsl(22 70% 40%);
-    --sidebar-border: hsl(22 20% 91%);
-    --sidebar-ring: hsl(22 97% 51%);
-    --sidebar: hsl(0 0% 98%);
+
+    /* Sidebar matching the theme */
+    --sidebar-background: #f8fafc;
+    --sidebar-foreground: #334155;
+    --sidebar-primary: #059669;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #ecfdf5;
+    --sidebar-accent-foreground: #059669;
+    --sidebar-border: #e2e8f0;
+    --sidebar-ring: #059669;
+    --sidebar: #f8fafc;
 }
 
 .dark {
-    --background: hsl(0 0% 3.9%);
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(0 0% 3.9%);
-    --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(0 0% 3.9%);
-    --popover-foreground: hsl(0 0% 98%);
-    --primary: hsl(22 100% 60%);
-    --primary-foreground: hsl(0 0% 100%);
-    --secondary: hsl(22 20% 15%);
-    --secondary-foreground: hsl(22 50% 90%);
-    --muted: hsl(22 15% 15%);
-    --muted-foreground: hsl(22 15% 64%);
-    --accent: hsl(22 40% 18%);
-    --accent-foreground: hsl(22 90% 85%);
-    --destructive: hsl(0 84% 60%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(22 20% 15%);
-    --input: hsl(22 20% 15%);
-    --ring: hsl(22 97% 60%);
-    --chart-1: hsl(22 97% 60%);
-    --chart-2: hsl(35 90% 60%);
-    --chart-3: hsl(10 80% 60%);
-    --chart-4: hsl(160 50% 50%);
-    --chart-5: hsl(200 60% 50%);
-    --sidebar-background: hsl(0 0% 7%);
-    --sidebar-foreground: hsl(0 0% 95.9%);
-    --sidebar-primary: hsl(22 100% 60%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(22 40% 17%);
-    --sidebar-accent-foreground: hsl(22 90% 85%);
-    --sidebar-border: hsl(22 20% 16%);
-    --sidebar-ring: hsl(22 97% 60%);
-    --sidebar: hsl(240 5.9% 10%);
+    /* Deep Slate Background */
+    --background: #020617;
+    --foreground: #e2e8f0;
+
+    /* Elevated Slate for Cards */
+    --card: #0f172a;
+    --card-foreground: #e2e8f0;
+    --popover: #0f172a;
+    --popover-foreground: #e2e8f0;
+
+    /* Brighter Emerald for Dark Mode contrast */
+    --primary: #10b981;
+    --primary-foreground: #022c22;
+
+    /* Slate secondary with mint text */
+    --secondary: #1e293b;
+    --secondary-foreground: #a7f3d0;
+
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+
+    /* Deep Emerald accents */
+    --accent: #064e3b;
+    --accent-foreground: #6ee7b7;
+
+    --destructive: #f87171;
+    --destructive-foreground: #450a0a;
+
+    /* Subtle Slate Borders */
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #34d399;
+
+    --chart-1: #34d399;
+    --chart-2: #2dd4bf;
+    --chart-3: #22d3ee;
+    --chart-4: #60a5fa;
+    --chart-5: #94a3b8;
+
+    --sidebar-background: #020617;
+    --sidebar-foreground: #e2e8f0;
+    --sidebar-primary: #10b981;
+    --sidebar-primary-foreground: #022c22;
+    --sidebar-accent: #064e3b;
+    --sidebar-accent-foreground: #6ee7b7;
+    --sidebar-border: #1e293b;
+    --sidebar-ring: #34d399;
+    --sidebar: #020617;
 }
 
 @layer base {

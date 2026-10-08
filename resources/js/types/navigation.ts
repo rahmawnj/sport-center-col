@@ -12,3 +12,14 @@ export type NavItem = {
     icon?: LucideIcon;
     isActive?: boolean;
 };
+
+export type NavGroup = {
+    title: string;
+    icon?: LucideIcon;
+    isActive?: boolean;
+    items: NavItem[];
+};
+
+export function isNavGroup(item: NavItem | NavGroup): item is NavGroup {
+    return 'items' in item;
+}

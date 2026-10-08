@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from '@lucide/vue';
+import {
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    Menu,
+    Moon,
+    Search,
+    Sun,
+    User,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -32,8 +40,8 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import UserMenuContent from '@/components/UserMenuContent.vue';
+import { useAppearance } from '@/composables/useAppearance';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -49,6 +57,11 @@ const props = withDefaults(defineProps<Props>(), {
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+const { resolvedAppearance, updateAppearance } = useAppearance();
+
+const toggleAppearance = () => {
+    updateAppearance(resolvedAppearance.value === 'dark' ? 'light' : 'dark');
+};
 
 const activeItemStyles =
     'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
@@ -238,27 +251,34 @@ const rightNavItems: NavItem[] = [
                         </div>
                     </div>
 
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        class="group h-9 w-9 cursor-pointer"
+                        @click="toggleAppearance"
+                    >
+                        <Sun
+                            v-if="resolvedAppearance === 'dark'"
+                            class="size-5 opacity-80 group-hover:opacity-100"
+                        />
+                        <Moon
+                            v-else
+                            class="size-5 opacity-80 group-hover:opacity-100"
+                        />
+                        <span class="sr-only">Toggle dark mode</span>
+                    </Button>
+
                     <DropdownMenu>
                         <DropdownMenuTrigger :as-child="true">
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
+                                title="Akun"
+                                class="group h-9 w-9 cursor-pointer rounded-full"
                             >
-                                <Avatar
-                                    class="size-8 overflow-hidden rounded-full"
-                                >
-                                    <AvatarImage
-                                        v-if="auth.user.avatar"
-                                        :src="auth.user.avatar"
-                                        :alt="auth.user.name"
-                                    />
-                                    <AvatarFallback
-                                        class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
-                                    >
-                                        {{ getInitials(auth.user?.name) }}
-                                    </AvatarFallback>
-                                </Avatar>
+                                <User
+                                    class="size-5 opacity-80 group-hover:opacity-100"
+                                />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" class="w-56">

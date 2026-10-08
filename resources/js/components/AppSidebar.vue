@@ -1,28 +1,57 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { CalendarCheck, CircleDollarSign, CircleDot, Dumbbell, LayoutGrid, Users, PanelsTopLeft, Building2, PackagePlus, CreditCard, UserRoundPlus, Repeat2 } from '@lucide/vue';
+import {
+    BadgeCheck,
+    Building2,
+    FileChartColumn,
+    LayoutGrid,
+    MapPin,
+    Package as PackageIcon,
+    Receipt,
+    Users,
+} from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
-import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import NavMain from '@/components/NavMain.vue';
+import NavUser from '@/components/NavUser.vue';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
+import type { NavGroup, NavItem } from '@/types';
 
-const masterDataItems: NavItem[] = [
-    { title: 'Pengguna', href: '/users', icon: Users },
-    { title: 'Zona', href: '/zones', icon: CircleDot },
-    { title: 'Area Lapangan', href: '/zone-spaces', icon: PanelsTopLeft },
-    { title: 'Tarif Harga', href: '/pricing-rates', icon: CircleDollarSign },
-    { title: 'Paket Keanggotaan', href: '/membership-packages', icon: CreditCard },
-    { title: 'Pelatih', href: '/trainers', icon: Dumbbell },
+const items: (NavItem | NavGroup)[] = [
+    { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Fasilitas', href: '/facilities', icon: Building2 },
-    { title: 'Layanan Tambahan', href: '/add-ons', icon: PackagePlus },
-];
-
-const navigationItems: NavItem[] = [
-    { title: 'Pemesanan', href: '/bookings', icon: CalendarCheck },
-    { title: 'Keanggotaan', href: '/memberships', icon: UserRoundPlus },
-    { title: 'Langganan', href: '/subscriptions', icon: Repeat2 },
+    { title: 'Member', href: '/members', icon: Users },
+    { title: 'Membership', href: '/memberships', icon: BadgeCheck },
+    { title: 'Transaksi', href: '/transactions', icon: Receipt },
+    {
+        title: 'Laporan',
+        icon: FileChartColumn,
+        items: [
+            {
+                title: 'Penjualan Paket',
+                href: '/reports/package',
+                icon: PackageIcon,
+            },
+            {
+                title: 'Booking Lapangan',
+                href: '/reports/booking',
+                icon: MapPin,
+            },
+            {
+                title: 'Membership',
+                href: '/reports/membership',
+                icon: BadgeCheck,
+            },
+        ],
+    },
 ];
 </script>
 
@@ -38,15 +67,7 @@ const navigationItems: NavItem[] = [
             </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-            <SidebarMenu class="px-2 py-0">
-                <SidebarMenuItem>
-                    <SidebarMenuButton as-child :tooltip="'Dasbor'">
-                        <Link :href="dashboard()" aria-label="Dasbor"><LayoutGrid /><span>Dasbor</span></Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-            <NavMain :items="navigationItems" label="Operasional" />
-            <NavMain :items="masterDataItems" label="Data Master" />
+            <NavMain :items="items" />
         </SidebarContent>
         <SidebarFooter>
             <NavUser />
