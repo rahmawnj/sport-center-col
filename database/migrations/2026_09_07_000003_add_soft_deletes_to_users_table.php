@@ -1,22 +1,23 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * The deleted_at column is already added by the earlier
+     * 2026_08_19_064814_add_role_relationship_to_users_table migration.
+     *
+     * This migration is intentionally kept as a no-op to preserve migration
+     * history without attempting to add the column a second time.
+     */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->softDeletes();
-        });
+        //
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropSoftDeletes();
-        });
+        //
     }
 };
