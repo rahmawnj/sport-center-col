@@ -19,13 +19,13 @@ class SportCenterSeeder extends Seeder
         $member = User::where('email', 'test@example.com')->first();
 
         foreach ([
-            ['Andi Pratama', 'Personal Trainer Gym'],
-            ['Budi Santoso', 'Padel & Functional Training'],
-            ['Citra Lestari', 'Yoga & Pilates'],
-        ] as [$name, $specialty]) {
+            ['Andi Pratama', 'Personal Trainer Gym', '081234567890'],
+            ['Budi Santoso', 'Padel & Functional Training', '081234567891'],
+            ['Citra Lestari', 'Yoga & Pilates', '081234567892'],
+        ] as [$name, $specialty, $phone]) {
             Trainer::updateOrCreate(
                 ['name' => $name],
-                ['specialty' => $specialty]
+                ['specialty' => $specialty, 'phone' => $phone]
             );
         }
 
@@ -65,12 +65,10 @@ class SportCenterSeeder extends Seeder
         ];
 
         foreach ($facilities as [$name, $slug, $online, $turnaround, $courts, $packages]) {
-            $facility = Facility::updateOrCreate(['slug' => $slug], [
-                'name' => $name,
-                'is_bookable_online' => $online,
-                'turnaround_minutes' => $turnaround,
-                'status' => 'active',
-            ]);
+            $facility = Facility::updateOrCreate(
+                ['name' => $name],
+                ['icon' => $slug]
+            );
 
             foreach ($courts as $court) {
                 Court::updateOrCreate(
