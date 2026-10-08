@@ -12,13 +12,10 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $superadminRole = Role::firstOrCreate(['name' => 'Superadmin']);
-        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
+        Role::firstOrCreate(['name' => 'Admin']);
         $memberRole = Role::firstOrCreate(['name' => 'Member']);
 
         User::firstOrCreate(
@@ -38,9 +35,11 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Test User',
                 'password' => Hash::make('password'),
                 'role_id' => $memberRole->id,
-                'phone' => null,
+                'phone' => '081234567899',
                 'email_verified_at' => now(),
             ]
         );
+
+        $this->call(SportCenterSeeder::class);
     }
 }
