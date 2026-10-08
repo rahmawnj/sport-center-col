@@ -48,6 +48,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('zones_system_tables');
+        Schema::dropIfExists('zone_spaces');
+        Schema::dropIfExists('operational_hours');
+        Schema::dropIfExists('zones');
     }
 };
