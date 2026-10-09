@@ -25,6 +25,7 @@ const props = defineProps<{
     zones: Zone[];
     addOns: AddOn[];
     initialZoneId: number | null;
+    initialSpaceId: number | null;
     successMessage?: string | null;
     bookingReference?: string | null;
 }>();
@@ -78,6 +79,14 @@ const steps = [
 ];
 
 onMounted(() => {
+    if (props.initialSpaceId && selectedZone.value) {
+        const space = selectedZone.value.spaces.find((item) => item.id === props.initialSpaceId);
+        if (space) {
+            chooseSpace(space);
+            step.value = 3;
+            return;
+        }
+    }
     if (zoneId.value && selectedZone.value) step.value = 2;
 });
 
