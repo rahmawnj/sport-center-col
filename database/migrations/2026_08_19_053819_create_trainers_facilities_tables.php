@@ -20,13 +20,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('facilities', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('icon')->nullable();
-            $table->timestamps();
-        });
-
         Schema::create('facility_zone_space', function (Blueprint $table) {
             $table->foreignId('zone_space_id')->constrained('zone_spaces')->onDelete('cascade');
             $table->foreignId('facility_id')->constrained('facilities')->onDelete('cascade');
@@ -41,7 +34,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('facility_zone_space');
-        Schema::dropIfExists('facilities');
         Schema::dropIfExists('trainers');
     }
 };
