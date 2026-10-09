@@ -32,7 +32,6 @@ return new class extends Migration
         Schema::table('bookings', function (Blueprint $table) {
             $table->dropConstrainedForeignId('pricing_rate_id');
             $table->dropConstrainedForeignId('zone_space_id');
-            $table->foreignId('court_id')->nullable(false)->change();
         });
     }
 };
