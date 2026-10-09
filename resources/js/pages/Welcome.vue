@@ -124,28 +124,28 @@ function pricingLabel(model: string) {
     </Head>
 
     <div class="min-h-screen overflow-x-clip bg-white text-[#15251f]">
-        <header class="sticky top-0 z-50 border-b border-black/5 bg-[#f6f7f2]/95 backdrop-blur-md">
+        <header class="sticky top-0 z-50 border-b border-white/10 bg-[#001428]/95 text-white backdrop-blur-md">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
                 <a href="/" class="flex items-center gap-3" aria-label="Sport Center home">
                     <img src="/logo.png" alt="Sport Center" class="h-11 w-11 rounded-xl object-contain" />
                     <span>
-                        <span class="block text-lg font-black tracking-tight">sport<span class="text-[#6b8e23]">center.</span></span>
-                        <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Move your way</span>
+                        <span class="block text-lg font-black tracking-tight text-white">sport<span class="text-[#d8ff62]">center.</span></span>
+                        <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">Move your way</span>
                     </span>
                 </a>
 
-                <nav class="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex">
-                    <a href="#zones" class="transition hover:text-[#15251f]">Olahraga</a>
-                    <a href="#coaches" class="transition hover:text-[#15251f]">Pelatih</a>
-                    <a href="#extras" class="transition hover:text-[#15251f]">Layanan tambahan</a>
+                <nav class="hidden items-center gap-8 text-sm font-semibold text-white/75 md:flex">
+                    <a href="#zones" class="transition hover:text-white">Olahraga</a>
+                    <a href="#coaches" class="transition hover:text-white">Pelatih</a>
+                    <a href="#extras" class="transition hover:text-white">Layanan tambahan</a>
                 </nav>
 
                 <div class="flex items-center gap-2">
-                    <Link v-if="$page.props.auth.user" :href="dashboard()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold sm:inline-flex">Dasbor</Link>
+                    <Link v-if="$page.props.auth.user" :href="dashboard()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10 sm:inline-flex">Dasbor</Link>
                     <template v-else>
-                        <Link :href="login()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold sm:inline-flex">Masuk</Link>
+                        <Link :href="login()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10 sm:inline-flex">Masuk</Link>
                     </template>
-                    <Link href="#zones" class="rounded-full bg-[#172720] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4436] sm:px-5">
+                    <Link href="#zones" class="group rounded-full bg-[#d8ff62] px-4 py-2.5 text-sm font-bold text-[#001428] transition hover:bg-white sm:px-5">
                         Cari fasilitas <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1 h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </Link>
                 </div>
