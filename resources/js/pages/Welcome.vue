@@ -102,8 +102,8 @@ function pricingLabel(model: string) {
                     <template v-else>
                         <Link :href="login()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold sm:inline-flex">Masuk</Link>
                     </template>
-                    <Link href="/book" class="rounded-full bg-[#172720] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4436] sm:px-5">
-                        Booking <span class="ml-1">↗</span>
+                    <Link href="#zones" class="rounded-full bg-[#172720] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4436] sm:px-5">
+                        Cari fasilitas <span class="ml-1">↗</span>
                     </Link>
                 </div>
             </div>
@@ -189,7 +189,7 @@ function pricingLabel(model: string) {
                         <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Temukan zona favoritmu.</h2>
                         <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Lihat zona dan ruang yang terdaftar di Sport Center, lengkap dengan status dan tarif awal.</p>
                     </div>
-                    <Link href="/book" class="inline-flex w-fit items-center gap-2 text-sm font-extrabold">Lihat proses booking <span>↗</span></Link>
+                    <Link href="#zones" class="inline-flex w-fit items-center gap-2 text-sm font-extrabold">Jelajahi fasilitas <span>↗</span></Link>
                 </div>
 
                 <div v-if="props.zones.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -213,7 +213,7 @@ function pricingLabel(model: string) {
                             </div>
                             <div class="mt-5 flex items-center justify-between border-t border-[#edf0e9] pt-4">
                                 <span class="text-xs font-semibold text-slate-500">{{ zone.spaces.filter((space) => space.status === 'available').length }} ruang tersedia</span>
-                                <Link href="/book" class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-lg text-white transition group-hover:bg-[#d8ff62] group-hover:text-[#172720]" :aria-label="'Booking ' + zone.name">↗</Link>
+                                <Link href="#zones" class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-lg text-white transition group-hover:bg-[#d8ff62] group-hover:text-[#172720]" :aria-label="'Booking ' + zone.name">↗</Link>
                             </div>
                         </div>
                     </article>
