@@ -63,7 +63,7 @@ const selectedZone = computed(() => props.zones.find((zone) => zone.id === zoneI
 const availableSpaces = computed(() => selectedZone.value?.spaces.filter((space) => space.status === 'available' && space.rates.length) ?? []);
 const selectedSpace = computed(() => selectedZone.value?.spaces.find((space) => space.id === spaceId.value) ?? null);
 const selectedRate = computed(() => selectedSpace.value?.rates.find((rate) => rate.id === rateId.value) ?? null);
-const isHourly = computed(() => selectedRate.value?.unit_type === 'per_hour');
+const isHourly = computed(() => selectedRate.value?.unit_type === 'per_hour' || (selectedRate.value?.unit_type === 'per_session' && /jam|hour/i.test(selectedRate.value?.rental_type ?? '')));
 const currentPrice = computed(() => selectedRate.value ? selectedRate.value.price * (isHourly.value ? duration.value : 1) : 0);
 const selectedEndTime = computed(() => selectedSlots.value.length ? selectedSlots.value[selectedSlots.value.length - 1].end_time : selectedSlot.value?.end_time ?? '');
 const addOnTotal = computed(() => props.addOns.reduce((sum, item) => sum + item.price * (addOnQuantities.value[item.id] ?? 0), 0));
