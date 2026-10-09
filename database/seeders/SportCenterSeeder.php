@@ -7,6 +7,7 @@ use App\Models\ZoneSpace;
 use App\Models\Facility;
 use App\Models\PricingRate;
 use App\Models\Trainer;
+use App\Models\AddOn;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -153,6 +154,19 @@ class SportCenterSeeder extends Seeder
                     );
                 }
             }
+        }
+
+        // Seed add-ons in the existing add_ons table.
+        // firstOrCreate keeps remaining stock intact when the seeder is run again.
+        foreach ([
+            ['Raket Padel', 35000, 20],
+            ['Handuk', 10000, 50],
+            ['Bola Billiard Tambahan', 15000, 5],
+        ] as [$addOnName, $price, $stock]) {
+            AddOn::firstOrCreate(
+                ['name' => $addOnName],
+                ['price' => $price, 'stock' => $stock]
+            );
         }
 
     }
