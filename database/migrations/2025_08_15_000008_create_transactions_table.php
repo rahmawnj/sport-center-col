@@ -1,26 +1,20 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Legacy transactions schema superseded by
+     * 2026_08_19_054015_create_transactions_tables.php.
+     */
     public function up(): void
     {
-        Schema::create('transactions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->comment('Boleh NULL untuk transaksi Guest')->constrained()->nullOnDelete();
-            $table->morphs('transactionable');
-            $table->decimal('amount', 15, 2);
-            $table->string('payment_method', 100)->nullable();
-            $table->enum('payment_status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
-            $table->timestamps();
-        });
+        // Intentionally left empty to prevent conflicting transactions schemas.
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('transactions');
+        // The current transactions schema is managed by the 2026 migration.
     }
 };
