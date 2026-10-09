@@ -123,7 +123,7 @@ function pricingLabel(model: string) {
         <meta head-key="twitter:description" name="twitter:description" content="Jelajahi zona olahraga, cek harga dan jadwal, lalu booking dengan mudah." />
     </Head>
 
-    <div class="min-h-screen overflow-hidden bg-white text-[#15251f]">
+    <div class="min-h-screen overflow-x-clip bg-white text-[#15251f]">
         <header class="sticky top-0 z-50 border-b border-black/5 bg-[#f6f7f2]/95 backdrop-blur-md">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
                 <a href="/" class="flex items-center gap-3" aria-label="Sport Center home">
