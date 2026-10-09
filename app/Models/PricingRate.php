@@ -11,6 +11,8 @@ class PricingRate extends Model
         'zone_space_id',
         'rental_type',
         'price',
+        'unit_type',
+        'min_booking_duration',
     ];
 
     protected function casts(): array
