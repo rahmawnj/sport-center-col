@@ -186,7 +186,8 @@ class PublicBookingController extends Controller
             foreach ($selectedAddOns as $item) {
                 $addOn = $addOnModels->get((int) $item['id']);
                 $quantity = (int) $item['quantity'];
-                $addOnHours = $this->isHourlyRate($rate) ? $duration : 1;\n                $addOnTotal += (float) $addOn->price * $quantity * $addOnHours;
+                $addOnHours = $this->isHourlyRate($rate) ? $duration : 1;
+                $addOnTotal += (float) $addOn->price * $quantity * $addOnHours;
                 $addOn->decrement('stock', $quantity);
             }
 
