@@ -70,6 +70,23 @@ class PublicBookingController extends Controller
         ]);
     }
 
+    public function addOnsStock(): JsonResponse
+    {
+        $addOns = AddOn::query()
+            ->where('stock', '>', 0)
+            ->orderBy('name')
+            ->get(['id', 'name', 'price', 'stock'])
+            ->map(fn (AddOn $addOn) => [
+                'id' => $addOn->id,
+                'name' => $addOn->name,
+                'price' => (float) $addOn->price,
+                'stock' => (int) $addOn->stock,
+            ])->values();
+
+        return response()->json(['addOns' => $addOns])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
     public function availability(Request $request): JsonResponse
     {
         $data = $request->validate([
