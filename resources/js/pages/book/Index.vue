@@ -38,6 +38,7 @@ const date = ref('');
 const duration = ref(1);
 const slots = ref<Slot[]>([]);
 const selectedSlot = ref<Slot | null>(null);
+const selectedSlots = ref<Slot[]>([]);
 const loadingSlots = ref(false);
 const slotError = ref('');
 const addOnQuantities = ref<Record<number, number>>({});
@@ -63,7 +64,8 @@ const availableSpaces = computed(() => selectedZone.value?.spaces.filter((space)
 const selectedSpace = computed(() => selectedZone.value?.spaces.find((space) => space.id === spaceId.value) ?? null);
 const selectedRate = computed(() => selectedSpace.value?.rates.find((rate) => rate.id === rateId.value) ?? null);
 const isHourly = computed(() => selectedRate.value?.unit_type === 'per_hour');
-const currentPrice = computed(() => selectedSlot.value?.price ?? (selectedRate.value ? selectedRate.value.price * (isHourly.value ? duration.value : 1) : 0));
+const currentPrice = computed(() => selectedRate.value ? selectedRate.value.price * (isHourly.value ? duration.value : 1) : 0);
+const selectedEndTime = computed(() => selectedSlots.value.length ? selectedSlots.value[selectedSlots.value.length - 1].end_time : selectedSlot.value?.end_time ?? '');
 const addOnTotal = computed(() => props.addOns.reduce((sum, item) => sum + item.price * (addOnQuantities.value[item.id] ?? 0), 0));
 const total = computed(() => currentPrice.value + addOnTotal.value);
 const selectedAddOns = computed(() => props.addOns
@@ -92,6 +94,8 @@ onMounted(() => {
 
 watch([date, spaceId, rateId, duration], () => {
     selectedSlot.value = null;
+    selectedSlots.value = [];
+    duration.value = Math.max(1, selectedRate.value?.min_booking_duration ?? 1);
     slots.value = [];
     slotError.value = '';
     if (!date.value || !spaceId.value || !rateId.value) return;
@@ -101,7 +105,7 @@ watch([date, spaceId, rateId, duration], () => {
         space_id: String(spaceId.value),
         rate_id: String(rateId.value),
         date: date.value,
-        duration: String(duration.value),
+        duration: String(isHourly.value ? 1 : duration.value),
     });
 
     fetch(`/book/availability?${params.toString()}`, {
@@ -125,6 +129,7 @@ function chooseZone(zone: Zone) {
     rateId.value = null;
     date.value = '';
     selectedSlot.value = null;
+    selectedSlots.value = [];
     step.value = 2;
 }
 function chooseSpace(space: Space) {
@@ -132,21 +137,48 @@ function chooseSpace(space: Space) {
     rateId.value = space.rates[0]?.id ?? null;
     duration.value = Math.max(1, space.rates[0]?.min_booking_duration ?? 1);
     selectedSlot.value = null;
+    selectedSlots.value = [];
 }
 function chooseRate(rate: Rate) {
     rateId.value = rate.id;
     duration.value = Math.max(1, rate.min_booking_duration || 1);
     selectedSlot.value = null;
+    selectedSlots.value = [];
 }
-function chooseDuration(value: number) {
-    duration.value = Math.max(selectedRate.value?.min_booking_duration ?? 1, value);
+function chooseAvailableSlot(slot: Slot) {
+    if (!isHourly.value) {
+        selectedSlot.value = slot;
+        selectedSlots.value = [slot];
+        duration.value = Math.max(1, selectedRate.value?.min_booking_duration ?? 1);
+        return;
+    }
+
+    const existingIndex = selectedSlots.value.findIndex((item) => item.start_time === slot.start_time);
+    if (existingIndex >= 0) {
+        selectedSlots.value = selectedSlots.value.slice(0, existingIndex);
+    } else if (!selectedSlots.value.length) {
+        selectedSlots.value = [slot];
+    } else {
+        const first = selectedSlots.value[0];
+        const last = selectedSlots.value[selectedSlots.value.length - 1];
+        if (slot.start_time === last.end_time) {
+            selectedSlots.value = [...selectedSlots.value, slot];
+        } else if (slot.end_time === first.start_time) {
+            selectedSlots.value = [slot, ...selectedSlots.value];
+        } else {
+            selectedSlots.value = [slot];
+        }
+    }
+
+    selectedSlot.value = selectedSlots.value[0] ?? null;
+    duration.value = Math.max(selectedRate.value?.min_booking_duration ?? 1, selectedSlots.value.length || 1);
 }
 function next() {
     if (step.value === 2 && selectedRate.value && selectedSpace.value) {
         step.value = 3;
         return;
     }
-    if (step.value === 3 && date.value && selectedSlot.value) {
+    if (step.value === 3 && date.value && selectedSlot.value && selectedSlots.value.length >= (selectedRate.value?.min_booking_duration ?? 1)) {
         step.value = 4;
         return;
     }
@@ -268,11 +300,6 @@ function unitLabel(unit: Rate['unit_type']) {
                                 <label class="grid gap-2 text-sm font-bold">Tanggal
                                     <input v-model="date" type="date" :min="today" class="rounded-xl border border-[#dce1d5] bg-white px-4 py-3 font-medium outline-none focus:border-[#8ba83d]" />
                                 </label>
-                                <label class="grid gap-2 text-sm font-bold">Durasi
-                                    <select :value="duration" :disabled="!isHourly" class="rounded-xl border border-[#dce1d5] bg-white px-4 py-3 font-medium outline-none focus:border-[#8ba83d] disabled:bg-slate-100" @change="chooseDuration(Number(($event.target as HTMLSelectElement).value))">
-                                        <option v-for="hour in [1,2,3,4,5,6,7,8,9,10,11,12].filter(h => h >= (selectedRate?.min_booking_duration ?? 1))" :key="hour" :value="hour">{{ hour }} jam</option>
-                                    </select>
-                                </label>
                             </div>
                             <div class="mt-5 rounded-xl bg-[#f6f7f2] p-4 text-sm">
                                 <div class="flex justify-between gap-3"><span class="text-slate-500">Tarif</span><span class="font-bold">{{ selectedRate ? formatIDR(selectedRate.price) + ' / ' + unitLabel(selectedRate.unit_type) : '—' }}</span></div>
@@ -281,15 +308,18 @@ function unitLabel(unit: Rate['unit_type']) {
                             <div v-if="loadingSlots" class="mt-5 text-sm font-semibold text-slate-500">Memeriksa jadwal yang tersedia...</div>
                             <p v-else-if="slotError" class="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{{ slotError }}</p>
                             <div v-else-if="date" class="mt-5">
-                                <p class="mb-3 text-sm font-bold">Jam yang tersedia</p>
+                                <p class="mb-2 text-sm font-bold">Jam yang tersedia</p>
+                                <p class="mb-3 text-xs text-slate-500">{{ isHourly ? 'Pilih jam mulai, lalu pilih jam berikutnya secara berurutan untuk menambah durasi.' : 'Pilih jam mulai yang tersedia.' }}</p>
                                 <div v-if="slots.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                    <button v-for="slot in slots" :key="slot.start_time" type="button" class="rounded-xl border p-3 text-left transition" :class="selectedSlot?.start_time === slot.start_time ? 'border-[#8ba83d] bg-[#f3f8e7] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df] hover:border-[#9db55f]'" @click="selectedSlot = slot">
+                                    <button v-for="slot in slots" :key="slot.start_time" type="button" class="rounded-xl border p-3 text-left transition"  :class="selectedSlots.some(item => item.start_time === slot.start_time) ? 'border-[#8ba83d] bg-[#f3f8e7] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df] hover:border-[#9db55f]'" @click="chooseAvailableSlot(slot)">
                                         <span class="block font-black">{{ slot.start_time }}–{{ slot.end_time }}</span>
                                         <span class="mt-1 block text-xs font-bold text-[#607a2f]">{{ formatIDR(slot.price) }}</span>
                                     </button>
                                 </div>
                                 <p v-else class="rounded-xl border border-dashed border-[#d5dccb] p-5 text-sm text-slate-500">Tidak ada slot tersedia pada tanggal ini. Coba tanggal atau durasi lain.</p>
                             </div>
+                            <p v-if="isHourly && selectedSlots.length" class="mt-3 rounded-xl bg-[#f3f8e7] p-3 text-sm font-semibold text-[#53663a]">Dipilih: {{ selectedSlot?.start_time }}–{{ selectedEndTime }} · {{ duration }} jam</p>
+                            <p v-if="isHourly && selectedSlots.length < (selectedRate?.min_booking_duration ?? 1)" class="mt-2 text-xs text-slate-500">Minimal durasi {{ selectedRate?.min_booking_duration ?? 1 }} jam. Pilih jam berurutan sampai durasi terpenuhi.</p>
                             <p v-if="form.errors.start_time || form.errors.date" class="mt-3 text-sm font-semibold text-red-600">{{ form.errors.start_time || form.errors.date }}</p>
                         </div>
 
@@ -335,7 +365,7 @@ function unitLabel(unit: Rate['unit_type']) {
                                 <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#d8ff62]">Ringkasan booking</p>
                                 <div class="mt-3 flex justify-between gap-3 text-sm"><span class="text-white/65">Zona / ruang</span><span class="text-right font-bold">{{ selectedZone?.name }} · {{ selectedSpace?.name }}</span></div>
                                 <div class="mt-2 flex justify-between gap-3 text-sm"><span class="text-white/65">Tanggal</span><span class="font-bold">{{ date }}</span></div>
-                                <div class="mt-2 flex justify-between gap-3 text-sm"><span class="text-white/65">Jam</span><span class="font-bold">{{ selectedSlot?.start_time }}–{{ selectedSlot?.end_time }}</span></div>
+                                <div class="mt-2 flex justify-between gap-3 text-sm"><span class="text-white/65">Jam</span><span class="font-bold">{{ selectedSlot?.start_time }}–{{ selectedEndTime }}</span></div>
                                 <div class="mt-2 flex justify-between gap-3 text-sm"><span class="text-white/65">Tarif ruang</span><span class="font-bold">{{ formatIDR(currentPrice) }}</span></div>
                                 <div class="mt-2 flex justify-between gap-3 text-sm"><span class="text-white/65">Add-on</span><span class="font-bold">{{ formatIDR(addOnTotal) }}</span></div>
                                 <div class="mt-4 flex items-end justify-between border-t border-white/15 pt-4"><span class="font-bold">Total</span><span class="text-2xl font-black text-[#d8ff62]">{{ formatIDR(total) }}</span></div>
@@ -345,7 +375,7 @@ function unitLabel(unit: Rate['unit_type']) {
 
                         <div class="mt-7 flex items-center justify-between gap-3 border-t border-[#edf0e9] pt-5">
                             <button type="button" class="rounded-full border border-[#d7ddcf] px-5 py-3 text-sm font-bold disabled:opacity-30" :disabled="step === 1 || form.processing" @click="back">← Kembali</button>
-                            <button v-if="step < 5" type="button" class="rounded-full bg-[#172720] px-6 py-3 text-sm font-black text-white transition hover:bg-[#2d4436] disabled:cursor-not-allowed disabled:opacity-40" :disabled="(step === 1 && !selectedZone) || (step === 2 && (!selectedSpace || !selectedRate)) || (step === 3 && (!date || !selectedSlot || loadingSlots))" @click="next">Lanjutkan →</button>
+                            <button v-if="step < 5" type="button" class="rounded-full bg-[#172720] px-6 py-3 text-sm font-black text-white transition hover:bg-[#2d4436] disabled:cursor-not-allowed disabled:opacity-40" :disabled="(step === 1 && !selectedZone) || (step === 2 && (!selectedSpace || !selectedRate)) || (step === 3 && (!date || !selectedSlot || loadingSlots || (isHourly && selectedSlots.length < (selectedRate?.min_booking_duration ?? 1))))" @click="next">Lanjutkan →</button>
                             <button v-else type="button" class="rounded-full bg-[#d8ff62] px-6 py-3 text-sm font-black text-[#172720] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40" :disabled="form.processing || !form.guest_name || !form.guest_email || !form.guest_phone" @click="submit">{{ form.processing ? 'Memproses...' : 'Konfirmasi booking · ' + formatIDR(total) }}</button>
                         </div>
                     </section>
@@ -357,7 +387,7 @@ function unitLabel(unit: Rate['unit_type']) {
                             <div class="flex justify-between gap-3"><span class="text-white/60">Zona</span><span class="text-right font-bold">{{ selectedZone?.name ?? 'Belum dipilih' }}</span></div>
                             <div class="flex justify-between gap-3"><span class="text-white/60">Ruang</span><span class="text-right font-bold">{{ selectedSpace?.name ?? 'Belum dipilih' }}</span></div>
                             <div class="flex justify-between gap-3"><span class="text-white/60">Tanggal</span><span class="text-right font-bold">{{ date || 'Belum dipilih' }}</span></div>
-                            <div class="flex justify-between gap-3"><span class="text-white/60">Jam</span><span class="text-right font-bold">{{ selectedSlot ? selectedSlot.start_time + '–' + selectedSlot.end_time : 'Belum dipilih' }}</span></div>
+                            <div class="flex justify-between gap-3"><span class="text-white/60">Jam</span><span class="text-right font-bold">{{ selectedSlot ? selectedSlot.start_time + '–' + selectedEndTime : 'Belum dipilih' }}</span></div>
                         </div>
                         <div class="mt-5 flex items-end justify-between gap-3">
                             <span class="text-sm text-white/65">Estimasi total</span>
