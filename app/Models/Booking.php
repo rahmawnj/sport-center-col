@@ -14,6 +14,8 @@ class Booking extends Model
         'guest_email',
         'guest_phone',
         'court_id',
+        'zone_space_id',
+        'pricing_rate_id',
         'date',
         'start_time',
         'end_time',
@@ -22,9 +24,7 @@ class Booking extends Model
 
     protected function casts(): array
     {
-        return [
-            'date' => 'date',
-        ];
+        return ['date' => 'date'];
     }
 
     public function user(): BelongsTo
@@ -35,6 +35,16 @@ class Booking extends Model
     public function court(): BelongsTo
     {
         return $this->belongsTo(Court::class);
+    }
+
+    public function zoneSpace(): BelongsTo
+    {
+        return $this->belongsTo(ZoneSpace::class);
+    }
+
+    public function pricingRate(): BelongsTo
+    {
+        return $this->belongsTo(PricingRate::class);
     }
 
     public function transactions(): MorphMany
