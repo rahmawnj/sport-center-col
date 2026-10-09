@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import PublicLayout from '@/layouts/PublicLayout.vue';
 import { dashboard, login, register } from '@/routes';
 
 type PricingRule = {
@@ -92,31 +93,8 @@ const facilityDescription = (slug: string) => {
 <template>
     <Head title="Sport Center — Olahraga, Lebih Mudah"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" /></Head>
 
+    <PublicLayout>
     <div class="dream-home min-h-screen bg-white text-[#001428]">
-        <header class="site-header sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur">
-            <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-                <a href="/" class="brand flex items-center gap-2.5" aria-label="Sport Center beranda">
-                    <span class="brand-mark"><i class="fa-solid fa-volleyball"></i></span>
-                    <span class="text-xl font-extrabold tracking-tight">SPORT<span class="text-[#8dbb00]">CENTER</span></span>
-                </a>
-
-                <nav class="hidden items-center gap-8 text-sm font-semibold md:flex">
-                    <a href="#olahraga" class="nav-link">Olahraga</a>
-                    <a href="#pelatih" class="nav-link">Pelatih</a>
-                    <a href="#membership" class="nav-link">Keanggotaan</a>
-                </nav>
-
-                <div class="flex items-center gap-2">
-                    <Link href="/book" class="hidden rounded-full px-4 py-2.5 text-sm font-bold text-[#001428] transition hover:bg-slate-100 sm:inline-flex">Booking</Link>
-                    <Link v-if="$page.props.auth.user" :href="dashboard()" class="btn-lime rounded-full px-5 py-2.5 text-sm font-extrabold">Dasbor</Link>
-                    <template v-else>
-                        <Link :href="login()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold sm:inline-flex">Masuk</Link>
-                        <Link :href="register()" class="btn-lime rounded-full px-5 py-2.5 text-sm font-extrabold">Daftar</Link>
-                    </template>
-                </div>
-            </div>
-        </header>
-
         <main>
             <section class="hero-section relative overflow-hidden">
                 <div class="hero-glow"></div>
@@ -268,18 +246,8 @@ const facilityDescription = (slug: string) => {
                 </div>
             </section>
         </main>
-
-        <footer class="bg-[#001428] text-white">
-            <div class="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-9 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-                <a href="/" class="flex items-center gap-2.5">
-                    <span class="brand-mark"><i class="fa-solid fa-volleyball"></i></span>
-                    <span class="text-lg font-extrabold">SPORT<span class="text-[#a4da01]">CENTER</span></span>
-                </a>
-                <p class="text-sm text-slate-400">Temukan permainanmu. Bergerak lebih aktif.</p>
-                <p class="text-xs text-slate-500">© {{ currentYear }} Sport Center. Hak cipta dilindungi.</p>
-            </div>
-        </footer>
     </div>
+    </PublicLayout>
 </template>
 
 <style scoped>
