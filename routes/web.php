@@ -7,17 +7,13 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PublicBookingController;
+use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SportController;
 use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VerifyController;
-use App\Models\AddOn;
-use App\Models\Trainer;
-use App\Models\Zone;
-use App\Models\ZoneSpace;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
 
