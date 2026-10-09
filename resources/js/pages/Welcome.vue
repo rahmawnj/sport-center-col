@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { dashboard, login, register } from '@/routes';
 
 type Space = {
@@ -31,6 +32,36 @@ const props = defineProps<{
 
 const currentYear = new Date().getFullYear();
 const totalSpaces = props.zones.reduce((total, zone) => total + zone.spaces.length, 0);
+const animatedZones = ref(0);
+const animatedSpaces = ref(0);
+const animatedTrainers = ref(0);
+let statsTimer: ReturnType<typeof setInterval> | undefined;
+
+onMounted(() => {
+    const duration = 1600;
+    const startedAt = Date.now();
+    const targets = [props.zones.length, totalSpaces, props.trainers.length];
+
+    statsTimer = setInterval(() => {
+        const progress = Math.min((Date.now() - startedAt) / duration, 1);
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+        animatedZones.value = Math.floor(targets[0] * easedProgress);
+        animatedSpaces.value = Math.floor(targets[1] * easedProgress);
+        animatedTrainers.value = Math.floor(targets[2] * easedProgress);
+
+        if (progress >= 1) {
+            animatedZones.value = targets[0];
+            animatedSpaces.value = targets[1];
+            animatedTrainers.value = targets[2];
+            if (statsTimer) clearInterval(statsTimer);
+        }
+    }, 16);
+});
+
+onBeforeUnmount(() => {
+    if (statsTimer) clearInterval(statsTimer);
+});
 
 const zoneImages: Record<string, string> = {
     padel: 'photo-1626224583764-f87db24ac4ea',
@@ -146,15 +177,15 @@ function pricingLabel(model: string) {
 
                     <div class="mt-10 grid max-w-lg grid-cols-3 border-t border-[#dce1d5] pt-6">
                         <div>
-                            <p class="text-3xl font-black tracking-tight">{{ props.zones.length }}<span class="text-[#8ba83d]">+</span></p>
+                            <p class="text-3xl font-black tracking-tight">{{ animatedZones }}<span class="text-[#8ba83d]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Zona olahraga</p>
                         </div>
                         <div class="border-l border-[#dce1d5] pl-5">
-                            <p class="text-3xl font-black tracking-tight">{{ totalSpaces }}<span class="text-[#8ba83d]">+</span></p>
+                            <p class="text-3xl font-black tracking-tight">{{ animatedSpaces }}<span class="text-[#8ba83d]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Ruang tersedia</p>
                         </div>
                         <div class="border-l border-[#dce1d5] pl-5">
-                            <p class="text-3xl font-black tracking-tight">{{ props.trainers.length }}<span class="text-[#8ba83d]">+</span></p>
+                            <p class="text-3xl font-black tracking-tight">{{ animatedTrainers }}<span class="text-[#8ba83d]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Pelatih</p>
                         </div>
                     </div>
