@@ -22,7 +22,7 @@ Route::get('/', [PublicPageController::class, 'home'])->name('home');
 Route::get('/zones/{zone}', [PublicPageController::class, 'showZone'])->name('zones.show');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
-Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
+Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');\nRoute::get('book/add-ons-stock', [PublicBookingController::class, 'addOnsStock'])->name('booking.add-ons-stock');
 Route::post('book', [PublicBookingController::class, 'store'])->name('booking.store');
 
 Route::get('verify', [VerifyController::class, 'show'])->name('verify');
