@@ -8,6 +8,8 @@ use App\Models\Facility;
 use App\Models\PricingRate;
 use App\Models\Trainer;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SportCenterSeeder extends Seeder
 {
@@ -85,6 +87,31 @@ class SportCenterSeeder extends Seeder
                 );
 
                 $space->facilities()->syncWithoutDetaching([$facility->id]);
+            }
+
+            // Seed operational hours in the existing table; do not create or alter schema here.
+            if (Schema::hasTable('operational_hours')) {
+                [$openTime, $closeTime] = match ($slug) {
+                    'ice-skating' => ['09:00:00', '22:00:00'],
+                    'gym' => ['08:00:00', '22:00:00'],
+                    'yoga', 'pilates' => ['08:00:00', '20:00:00'],
+                    default => ['08:00:00', '23:00:00'],
+                };
+
+                // Laravel Carbon / PHP dayOfWeek convention: Sunday = 0, Saturday = 6.
+                foreach (range(0, 6) as $dayOfWeek) {
+                    DB::table('operational_hours')->updateOrInsert(
+                        [
+                            'zone_id' => $zone->id,
+                            'day_of_week' => (string) $dayOfWeek,
+                        ],
+                        [
+                            'open_time' => $openTime,
+                            'close_time' => $closeTime,
+                            'is_closed' => false,
+                        ]
+                    );
+                }
             }
 
             foreach ($packages as [$packageName, $type, $minutes, $days, $rules]) {
