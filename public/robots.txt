@@ -6,5 +6,3 @@ Disallow: /register
 Disallow: /settings
 Disallow: /book
 Disallow: /verify
-
-Sitemap: https://YOUR-DOMAIN/sitemap.xml
