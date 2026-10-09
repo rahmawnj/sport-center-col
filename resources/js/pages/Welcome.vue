@@ -185,12 +185,18 @@ function pricingLabel(model: string) {
                 </div>
             </section>
 
-            <section class="border-y border-[#e3e7dc] bg-white">
-                <div class="mx-auto grid max-w-7xl grid-cols-2 gap-5 px-5 py-6 sm:grid-cols-4 sm:px-8">
-                    <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">⌖</span><span class="text-sm font-bold">Zona olahraga</span></div>
-                    <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">◷</span><span class="text-sm font-bold">Tarif transparan</span></div>
-                    <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">♧</span><span class="text-sm font-bold">Pelatih profesional</span></div>
-                    <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">＋</span><span class="text-sm font-bold">Add-on praktis</span></div>
+            <section class="overflow-hidden border-y border-[#e3e7dc] bg-white py-5" aria-label="Keunggulan Sport Center">
+                <div class="sport-benefits-marquee flex w-max items-center">
+                    <div v-for="copy in 2" :key="copy" class="flex shrink-0 items-center gap-8 px-4 sm:gap-12 sm:px-6" :aria-hidden="copy === 2 ? 'true' : undefined">
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">⌖</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Zona olahraga</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">◷</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Tarif transparan</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">♧</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Pelatih profesional</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">＋</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Add-on praktis</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
+                    </div>
                 </div>
             </section>
 
@@ -302,3 +308,26 @@ function pricingLabel(model: string) {
         </footer>
     </div>
 </template>
+
+<style>
+.sport-benefits-marquee {
+    animation: sport-benefits-scroll 28s linear infinite;
+    will-change: transform;
+}
+.sport-benefits-marquee:hover {
+    animation-play-state: paused;
+}
+@keyframes sport-benefits-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sport-benefits-marquee {
+        animation: none;
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+    }
+}
+</style>
