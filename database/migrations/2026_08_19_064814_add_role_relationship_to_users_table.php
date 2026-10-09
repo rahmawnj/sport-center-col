@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\\Database\\Migrations\\Migration;
-use Illuminate\\Database\\Schema\\Blueprint;
-use Illuminate\\Support\\Facades\\Schema;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,8 +17,7 @@ return new class extends Migration
                 $table->string('phone')->nullable();
             }
 
-            // The base users migration already uses softDeletes(), so only add
-            // deleted_at on installations where it is genuinely missing.
+            // The base users migration already uses softDeletes().
             if (!Schema::hasColumn('users', 'deleted_at')) {
                 $table->softDeletes();
             }
@@ -37,7 +36,7 @@ return new class extends Migration
                 $table->dropColumn('phone');
             }
 
-            // Do not remove deleted_at here: it belongs to the base users table.
+            // deleted_at belongs to the base users table; leave it intact.
         });
     }
 };
