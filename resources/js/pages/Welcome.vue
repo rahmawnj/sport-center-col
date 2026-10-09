@@ -153,7 +153,7 @@ function pricingLabel(model: string) {
         </header>
 
         <main>
-            <section class="bg-[#f3f6ec]">
+            <section class="bg-white">
                 <div class="mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:pt-20">
                 <div class="relative z-10">
                     <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#dfe4d5] bg-white px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#60734a]">
@@ -193,8 +193,8 @@ function pricingLabel(model: string) {
                 </div>
 
                 <div class="relative min-h-[390px] sm:min-h-[500px]">
-                    <div class="absolute -right-8 -top-6 h-40 w-40 rounded-full bg-[#e1f1b0] blur-2xl sm:h-56 sm:w-56"></div>
-                    <div class="absolute bottom-0 left-0 right-5 top-0 overflow-hidden rounded-[2rem] bg-[#dce4d0] sm:left-8 sm:rounded-[2.5rem]">
+                    <div class="absolute -right-8 -top-6 h-40 w-40 rounded-full bg-[#d8ff62]/35 blur-2xl sm:h-56 sm:w-56"></div>
+                    <div class="absolute bottom-0 left-0 right-5 top-0 overflow-hidden rounded-[2rem] bg-[#d8ff62]/20 sm:left-8 sm:rounded-[2.5rem]">
                         <img
                             src="https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=1400&q=90"
                             alt="Lapangan olahraga dengan suasana aktif"
@@ -275,12 +275,12 @@ function pricingLabel(model: string) {
                 </div>
             </section>
 
-            <section id="coaches" class="bg-[#234832] text-white">
+            <section id="coaches" class="bg-[#d8ff62] text-[#172720]">
                 <div class="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
                     <div>
-                        <p class="text-xs font-black uppercase tracking-[0.22em] text-[#d8ff62]">Better with guidance</p>
+                        <p class="text-xs font-black uppercase tracking-[0.22em] text-[#234832]">Better with guidance</p>
                         <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Latihan bareng pelatih.</h2>
-                        <p class="mt-4 max-w-md text-sm leading-7 text-white/75 sm:text-base">Kenali tim pelatih yang terdaftar dan temukan spesialisasi yang sesuai dengan target latihanmu.</p>
+                        <p class="mt-4 max-w-md text-sm leading-7 text-[#234832] sm:text-base">Kenali tim pelatih yang terdaftar dan temukan spesialisasi yang sesuai dengan target latihanmu.</p>
                         <Link href="/trainers" class="mt-7 inline-flex items-center gap-3 rounded-full bg-[#172720] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#2d4436]">Kenali pelatih <span>↗</span></Link>
                     </div>
                     <div v-if="props.trainers.length" class="grid gap-3 sm:grid-cols-2">
@@ -296,7 +296,7 @@ function pricingLabel(model: string) {
                 </div>
             </section>
 
-            <section id="extras" class="bg-[#f3f6ec] px-5 py-16 sm:px-8 sm:py-20">
+            <section id="extras" class="bg-white px-5 py-16 sm:px-8 sm:py-20">
                 <div class="mx-auto max-w-7xl">
                 <div class="mb-8">
                     <p class="text-xs font-black uppercase tracking-[0.22em] text-[#819b42]">The little extras</p>
