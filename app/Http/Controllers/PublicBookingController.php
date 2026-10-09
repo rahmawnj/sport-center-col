@@ -255,12 +255,18 @@ class PublicBookingController extends Controller
 
     private function calculateRatePrice(PricingRate $rate, int $duration): float
     {
-        return (float) $rate->price * ($rate->unit_type === 'per_hour' ? $duration : 1);
+        return (float) $rate->price * ($this->isHourlyRate($rate) ? $duration : 1);
+    }
+
+    private function isHourlyRate(PricingRate $rate): bool
+    {
+        return $rate->unit_type === 'per_hour'
+            || ($rate->unit_type === 'per_session' && preg_match('/jam|hour/i', (string) $rate->rental_type) === 1);
     }
 
     private function durationMinutes(PricingRate $rate, int $duration): int
     {
-        return $rate->unit_type === 'per_hour'
+        return $this->isHourlyRate($rate)
             ? $duration * 60
             : max(1, (int) $rate->min_booking_duration) * 60;
     }
