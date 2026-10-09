@@ -78,7 +78,19 @@ function pricingLabel(model: string) {
 </script>
 
 <template>
-    <Head title="Sport Center — Find Your Game" />
+    <Head>
+        <title>Sport Center | Sewa Lapangan & Booking Fasilitas Olahraga</title>
+        <meta head-key="description" name="description" content="Temukan dan booking fasilitas olahraga dengan mudah. Jelajahi zona, pilih ruang, cek tarif transparan, lihat jadwal tersedia, dan pesan tanpa harus menjadi member." />
+        <meta head-key="robots" name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta head-key="keywords" name="keywords" content="tempat olahraga, fasilitas olahraga, sewa lapangan, booking lapangan, booking olahraga, sewa ruang olahraga, harga sewa lapangan, jadwal olahraga" />
+        <meta head-key="og:type" property="og:type" content="website" />
+        <meta head-key="og:site_name" property="og:site_name" content="Sport Center" />
+        <meta head-key="og:title" property="og:title" content="Sport Center | Sewa Lapangan & Booking Fasilitas Olahraga" />
+        <meta head-key="og:description" property="og:description" content="Cari fasilitas olahraga, bandingkan tarif, cek jadwal, dan booking dengan mudah tanpa daftar member." />
+        <meta head-key="twitter:card" name="twitter:card" content="summary_large_image" />
+        <meta head-key="twitter:title" name="twitter:title" content="Sport Center | Booking Fasilitas Olahraga" />
+        <meta head-key="twitter:description" name="twitter:description" content="Jelajahi zona olahraga, cek harga dan jadwal, lalu booking dengan mudah." />
+    </Head>
 
     <div class="min-h-screen overflow-hidden bg-[#f6f7f2] text-[#15251f]">
         <header class="relative z-20 border-b border-black/5 bg-[#f6f7f2]">
@@ -117,11 +129,11 @@ function pricingLabel(model: string) {
                         Your space to play
                     </div>
                     <h1 class="max-w-2xl text-5xl font-black leading-[0.98] tracking-[-0.055em] sm:text-6xl lg:text-[4.6rem]">
-                        Find your game.<br />
-                        <span class="text-[#8ba83d]">Own your moment.</span>
+                        Tempat olahraga<br />
+                        <span class="text-[#8ba83d]">buat caramu bergerak.</span>
                     </h1>
                     <p class="mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-                        Dari sesi latihan sampai waktu bermain bareng teman, temukan zona olahraga, ruang, dan layanan yang cocok buat kamu.
+                        Cari tempat olahraga untuk latihan atau bermain bersama teman. Bandingkan fasilitas, lihat harga sewa, cek jadwal yang tersedia, dan booking ruang olahraga secara online tanpa perlu daftar sebagai member.
                     </p>
                     <div class="mt-8 flex flex-wrap items-center gap-3">
                         <a href="#zones" class="inline-flex items-center gap-3 rounded-full bg-[#172720] px-6 py-4 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#2d4436]">
@@ -186,8 +198,8 @@ function pricingLabel(model: string) {
                 <div class="mb-8 flex flex-col justify-between gap-4 sm:mb-10 sm:flex-row sm:items-end">
                     <div>
                         <p class="text-xs font-black uppercase tracking-[0.22em] text-[#819b42]">Explore the spaces</p>
-                        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Temukan zona favoritmu.</h2>
-                        <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Lihat zona dan ruang yang terdaftar di Sport Center, lengkap dengan status dan tarif awal.</p>
+                        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Cari fasilitas olahraga favoritmu.</h2>
+                        <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Jelajahi pilihan fasilitas olahraga, lihat ruang yang tersedia, cek fasilitas pendukung, dan bandingkan harga sebelum melakukan booking.</p>
                     </div>
                     <Link href="#zones" class="inline-flex w-fit items-center gap-2 text-sm font-extrabold">Jelajahi fasilitas <span>↗</span></Link>
                 </div>
