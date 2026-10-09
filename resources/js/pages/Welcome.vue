@@ -219,8 +219,8 @@ function pricingLabel(model: string) {
             </section>
 
             <section class="overflow-hidden border-y border-[#e3e7dc] bg-white py-5" aria-label="Keunggulan Sport Center">
-                <div class="sport-benefits-marquee flex w-max items-center">
-                    <div v-for="copy in 2" :key="copy" class="flex shrink-0 items-center gap-8 px-4 sm:gap-12 sm:px-6" :aria-hidden="copy === 2 ? 'true' : undefined">
+                <div class="sport-benefits-marquee flex w-max flex-nowrap items-center">
+                    <div v-for="copy in 2" :key="copy" class="flex w-max shrink-0 items-center gap-8 px-4 sm:gap-12 sm:px-6" :aria-hidden="copy === 2 ? 'true' : undefined">
                         <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">⌖</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Zona olahraga</span></div>
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
                         <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">◷</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Tarif transparan</span></div>
@@ -347,6 +347,8 @@ function pricingLabel(model: string) {
 <style>
 .sport-benefits-marquee {
     animation: sport-benefits-scroll 28s linear infinite;
+    width: max-content;
+    flex-wrap: nowrap;
     will-change: transform;
 }
 .sport-benefits-marquee:hover {
