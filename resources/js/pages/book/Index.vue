@@ -341,16 +341,39 @@ function unitLabel(unit: Rate['unit_type']) {
                             <h2 class="text-xl font-black">Tambahan untuk booking</h2>
                             <p class="mt-1 text-sm text-slate-500">Opsional. Pilih add-on yang kamu perlukan.</p>
                             <div v-if="props.addOns.length" class="mt-5 space-y-3">
-                                <div v-for="item in props.addOns" :key="item.id" class="flex items-center justify-between gap-4 rounded-2xl border border-[#e4e8df] p-4">
-                                    <div class="min-w-0">
-                                        <p class="font-black">{{ item.name }}</p>
-                                        <p class="mt-1 text-sm font-bold text-[#607a2f]">{{ formatIDR(item.price) }}</p>
-                                        <p class="mt-1 text-xs text-slate-400">Stok {{ item.stock }}</p>
+                                <div v-for="item in props.addOns" :key="item.id" class="rounded-2xl border p-4 transition" :class="(addOnQuantities[item.id] ?? 0) > 0 ? 'border-[#8ba83d] bg-[#f8faef] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df]'">
+                                    <div class="flex items-start gap-3">
+                                        <input
+                                            :id="`addon-${item.id}`"
+                                            type="checkbox"
+                                            class="mt-1 size-4 shrink-0 accent-[#8ba83d]"
+                                            :checked="(addOnQuantities[item.id] ?? 0) > 0"
+                                            :disabled="item.stock < 1"
+                                            @change="addOnQuantities[item.id] = ($event.target as HTMLInputElement).checked ? 1 : 0"
+                                        />
+                                        <label :for="`addon-${item.id}`" class="min-w-0 flex-1 cursor-pointer">
+                                            <span class="block font-black">{{ item.name }}</span>
+                                            <span class="mt-1 block text-sm font-bold text-[#607a2f]">{{ formatIDR(item.price) }} <span class="font-medium text-slate-400">/ item</span></span>
+                                            <span class="mt-1 block text-xs text-slate-500">Stok tersedia: {{ item.stock }}</span>
+                                        </label>
+                                        <span v-if="(addOnQuantities[item.id] ?? 0) > 0" class="rounded-full bg-[#d8ff62] px-3 py-1 text-xs font-black text-[#172720]">Dipilih</span>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" class="grid size-9 place-items-center rounded-full border disabled:opacity-30" :disabled="!(addOnQuantities[item.id] ?? 0)" @click="addOnQuantities[item.id] = Math.max(0, (addOnQuantities[item.id] ?? 0) - 1)">−</button>
-                                        <span class="w-5 text-center text-sm font-black">{{ addOnQuantities[item.id] ?? 0 }}</span>
-                                        <button type="button" class="grid size-9 place-items-center rounded-full border disabled:opacity-30" :disabled="(addOnQuantities[item.id] ?? 0) >= Math.min(item.stock, 20)" @click="addOnQuantities[item.id] = (addOnQuantities[item.id] ?? 0) + 1">+</button>
+                                    <div v-if="(addOnQuantities[item.id] ?? 0) > 0" class="mt-4 grid grid-cols-2 items-end gap-3 border-t border-[#e4e8df] pt-4">
+                                        <label class="grid gap-1.5 text-xs font-bold text-slate-600">
+                                            Jumlah
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                :max="Math.min(item.stock, 20)"
+                                                :value="addOnQuantities[item.id]"
+                                                class="w-full rounded-xl border border-[#dce1d5] bg-white px-3 py-2.5 text-sm font-bold text-[#15251f] outline-none focus:border-[#8ba83d]"
+                                                @input="addOnQuantities[item.id] = Math.max(1, Math.min(Math.min(item.stock, 20), Number(($event.target as HTMLInputElement).value) || 1))"
+                                            />
+                                        </label>
+                                        <div class="text-right">
+                                            <p class="text-xs text-slate-500">Subtotal</p>
+                                            <p class="mt-1 font-black">{{ formatIDR(item.price * (addOnQuantities[item.id] ?? 0)) }}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
