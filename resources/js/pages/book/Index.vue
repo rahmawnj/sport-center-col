@@ -92,7 +92,7 @@ onMounted(() => {
     if (zoneId.value && selectedZone.value) step.value = 2;
 });
 
-watch([date, spaceId, rateId, duration], () => {
+watch([date, spaceId, rateId], () => {
     selectedSlot.value = null;
     selectedSlots.value = [];
     duration.value = Math.max(1, selectedRate.value?.min_booking_duration ?? 1);
