@@ -64,6 +64,7 @@ class PublicBookingController extends Controller
             'zones' => $zones,
             'addOns' => $addOns,
             'initialZoneId' => $request->integer('zone_id') ?: null,
+            'initialSpaceId' => $request->integer('space_id') ?: null,
             'successMessage' => session('success'),
             'bookingReference' => session('booking_reference'),
         ]);
