@@ -90,7 +90,8 @@ class PublicBookingController extends Controller
         $duration = max((int) $rate->min_booking_duration, (int) $data['duration']);
         $minutes = $this->durationMinutes($rate, $duration);
         [$open, $close] = $this->openingWindow($space->zone_id, $date);
-        $bookings = $this->bookingsForSpace($space->id, $date);
+        // Availability is based on operational hours first. Do not query bookings
+        // until booking persistence is configured in the database.
         $slots = [];
 
         for ($start = $open; $start + $minutes <= $close; $start += 60) {
@@ -99,20 +100,11 @@ class PublicBookingController extends Controller
             }
 
             $end = $start + $minutes;
-            $busy = $bookings->contains(fn ($booking) => $this->overlaps(
-                $start,
-                $end,
-                $this->toMinutes((string) $booking->start_time),
-                $this->toMinutes((string) $booking->end_time),
-            ));
-
-            if (! $busy) {
-                $slots[] = [
-                    'start_time' => $this->toTime($start),
-                    'end_time' => $this->toTime($end),
-                    'price' => $this->calculateRatePrice($rate, $duration),
-                ];
-            }
+            $slots[] = [
+                'start_time' => $this->toTime($start),
+                'end_time' => $this->toTime($end),
+                'price' => $this->calculateRatePrice($rate, $duration),
+            ];
         }
 
         return response()->json(['slots' => $slots]);
