@@ -233,7 +233,7 @@ function pricingLabel(model: string) {
                         <Link href="/trainers" class="mt-7 inline-flex items-center gap-3 rounded-full bg-[#172720] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#2d4436]">Kenali pelatih <span>↗</span></Link>
                     </div>
                     <div v-if="props.trainers.length" class="grid gap-3 sm:grid-cols-2">
-                        <article v-for="(trainer, index) in props.props.trainers.slice(0, 4)" :key="trainer.id" class="flex items-center gap-4 rounded-2xl border border-white/80 bg-white p-4 shadow-sm">
+                        <article v-for="(trainer, index) in props.trainers.slice(0, 4)" :key="trainer.id" class="flex items-center gap-4 rounded-2xl border border-white/80 bg-white p-4 shadow-sm">
                             <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xl font-black" :class="index % 2 === 0 ? 'bg-[#d8ff62] text-[#26351c]' : 'bg-[#e7ebdf] text-[#60734a]'">{{ trainer.name.split(' ').map((part) => part[0]).slice(0, 2).join('') }}</div>
                             <div class="min-w-0">
                                 <p class="truncate font-extrabold">{{ trainer.name }}</p>
