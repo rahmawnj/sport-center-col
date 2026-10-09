@@ -43,13 +43,15 @@ type Slot = {
     courts: Court[];
 };
 
-const props = defineProps<{ facilities: Facility[] }>();
+const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null }>();
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-const step = ref(1);
-const facility = ref<Facility | null>(null);
+const initialFacility =
+    props.facilities.find((item) => item.id === props.initialFacilityId) ?? null;
+const step = ref(initialFacility ? 2 : 1);
+const facility = ref<Facility | null>(initialFacility);
 const pkg = ref<BookingPackage | null>(null);
 const date = ref('');
 const slots = ref<Slot[]>([]);
