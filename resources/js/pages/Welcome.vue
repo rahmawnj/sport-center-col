@@ -193,7 +193,7 @@ function pricingLabel(model: string) {
                 </div>
 
                 <div v-if="props.zones.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <article v-for="(zone, index) in props.zones" :key="zone.id" class="group overflow-hidden rounded-[1.6rem] border border-[#e4e8df] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#26351c]/10">
+                    <Link v-for="(zone, index) in props.zones" :key="zone.id" :href="`/zones/${zone.id}`" class="group block overflow-hidden rounded-[1.6rem] border border-[#e4e8df] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c6d99b] hover:shadow-xl hover:shadow-[#26351c]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8ba83d] focus-visible:ring-offset-4">
                         <div class="relative h-52 overflow-hidden bg-[#e8ecdf]">
                             <img :src="imageForZone(zone.name, index)" :alt="zone.name" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                             <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
@@ -213,10 +213,10 @@ function pricingLabel(model: string) {
                             </div>
                             <div class="mt-5 flex items-center justify-between border-t border-[#edf0e9] pt-4">
                                 <span class="text-xs font-semibold text-slate-500">{{ zone.spaces.filter((space) => space.status === 'available').length }} ruang tersedia</span>
-                                <Link href="#zones" class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-lg text-white transition group-hover:bg-[#d8ff62] group-hover:text-[#172720]" :aria-label="'Booking ' + zone.name">↗</Link>
+                                <span class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-lg text-white transition group-hover:bg-[#d8ff62] group-hover:text-[#172720]" aria-hidden="true">↗</span>
                             </div>
                         </div>
-                    </article>
+                    </Link>
                 </div>
                 <div v-else class="rounded-3xl border border-dashed border-[#cbd3c1] bg-white p-10 text-center">
                     <p class="text-lg font-bold">Zona olahraga belum tersedia</p>
