@@ -7,7 +7,6 @@ use App\Models\ZoneSpace;
 use App\Models\Facility;
 use App\Models\PricingRate;
 use App\Models\Trainer;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class SportCenterSeeder extends Seeder
