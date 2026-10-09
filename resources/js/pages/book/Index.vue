@@ -183,7 +183,7 @@ function unitLabel(unit: Rate['unit_type']) {
         <header class="border-b border-black/5 bg-white">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
                 <Link href="/" class="flex items-center gap-3">
-                    <span class="grid h-10 w-10 place-items-center rounded-2xl bg-[#d8ff62] text-xl">✳</span>
+                    <img src="/logo.png" alt="Sport Center" class="h-10 w-10 rounded-xl object-contain" />
                     <span class="text-lg font-black tracking-tight">sport<span class="text-[#6b8e23]">center.</span></span>
                 </Link>
                 <Link href="/" class="rounded-full border border-[#d7ddcf] px-4 py-2.5 text-sm font-bold hover:bg-[#f6f7f2]">← Beranda</Link>
