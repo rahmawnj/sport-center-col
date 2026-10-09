@@ -123,6 +123,7 @@ function unitLabel(unit: string) {
                             </div>
                         </div>
                         <p v-else class="mt-3 text-sm text-slate-500">Tarif belum diatur.</p>
+                        <Link v-if="zone.is_online_bookable && space.status === 'available' && space.pricing_rates.length" :href="`/book?zone_id=${zone.id}&space_id=${space.id}`" class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#172720] px-5 py-3 text-sm font-black text-white transition hover:bg-[#d8ff62] hover:text-[#172720]">Pilih ruang & booking ↗</Link>
                     </div>
                 </article>
             </div>
@@ -133,8 +134,9 @@ function unitLabel(unit: string) {
 
             <div class="mt-10 rounded-3xl bg-[#172720] p-6 text-white sm:p-8">
                 <h2 class="text-2xl font-black">Siap untuk mulai?</h2>
-                <p class="mt-2 max-w-xl text-sm leading-6 text-white/65">Kembali ke halaman utama untuk menjelajahi zona lainnya.</p>
-                <Link href="/" class="mt-5 inline-flex rounded-full bg-[#d8ff62] px-5 py-3 text-sm font-black text-[#172720] transition hover:bg-white">Lihat zona lainnya ↗</Link>
+                <p class="mt-2 max-w-xl text-sm leading-6 text-white/65">Pilih ruang dan jadwal yang tersedia, cek harga otomatis, lalu booking tanpa harus mendaftar sebagai member.</p>
+                <Link v-if="zone.is_online_bookable" :href="`/book?zone_id=${zone.id}`" class="mt-5 inline-flex rounded-full bg-[#d8ff62] px-5 py-3 text-sm font-black text-[#172720] transition hover:bg-white">Booking zona ini ↗</Link>
+                <Link v-else href="/" class="mt-5 inline-flex rounded-full bg-[#d8ff62] px-5 py-3 text-sm font-black text-[#172720] transition hover:bg-white">Lihat zona lainnya ↗</Link>
             </div>
         </section>
     </main>
