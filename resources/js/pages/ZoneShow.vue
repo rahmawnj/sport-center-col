@@ -55,28 +55,28 @@ function unitLabel(unit: string) {
         <meta head-key="og:description" property="og:description" :content="'Cek fasilitas, ruang, dan harga ' + zone.name + '. Booking online dengan mudah tanpa daftar member.'" />
     </Head>
 
-    <main class="min-h-screen bg-[#f6f7f2] text-[#15251f]">
-        <header class="border-b border-black/5">
+    <main class="min-h-screen bg-white text-[#001428]">
+        <header class="sticky top-0 z-50 border-b border-white/10 bg-[#001428]/95 text-white backdrop-blur-md">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
                 <Link href="/" class="flex items-center gap-3">
                     <img src="/logo.png" alt="Sport Center" class="h-11 w-11 rounded-xl object-contain" />
                     <span>
-                        <span class="block text-lg font-black tracking-tight">sport<span class="text-[#6b8e23]">center.</span></span>
-                        <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Move your way</span>
+                        <span class="block text-lg font-black tracking-tight text-white">sport<span class="text-[#a4da01]">center.</span></span>
+                        <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">Move your way</span>
                     </span>
                 </Link>
-                <Link href="/" class="rounded-full border border-[#d7ddcf] px-4 py-2.5 text-sm font-bold transition hover:bg-white">← Kembali</Link>
+                <Link href="/" class="rounded-full border border-white/20 px-4 py-2.5 text-sm font-bold text-white transition hover:border-[#a4da01] hover:bg-[#a4da01] hover:text-[#001428]">← Kembali</Link>
             </div>
         </header>
 
         <section class="mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 sm:pb-24 sm:pt-16">
-            <p class="text-xs font-black uppercase tracking-[0.22em] text-[#819b42]">Explore the space</p>
+            <p class="text-xs font-black uppercase tracking-[0.22em] text-[#a4da01]">Explore the space</p>
             <div class="mt-3 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div>
                     <h1 class="text-4xl font-black tracking-tight sm:text-5xl">{{ zone.name }}</h1>
                     <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600">Lihat fasilitas olahraga, pilihan ruang, kapasitas, dan harga sewa yang tersedia. Kamu bisa cek jadwal dan lanjut booking online tanpa harus menjadi member.</p>
                 </div>
-                <span class="w-fit rounded-full bg-[#e7edda] px-4 py-2 text-xs font-extrabold text-[#53663a]">{{ zone.is_online_bookable ? 'Bisa dipesan online' : 'Informasi zona' }}</span>
+                <span class="w-fit rounded-full bg-[#a4da01] px-4 py-2 text-xs font-extrabold text-[#263600]">{{ zone.is_online_bookable ? 'Bisa dipesan online' : 'Informasi zona' }}</span>
             </div>
 
             <div class="mt-8 grid gap-4 sm:grid-cols-3">
@@ -108,17 +108,17 @@ function unitLabel(unit: string) {
                             <h3 class="text-xl font-extrabold">{{ space.name }}</h3>
                             <p class="mt-2 text-sm text-slate-500">Kapasitas {{ space.capacity }} orang</p>
                         </div>
-                        <span class="rounded-full px-3 py-1.5 text-xs font-extrabold" :class="space.status === 'available' ? 'bg-[#edf6d9] text-[#526b2b]' : 'bg-amber-100 text-amber-800'">{{ space.status === 'available' ? 'Tersedia' : 'Maintenance' }}</span>
+                        <span class="rounded-full px-3 py-1.5 text-xs font-extrabold" :class="space.status === 'available' ? 'bg-[#a4da01] text-[#263600]' : 'bg-amber-100 text-amber-800'">{{ space.status === 'available' ? 'Tersedia' : 'Maintenance' }}</span>
                     </div>
 
                     <div v-if="space.facilities.length" class="mt-5">
                         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Fasilitas</p>
                         <div class="mt-2 flex flex-wrap gap-2">
-                            <span v-for="facility in space.facilities" :key="facility" class="rounded-lg bg-[#f3f5ef] px-3 py-2 text-xs font-semibold text-slate-600">{{ facility }}</span>
+                            <span v-for="facility in space.facilities" :key="facility" class="rounded-lg bg-[#ffffff] px-3 py-2 text-xs font-semibold text-slate-600">{{ facility }}</span>
                         </div>
                     </div>
 
-                    <div class="mt-5 border-t border-[#edf0e9] pt-4">
+                    <div class="mt-5 border-t border-[#e4e8df] pt-4">
                         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Tarif</p>
                         <div v-if="space.pricing_rates.length" class="mt-3 space-y-3">
                             <div v-for="rate in space.pricing_rates" :key="rate.rental_type" class="flex items-center justify-between gap-3 text-sm">
@@ -130,20 +130,20 @@ function unitLabel(unit: string) {
                             </div>
                         </div>
                         <p v-else class="mt-3 text-sm text-slate-500">Tarif belum diatur.</p>
-                        <Link v-if="zone.is_online_bookable && space.status === 'available' && space.pricing_rates.length" :href="`/book?zone_id=${zone.id}&space_id=${space.id}`" class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#172720] px-5 py-3 text-sm font-black text-white transition hover:bg-[#d8ff62] hover:text-[#172720]">Pilih ruang & booking ↗</Link>
+                        <Link v-if="zone.is_online_bookable && space.status === 'available' && space.pricing_rates.length" :href="`/book?zone_id=${zone.id}&space_id=${space.id}`" class="group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#001428] px-5 py-3 text-sm font-black text-white transition hover:bg-[#a4da01] hover:text-[#001428]">Pilih ruang & booking <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></Link>
                     </div>
                 </article>
             </div>
-            <div v-else class="rounded-3xl border border-dashed border-[#cbd3c1] bg-white p-10 text-center">
+            <div v-else class="rounded-3xl border border-dashed border-[#dce5c6] bg-white p-10 text-center">
                 <p class="text-lg font-bold">Belum ada ruang di zona ini</p>
                 <p class="mt-2 text-sm text-slate-500">Ruang yang ditambahkan oleh pengelola akan muncul di sini.</p>
             </div>
 
-            <div class="mt-10 rounded-3xl bg-[#172720] p-6 text-white sm:p-8">
+            <div class="mt-10 rounded-3xl bg-[#001428] p-6 text-white sm:p-8">
                 <h2 class="text-2xl font-black">Siap untuk mulai?</h2>
                 <p class="mt-2 max-w-xl text-sm leading-6 text-white/65">Pilih ruang dan jadwal yang tersedia, cek harga otomatis, lalu booking tanpa harus mendaftar sebagai member.</p>
-                <Link v-if="zone.is_online_bookable" :href="`/book?zone_id=${zone.id}`" class="mt-5 inline-flex rounded-full bg-[#d8ff62] px-5 py-3 text-sm font-black text-[#172720] transition hover:bg-white">Booking zona ini ↗</Link>
-                <Link v-else href="/" class="mt-5 inline-flex rounded-full bg-[#d8ff62] px-5 py-3 text-sm font-black text-[#172720] transition hover:bg-white">Lihat zona lainnya ↗</Link>
+                <Link v-if="zone.is_online_bookable" :href="`/book?zone_id=${zone.id}`" class="group mt-5 inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-white">Booking zona ini <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></Link>
+                <Link v-else href="/" class="group mt-5 inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-white">Lihat zona lainnya <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></Link>
             </div>
         </section>
     </main>
