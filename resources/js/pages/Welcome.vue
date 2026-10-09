@@ -201,7 +201,7 @@ const facilityDescription = (slug: string) => {
                                     <p class="text-xs font-semibold text-slate-500">Mulai dari</p>
                                     <p class="mt-1 text-lg font-black text-[#001428]">{{ lowestPrice(facility) !== null ? formatCurrency(lowestPrice(facility) ?? 0) : 'Cek tarif' }}<span v-if="lowestPrice(facility) !== null" class="text-xs font-semibold text-slate-400"> / paket</span></p>
                                 </div>
-                                <Link href="/book" class="btn-lime inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-extrabold">Pesan <i class="fa-solid fa-arrow-right"></i></Link>
+                                <Link :href="`/book?facility=${encodeURIComponent(facility.slug)}`" class="btn-lime inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-extrabold">Pesan <i class="fa-solid fa-arrow-right"></i></Link>
                             </div>
                         </div>
                     </article>
