@@ -149,29 +149,36 @@ function normalizeTime(time: string) {
     return time.slice(0, 5);
 }
 
-function chooseAvailableSlot(slot: Slot) {
+function chooseAvailableSlot(slot: Slot, checked = true) {
     if (!isHourly.value) {
-        selectedSlot.value = slot;
-        selectedSlots.value = [slot];
+        selectedSlot.value = checked ? slot : null;
+        selectedSlots.value = checked ? [slot] : [];
         duration.value = Math.max(1, selectedRate.value?.min_booking_duration ?? 1);
         return;
     }
 
-    const existingIndex = selectedSlots.value.findIndex((item) => item.start_time === slot.start_time);
-    if (existingIndex >= 0) {
-        selectedSlots.value = selectedSlots.value.slice(0, existingIndex);
-    } else if (!selectedSlots.value.length) {
+    const slotIndex = slots.value.findIndex((item) => item.start_time === slot.start_time);
+    if (slotIndex < 0) return;
+
+    if (!checked) {
+        selectedSlots.value = [];
+        selectedSlot.value = null;
+        duration.value = Math.max(1, selectedRate.value?.min_booking_duration ?? 1);
+        return;
+    }
+
+    if (!selectedSlots.value.length) {
         selectedSlots.value = [slot];
     } else {
-        const first = selectedSlots.value[0];
-        const last = selectedSlots.value[selectedSlots.value.length - 1];
-        if (normalizeTime(slot.start_time) === normalizeTime(last.end_time)) {
-            selectedSlots.value = [...selectedSlots.value, slot];
-        } else if (normalizeTime(slot.end_time) === normalizeTime(first.start_time)) {
-            selectedSlots.value = [slot, ...selectedSlots.value];
-        } else {
-            selectedSlots.value = [slot];
-        }
+        // Selecting another checkbox expands the selection into one continuous
+        // range, because the booking API accepts a start time and duration.
+        const selectedIndexes = selectedSlots.value
+            .map((item) => slots.value.findIndex((candidate) => candidate.start_time === item.start_time))
+            .filter((index) => index >= 0);
+        const anchorIndex = selectedIndexes.length ? Math.min(...selectedIndexes) : slotIndex;
+        const from = Math.min(anchorIndex, slotIndex);
+        const to = Math.max(anchorIndex, slotIndex);
+        selectedSlots.value = slots.value.slice(from, to + 1);
     }
 
     selectedSlot.value = selectedSlots.value[0] ?? null;
@@ -313,12 +320,15 @@ function unitLabel(unit: Rate['unit_type']) {
                             <p v-else-if="slotError" class="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{{ slotError }}</p>
                             <div v-else-if="date" class="mt-5">
                                 <p class="mb-2 text-sm font-bold">Jam yang tersedia</p>
-                                <p class="mb-3 text-xs text-slate-500">{{ isHourly ? 'Pilih beberapa slot jam berurutan. Setiap slot yang dipilih akan ditandai, dan durasi serta harga total dihitung otomatis.' : 'Pilih jam mulai yang tersedia.' }}</p>
+                                <p class="mb-3 text-xs text-slate-500">{{ isHourly ? 'Pilih kotak centang jam mulai dan jam akhir. Pilihan akan membentuk rentang jam berurutan, lalu durasi serta harga dihitung otomatis.' : 'Pilih jam mulai yang tersedia.' }}</p>
                                 <div v-if="slots.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                    <button v-for="slot in slots" :key="slot.start_time" type="button" class="rounded-xl border p-3 text-left transition"  :class="selectedSlots.some(item => item.start_time === slot.start_time) ? 'border-[#8ba83d] bg-[#f3f8e7] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df] hover:border-[#9db55f]'" @click="chooseAvailableSlot(slot)">
-                                        <span class="block font-black">{{ slot.start_time }}–{{ slot.end_time }}</span>
-                                        <span class="mt-1 block text-xs font-bold text-[#607a2f]">{{ formatIDR(slot.price) }}</span>
-                                    </button>
+                                    <label v-for="slot in slots" :key="slot.start_time" class="flex cursor-pointer items-start gap-2 rounded-xl border p-3 text-left transition" :class="selectedSlots.some(item => item.start_time === slot.start_time) ? 'border-[#8ba83d] bg-[#f3f8e7] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df] hover:border-[#9db55f]'">
+                                        <input type="checkbox" class="mt-1 size-4 shrink-0 accent-[#8ba83d]" :checked="selectedSlots.some(item => item.start_time === slot.start_time)" @change="chooseAvailableSlot(slot, ($event.target as HTMLInputElement).checked)" />
+                                        <span class="min-w-0">
+                                            <span class="block font-black">{{ slot.start_time }}–{{ slot.end_time }}</span>
+                                            <span class="mt-1 block text-xs font-bold text-[#607a2f]">{{ formatIDR(slot.price) }}</span>
+                                        </span>
+                                    </label>
                                 </div>
                                 <p v-else class="rounded-xl border border-dashed border-[#d5dccb] p-5 text-sm text-slate-500">Tidak ada slot tersedia pada tanggal ini. Coba tanggal atau durasi lain.</p>
                             </div>
