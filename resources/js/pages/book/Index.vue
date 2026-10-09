@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
+import PublicLayout from '@/layouts/PublicLayout.vue';
 import {
     ArrowLeft,
     ArrowRight,
     Building2,
     Check,
     Clock,
-    LayoutGrid,
     Loader2,
     MapPin,
 } from '@lucide/vue';
@@ -235,24 +235,8 @@ function formatDuration(minutes: number) {
 
 <template>
     <Head title="Booking" />
+    <PublicLayout>
     <div class="min-h-screen bg-background text-foreground">
-        <header class="border-b">
-            <div
-                class="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4"
-            >
-                <Link href="/" class="flex items-center gap-2 font-semibold">
-                    <LayoutGrid class="size-5 text-primary" />
-                    Sport Center
-                </Link>
-                <Link
-                    href="/"
-                    class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                    Beranda
-                </Link>
-            </div>
-        </header>
-
         <main class="mx-auto w-full max-w-5xl px-4 py-8">
             <h1 class="text-2xl font-semibold tracking-tight">Booking</h1>
             <p class="mt-1 text-sm text-muted-foreground">
@@ -639,4 +623,5 @@ function formatDuration(minutes: number) {
             </div>
         </main>
     </div>
+    </PublicLayout>
 </template>
