@@ -1,8 +1,2 @@
 User-agent: *
-Allow: /
-Disallow: /dashboard
-Disallow: /login
-Disallow: /register
-Disallow: /settings
-Disallow: /book
-Disallow: /verify
+Disallow:

@@ -3,7 +3,7 @@
         'name' => 'laravel/vue-starter-kit',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '9f7b82080abbd787b20e69592595d3497bdec102',
+        'reference' => 'c30699cbbec6cb8f4e2054a83418346ce368b743',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -586,7 +586,7 @@
         'laravel/vue-starter-kit' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '9f7b82080abbd787b20e69592595d3497bdec102',
+            'reference' => 'c30699cbbec6cb8f4e2054a83418346ce368b743',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -1238,6 +1238,15 @@
             'install_path' => __DIR__ . '/../sebastian/version',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'spatie/laravel-package-tools' => array(
+            'pretty_version' => '1.93.3',
+            'version' => '1.93.3.0',
+            'reference' => '7aeef26bd8d4909bec744dbf47aee7d1395588c1',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../spatie/laravel-package-tools',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'spatie/once' => array(
             'dev_requirement' => false,

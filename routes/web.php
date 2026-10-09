@@ -7,7 +7,6 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PublicBookingController;
-use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SportController;
@@ -16,14 +15,10 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VerifyController;
 use Illuminate\Support\Facades\Route;
 
-
-Route::get('/sitemap.xml', [PublicPageController::class, 'sitemap'])->name('sitemap');
-Route::get('/', [PublicPageController::class, 'home'])->name('home');
-Route::get('/zones/{zone}', [PublicPageController::class, 'showZone'])->name('zones.show');
+Route::inertia('/', 'Welcome')->name('home');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
 Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
-Route::get('book/add-ons-stock', [PublicBookingController::class, 'addOnsStock'])->name('booking.add-ons-stock');
 Route::post('book', [PublicBookingController::class, 'store'])->name('booking.store');
 
 Route::get('verify', [VerifyController::class, 'show'])->name('verify');
