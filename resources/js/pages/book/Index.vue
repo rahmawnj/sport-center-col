@@ -114,6 +114,10 @@ onMounted(() => {
     if (zoneId.value && selectedZone.value) step.value = 2;
 });
 
+onBeforeUnmount(() => {
+    if (addOnStockTimer) clearInterval(addOnStockTimer);
+});
+
 watch([date, spaceId, rateId], () => {
     selectedSlot.value = null;
     selectedSlots.value = [];
