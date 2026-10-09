@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import PublicLayout from '@/layouts/PublicLayout.vue';
-import { dashboard, login, register } from '@/routes';
 
 type PricingRule = {
     price: number;
@@ -54,7 +53,6 @@ const props = defineProps<{
     };
 }>();
 
-const currentYear = new Date().getFullYear();
 const featuredFacilities = computed(() => props.facilities.slice(0, 3));
 
 const formatCurrency = (amount: number | string) =>
