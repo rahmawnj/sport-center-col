@@ -123,7 +123,7 @@ function pricingLabel(model: string) {
         <meta head-key="twitter:description" name="twitter:description" content="Jelajahi zona olahraga, cek harga dan jadwal, lalu booking dengan mudah." />
     </Head>
 
-    <div class="min-h-screen overflow-hidden bg-[#f6f7f2] text-[#15251f]">
+    <div class="min-h-screen overflow-hidden bg-white text-[#15251f]">
         <header class="sticky top-0 z-50 border-b border-black/5 bg-[#f6f7f2]/95 backdrop-blur-md">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
                 <a href="/" class="flex items-center gap-3" aria-label="Sport Center home">
@@ -153,7 +153,8 @@ function pricingLabel(model: string) {
         </header>
 
         <main>
-            <section class="mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:pt-20">
+            <section class="bg-[#f3f6ec]">
+                <div class="mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:pt-20">
                 <div class="relative z-10">
                     <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#dfe4d5] bg-white px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#60734a]">
                         <span class="h-2 w-2 rounded-full bg-lime-500"></span>
@@ -214,6 +215,7 @@ function pricingLabel(model: string) {
                         <p class="mt-1 text-xs leading-5 text-slate-500">Zona, ruang, pelatih, dan add-on dalam satu platform.</p>
                     </div>
                 </div>
+                </div>
             </section>
 
             <section class="overflow-hidden border-y border-[#e3e7dc] bg-white py-5" aria-label="Keunggulan Sport Center">
@@ -273,12 +275,12 @@ function pricingLabel(model: string) {
                 </div>
             </section>
 
-            <section id="coaches" class="bg-[#e9eddf]">
+            <section id="coaches" class="bg-[#234832] text-white">
                 <div class="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
                     <div>
-                        <p class="text-xs font-black uppercase tracking-[0.22em] text-[#819b42]">Better with guidance</p>
+                        <p class="text-xs font-black uppercase tracking-[0.22em] text-[#d8ff62]">Better with guidance</p>
                         <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Latihan bareng pelatih.</h2>
-                        <p class="mt-4 max-w-md text-sm leading-7 text-slate-600 sm:text-base">Kenali tim pelatih yang terdaftar dan temukan spesialisasi yang sesuai dengan target latihanmu.</p>
+                        <p class="mt-4 max-w-md text-sm leading-7 text-white/75 sm:text-base">Kenali tim pelatih yang terdaftar dan temukan spesialisasi yang sesuai dengan target latihanmu.</p>
                         <Link href="/trainers" class="mt-7 inline-flex items-center gap-3 rounded-full bg-[#172720] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#2d4436]">Kenali pelatih <span>↗</span></Link>
                     </div>
                     <div v-if="props.trainers.length" class="grid gap-3 sm:grid-cols-2">
@@ -294,7 +296,8 @@ function pricingLabel(model: string) {
                 </div>
             </section>
 
-            <section id="extras" class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+            <section id="extras" class="bg-[#f3f6ec] px-5 py-16 sm:px-8 sm:py-20">
+                <div class="mx-auto max-w-7xl">
                 <div class="mb-8">
                     <p class="text-xs font-black uppercase tracking-[0.22em] text-[#819b42]">The little extras</p>
                     <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Lengkapi sesi olahragamu.</h2>
@@ -312,7 +315,8 @@ function pricingLabel(model: string) {
                         <p class="shrink-0 text-sm font-black">{{ formatPrice(addon.price) }}</p>
                     </article>
                 </div>
-                <div v-else class="rounded-2xl bg-[#f0f2eb] p-6 text-sm text-slate-500">Belum ada layanan tambahan yang tersedia saat ini.</div>
+                <div v-else class="rounded-2xl bg-white p-6 text-sm text-slate-500">Belum ada layanan tambahan yang tersedia saat ini.</div>
+                </div>
             </section>
 
             <section class="px-5 pb-16 sm:px-8 sm:pb-20">
