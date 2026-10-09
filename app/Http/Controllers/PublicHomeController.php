@@ -1,13 +1,13 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\Facility;
-use App\\Models\\MembershipPackage;
-use App\\Models\\Trainer;
-use Illuminate\\Support\\Facades\\DB;
-use Inertia\\Inertia;
-use Inertia\\Response;
+use App\Models\Facility;
+use App\Models\MembershipPackage;
+use App\Models\Trainer;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PublicHomeController extends Controller
 {
