@@ -1,21 +1,21 @@
 <?php
 
-use App\Http\Controllers\CourtController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\FacilityController;
-use App\Http\Controllers\MemberController;
-use App\Http\Controllers\MembershipController;
-use App\Http\Controllers\PackageController;
-use App\Http\Controllers\PublicBookingController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ResourceController;
-use App\Http\Controllers\SportController;
-use App\Http\Controllers\TrainerController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\VerifyController;
-use Illuminate\Support\Facades\Route;
+use App\\Http\\Controllers\\CourtController;
+use App\\Http\\Controllers\\DashboardController;
+use App\\Http\\Controllers\\FacilityController;
+use App\\Http\\Controllers\\MemberController;
+use App\\Http\\Controllers\\MembershipController;
+use App\\Http\\Controllers\\PackageController;
+use App\\Http\\Controllers\\PublicBookingController;\nuse App\\Http\\Controllers\\PublicHomeController;
+use App\\Http\\Controllers\\ReportController;
+use App\\Http\\Controllers\\ResourceController;
+use App\\Http\\Controllers\\SportController;
+use App\\Http\\Controllers\\TrainerController;
+use App\\Http\\Controllers\\TransactionController;
+use App\\Http\\Controllers\\VerifyController;
+use Illuminate\\Support\\Facades\\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', [PublicHomeController::class, 'index'])->name('home');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
 Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
