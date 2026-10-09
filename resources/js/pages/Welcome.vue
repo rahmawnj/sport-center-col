@@ -129,7 +129,7 @@ function pricingLabel(model: string) {
                 <a href="/" class="flex items-center gap-3" aria-label="Sport Center home">
                     <img src="/logo.png" alt="Sport Center" class="h-11 w-11 rounded-xl object-contain" />
                     <span>
-                        <span class="block text-lg font-black tracking-tight text-white">sport<span class="text-[#d8ff62]">center.</span></span>
+                        <span class="block text-lg font-black tracking-tight text-white">sport<span class="text-[#a4da01]">center.</span></span>
                         <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">Move your way</span>
                     </span>
                 </a>
@@ -145,7 +145,7 @@ function pricingLabel(model: string) {
                     <template v-else>
                         <Link :href="login()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10 sm:inline-flex">Masuk</Link>
                     </template>
-                    <Link href="#zones" class="group rounded-full bg-[#d8ff62] px-4 py-2.5 text-sm font-bold text-[#001428] transition hover:bg-white sm:px-5">
+                    <Link href="#zones" class="group rounded-full bg-[#a4da01] px-4 py-2.5 text-sm font-bold text-[#001428] transition hover:bg-white sm:px-5">
                         Cari fasilitas <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1 h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </Link>
                 </div>
@@ -156,13 +156,13 @@ function pricingLabel(model: string) {
             <section class="bg-white">
                 <div class="mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:pt-20">
                 <div class="relative z-10">
-                    <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#dfe4d5] bg-white px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#60734a]">
+                    <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#dce5c6] bg-white px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#486000]">
                         <span class="h-2 w-2 rounded-full bg-lime-500"></span>
                         Your space to play
                     </div>
                     <h1 class="max-w-2xl text-5xl font-black leading-[0.98] tracking-[-0.055em] sm:text-6xl lg:text-[4.6rem]">
                         Tempat olahraga<br />
-                        <span class="text-[#8ba83d]">buat caramu bergerak.</span>
+                        <span class="text-[#a4da01]">buat caramu bergerak.</span>
                     </h1>
                     <p class="mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
                         Cari tempat olahraga untuk latihan atau bermain bersama teman. Bandingkan fasilitas, lihat harga sewa, cek jadwal yang tersedia, dan booking ruang olahraga secara online tanpa perlu daftar sebagai member.
@@ -171,30 +171,30 @@ function pricingLabel(model: string) {
                         <a href="#zones" class="group inline-flex items-center gap-3 rounded-full bg-[#172720] px-6 py-4 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#2d4436]">
                             Jelajahi fasilitas <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </a>
-                        <Link v-if="!$page.props.auth.user" :href="register()" class="rounded-full border border-[#d7ddcf] px-6 py-4 text-sm font-bold transition hover:bg-white">
+                        <Link v-if="!$page.props.auth.user" :href="register()" class="rounded-full border border-[#dce5c6] px-6 py-4 text-sm font-bold transition hover:bg-white">
                             Buat akun
                         </Link>
                     </div>
 
-                    <div class="mt-10 grid max-w-lg grid-cols-3 border-t border-[#dce1d5] pt-6">
+                    <div class="mt-10 grid max-w-lg grid-cols-3 border-t border-[#dce5c6] pt-6">
                         <div>
-                            <p class="text-3xl font-black tracking-tight">{{ animatedZones }}<span class="text-[#8ba83d]">+</span></p>
+                            <p class="text-3xl font-black tracking-tight">{{ animatedZones }}<span class="text-[#a4da01]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Zona olahraga</p>
                         </div>
-                        <div class="border-l border-[#dce1d5] pl-5">
-                            <p class="text-3xl font-black tracking-tight">{{ animatedSpaces }}<span class="text-[#8ba83d]">+</span></p>
+                        <div class="border-l border-[#dce5c6] pl-5">
+                            <p class="text-3xl font-black tracking-tight">{{ animatedSpaces }}<span class="text-[#a4da01]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Ruang tersedia</p>
                         </div>
-                        <div class="border-l border-[#dce1d5] pl-5">
-                            <p class="text-3xl font-black tracking-tight">{{ animatedTrainers }}<span class="text-[#8ba83d]">+</span></p>
+                        <div class="border-l border-[#dce5c6] pl-5">
+                            <p class="text-3xl font-black tracking-tight">{{ animatedTrainers }}<span class="text-[#a4da01]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Pelatih</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="relative min-h-[390px] sm:min-h-[500px]">
-                    <div class="absolute -right-8 -top-6 h-40 w-40 rounded-full bg-[#d8ff62]/35 blur-2xl sm:h-56 sm:w-56"></div>
-                    <div class="absolute bottom-0 left-0 right-5 top-0 overflow-hidden rounded-[2rem] bg-[#d8ff62]/20 sm:left-8 sm:rounded-[2.5rem]">
+                    <div class="absolute -right-8 -top-6 h-40 w-40 rounded-full bg-[#a4da01]/35 blur-2xl sm:h-56 sm:w-56"></div>
+                    <div class="absolute bottom-0 left-0 right-5 top-0 overflow-hidden rounded-[2rem] bg-[#a4da01]/20 sm:left-8 sm:rounded-[2.5rem]">
                         <img
                             src="https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=1400&q=90"
                             alt="Lapangan olahraga dengan suasana aktif"
@@ -202,13 +202,13 @@ function pricingLabel(model: string) {
                         />
                         <div class="absolute inset-0 bg-gradient-to-t from-[#101d17]/75 via-transparent to-black/5"></div>
                         <div class="absolute bottom-6 left-6 right-6 text-white sm:bottom-8 sm:left-8">
-                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#d8ff62]">Play more, worry less</p>
+                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#a4da01]">Play more, worry less</p>
                             <p class="mt-2 max-w-sm text-2xl font-black leading-tight sm:text-3xl">Waktunya fokus ke permainanmu.</p>
                         </div>
                     </div>
                     <div class="absolute right-0 top-8 max-w-[190px] rounded-2xl border border-white/70 bg-white/95 p-4 shadow-xl backdrop-blur sm:right-[-8px] sm:top-12 sm:max-w-[220px] sm:p-5">
                         <div class="flex items-center gap-2">
-                            <span class="grid h-9 w-9 place-items-center rounded-xl bg-[#eaf5cd] text-lg">✓</span>
+                            <span class="grid h-9 w-9 place-items-center rounded-xl bg-[#a4da01] text-lg">✓</span>
                             <span class="text-xs font-bold text-slate-500">PILIHANMU</span>
                         </div>
                         <p class="mt-3 text-sm font-extrabold">Satu tempat, banyak cara bergerak.</p>
@@ -218,17 +218,17 @@ function pricingLabel(model: string) {
                 </div>
             </section>
 
-            <section class="overflow-hidden border-y border-[#e3e7dc] bg-white py-5" aria-label="Keunggulan Sport Center">
+            <section class="overflow-hidden border-y border-[#dce5c6] bg-white py-5" aria-label="Keunggulan Sport Center">
                 <div class="sport-benefits-marquee flex w-max flex-nowrap items-center">
                     <div v-for="copy in 2" :key="copy" class="flex w-max shrink-0 items-center gap-8 px-4 sm:gap-12 sm:px-6" :aria-hidden="copy === 2 ? 'true' : undefined">
-                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">⌖</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Zona olahraga</span></div>
-                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
-                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">◷</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Tarif transparan</span></div>
-                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
-                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">♧</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Pelatih profesional</span></div>
-                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
-                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#eff5e1] text-lg">＋</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Add-on praktis</span></div>
-                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#8ba83d]"></span>
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#a4da01] text-lg">⌖</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Zona olahraga</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#a4da01]"></span>
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#a4da01] text-lg">◷</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Tarif transparan</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#a4da01]"></span>
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#a4da01] text-lg">♧</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Pelatih profesional</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#a4da01]"></span>
+                        <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-[#a4da01] text-lg">＋</span><span class="whitespace-nowrap text-sm font-bold sm:text-base">Add-on praktis</span></div>
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#a4da01]"></span>
                     </div>
                 </div>
             </section>
@@ -236,21 +236,21 @@ function pricingLabel(model: string) {
             <section id="zones" class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
                 <div class="mb-8 flex flex-col justify-between gap-4 sm:mb-10 sm:flex-row sm:items-end">
                     <div>
-                        <p class="text-xs font-black uppercase tracking-[0.22em] text-[#819b42]">Explore the spaces</p>
+                        <p class="text-xs font-black uppercase tracking-[0.22em] text-[#a4da01]">Explore the spaces</p>
                         <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Cari fasilitas olahraga favoritmu.</h2>
                         <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Jelajahi pilihan fasilitas olahraga, lihat ruang yang tersedia, cek fasilitas pendukung, dan bandingkan harga sebelum melakukan booking.</p>
                     </div>
-                    <Link href="#zones" class="group inline-flex w-fit items-center gap-3 text-sm font-extrabold">Jelajahi fasilitas <span class="grid h-9 w-9 place-items-center rounded-full bg-[#d8ff62] text-[#172720] transition-colors duration-200 group-hover:bg-[#172720] group-hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span></Link>
+                    <Link href="#zones" class="group inline-flex w-fit items-center gap-3 text-sm font-extrabold">Jelajahi fasilitas <span class="grid h-9 w-9 place-items-center rounded-full bg-[#a4da01] text-[#172720] transition-colors duration-200 group-hover:bg-[#172720] group-hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span></Link>
                 </div>
 
                 <div v-if="props.zones.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <Link v-for="(zone, index) in props.zones" :key="zone.id" :href="`/zones/${zone.id}`" class="group block overflow-hidden rounded-[1.6rem] border border-[#e4e8df] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c6d99b] hover:shadow-xl hover:shadow-[#26351c]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8ba83d] focus-visible:ring-offset-4">
-                        <div class="relative h-52 overflow-hidden bg-[#e8ecdf]">
+                    <Link v-for="(zone, index) in props.zones" :key="zone.id" :href="`/zones/${zone.id}`" class="group block overflow-hidden rounded-[1.6rem] border border-[#dce5c6] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#dce5c6] hover:shadow-xl hover:shadow-[#26351c]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-4">
+                        <div class="relative h-52 overflow-hidden bg-white">
                             <img :src="imageForZone(zone.name, index)" :alt="zone.name" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                             <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
                             <span class="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[#24352a]">{{ pricingLabel(zone.pricing_model) }}</span>
                             <span class="absolute bottom-4 left-4 text-2xl font-black text-white">{{ zone.name }}</span>
-                            <span v-if="zone.is_online_bookable" class="absolute bottom-4 right-4 rounded-full bg-[#d8ff62] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#26351c]">Online</span>
+                            <span v-if="zone.is_online_bookable" class="absolute bottom-4 right-4 rounded-full bg-[#a4da01] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#26351c]">Online</span>
                         </div>
                         <div class="p-5">
                             <div class="flex items-center justify-between gap-3">
@@ -259,23 +259,23 @@ function pricingLabel(model: string) {
                                 <p v-else class="text-sm font-semibold text-slate-400">Tarif menyusul</p>
                             </div>
                             <div v-if="zone.spaces.length" class="mt-4 flex flex-wrap gap-2">
-                                <span v-for="space in zone.spaces.slice(0, 3)" :key="space.id" class="rounded-lg bg-[#f3f5ef] px-2.5 py-1.5 text-xs font-semibold text-slate-600">{{ space.name }}</span>
-                                <span v-if="zone.spaces.length > 3" class="rounded-lg bg-[#f3f5ef] px-2.5 py-1.5 text-xs font-semibold text-slate-500">+{{ zone.spaces.length - 3 }} lainnya</span>
+                                <span v-for="space in zone.spaces.slice(0, 3)" :key="space.id" class="rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600">{{ space.name }}</span>
+                                <span v-if="zone.spaces.length > 3" class="rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-500">+{{ zone.spaces.length - 3 }} lainnya</span>
                             </div>
-                            <div class="mt-5 flex items-center justify-between border-t border-[#edf0e9] pt-4">
+                            <div class="mt-5 flex items-center justify-between border-t border-[#e7edda] pt-4">
                                 <span class="text-xs font-semibold text-slate-500">{{ zone.spaces.filter((space) => space.status === 'available').length }} ruang tersedia</span>
-                                <span class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-white transition-colors duration-200 group-hover:bg-[#d8ff62] group-hover:text-[#172720]" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+                                <span class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-white transition-colors duration-200 group-hover:bg-[#a4da01] group-hover:text-[#172720]" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
                             </div>
                         </div>
                     </Link>
                 </div>
-                <div v-else class="rounded-3xl border border-dashed border-[#cbd3c1] bg-white p-10 text-center">
+                <div v-else class="rounded-3xl border border-dashed border-[#dce5c6] bg-white p-10 text-center">
                     <p class="text-lg font-bold">Zona olahraga belum tersedia</p>
                     <p class="mt-2 text-sm text-slate-500">Zona yang ditambahkan oleh pengelola akan tampil di bagian ini.</p>
                 </div>
             </section>
 
-            <section id="coaches" class="bg-[#d8ff62] text-[#172720]">
+            <section id="coaches" class="bg-[#a4da01] text-[#172720]">
                 <div class="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
                     <div>
                         <p class="text-xs font-black uppercase tracking-[0.22em] text-[#234832]">Better with guidance</p>
@@ -285,7 +285,7 @@ function pricingLabel(model: string) {
                     </div>
                     <div v-if="props.trainers.length" class="grid gap-3 sm:grid-cols-2">
                         <article v-for="(trainer, index) in props.trainers.slice(0, 4)" :key="trainer.id" class="flex items-center gap-4 rounded-2xl border border-white/80 bg-white p-4 shadow-sm">
-                            <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xl font-black" :class="index % 2 === 0 ? 'bg-[#d8ff62] text-[#26351c]' : 'bg-[#e7ebdf] text-[#60734a]'">{{ trainer.name.split(' ').map((part) => part[0]).slice(0, 2).join('') }}</div>
+                            <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xl font-black" :class="index % 2 === 0 ? 'bg-[#a4da01] text-[#26351c]' : 'bg-[#a4da01] text-[#486000]'">{{ trainer.name.split(' ').map((part) => part[0]).slice(0, 2).join('') }}</div>
                             <div class="min-w-0">
                                 <p class="truncate font-extrabold">{{ trainer.name }}</p>
                                 <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{{ trainer.specialty }}</p>
@@ -299,14 +299,14 @@ function pricingLabel(model: string) {
             <section id="extras" class="bg-white px-5 py-16 sm:px-8 sm:py-20">
                 <div class="mx-auto max-w-7xl">
                 <div class="mb-8">
-                    <p class="text-xs font-black uppercase tracking-[0.22em] text-[#819b42]">The little extras</p>
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-[#a4da01]">The little extras</p>
                     <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Lengkapi sesi olahragamu.</h2>
                     <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Add-on yang tersedia ditampilkan berdasarkan stok yang tercatat.</p>
                 </div>
                 <div v-if="props.addOns.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <article v-for="addon in props.addOns" :key="addon.id" class="flex items-center justify-between gap-4 rounded-2xl border border-[#e3e7dc] bg-white p-5 transition hover:border-[#bdce8f]">
+                    <article v-for="addon in props.addOns" :key="addon.id" class="flex items-center justify-between gap-4 rounded-2xl border border-[#dce5c6] bg-white p-5 transition hover:border-[#dce5c6]">
                         <div class="flex items-center gap-4">
-                            <span class="grid h-12 w-12 place-items-center rounded-2xl bg-[#eff5e1] text-xl">＋</span>
+                            <span class="grid h-12 w-12 place-items-center rounded-2xl bg-[#a4da01] text-xl">＋</span>
                             <div>
                                 <h3 class="font-extrabold">{{ addon.name }}</h3>
                                 <p class="mt-1 text-xs text-slate-500">Stok tersedia: {{ addon.stock }}</p>
@@ -321,20 +321,20 @@ function pricingLabel(model: string) {
 
             <section class="px-5 pb-16 sm:px-8 sm:pb-20">
                 <div class="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-[#172720] px-6 py-10 text-white sm:px-10 sm:py-14 lg:px-16">
-                    <div class="absolute -right-10 -top-24 h-72 w-72 rounded-full bg-[#d8ff62]/15 blur-2xl"></div>
+                    <div class="absolute -right-10 -top-24 h-72 w-72 rounded-full bg-[#a4da01]/15 blur-2xl"></div>
                     <div class="relative flex flex-col justify-between gap-8 md:flex-row md:items-center">
                         <div class="max-w-2xl">
-                            <p class="text-xs font-black uppercase tracking-[0.22em] text-[#d8ff62]">Your next session starts here</p>
+                            <p class="text-xs font-black uppercase tracking-[0.22em] text-[#a4da01]">Your next session starts here</p>
                             <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Siap bergerak hari ini?</h2>
                             <p class="mt-3 text-sm leading-7 text-white/65 sm:text-base">Jelajahi zona, cek ruang, dan rencanakan waktu olahraga berikutnya.</p>
                         </div>
-                        <a href="#zones" class="group inline-flex w-fit shrink-0 items-center gap-4 rounded-full bg-[#d8ff62] px-6 py-4 text-sm font-black text-[#172720] transition hover:bg-white">Temukan ruang <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+                        <a href="#zones" class="group inline-flex w-fit shrink-0 items-center gap-4 rounded-full bg-[#a4da01] px-6 py-4 text-sm font-black text-[#172720] transition hover:bg-white">Temukan ruang <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
                     </div>
                 </div>
             </section>
         </main>
 
-        <footer class="border-t border-[#e0e5d9] bg-white">
+        <footer class="border-t border-[#dce5c6] bg-white">
             <div class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                 <a href="/" class="flex items-center gap-2 font-black text-[#172720]"><img src="/logo.png" alt="Sport Center" class="h-8 w-8 rounded-lg object-contain" /> sportcenter.</a>
                 <p>© {{ currentYear }} Sport Center. Move your way.</p>
