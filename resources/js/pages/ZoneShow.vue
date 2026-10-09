@@ -46,7 +46,14 @@ function unitLabel(unit: string) {
 </script>
 
 <template>
-    <Head :title="zone.name + ' — Sport Center'" />
+    <Head>
+        <title>{{ zone.name }} | Fasilitas & Harga Booking Sport Center</title>
+        <meta head-key="description" name="description" :content="'Lihat fasilitas, ruang, kapasitas, dan harga ' + zone.name + ' di Sport Center. Cek ketersediaan jadwal dan booking online tanpa harus mendaftar sebagai member.'" />
+        <meta head-key="robots" name="robots" content="index, follow, max-image-preview:large" />
+        <meta head-key="og:type" property="og:type" content="website" />
+        <meta head-key="og:title" property="og:title" :content="zone.name + ' | Fasilitas & Harga Booking Sport Center'" />
+        <meta head-key="og:description" property="og:description" :content="'Cek fasilitas, ruang, dan harga ' + zone.name + '. Booking online dengan mudah tanpa daftar member.'" />
+    </Head>
 
     <main class="min-h-screen bg-[#f6f7f2] text-[#15251f]">
         <header class="border-b border-black/5">
@@ -67,7 +74,7 @@ function unitLabel(unit: string) {
             <div class="mt-3 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div>
                     <h1 class="text-4xl font-black tracking-tight sm:text-5xl">{{ zone.name }}</h1>
-                    <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600">Detail zona olahraga, ruang yang tersedia, fasilitas, dan tarif yang tercatat di Sport Center.</p>
+                    <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600">Lihat fasilitas olahraga, pilihan ruang, kapasitas, dan harga sewa yang tersedia. Kamu bisa cek jadwal dan lanjut booking online tanpa harus menjadi member.</p>
                 </div>
                 <span class="w-fit rounded-full bg-[#e7edda] px-4 py-2 text-xs font-extrabold text-[#53663a]">{{ zone.is_online_bookable ? 'Bisa dipesan online' : 'Informasi zona' }}</span>
             </div>
