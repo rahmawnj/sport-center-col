@@ -96,7 +96,7 @@ function pricingLabel(model: string) {
         <header class="relative z-20 border-b border-black/5 bg-[#f6f7f2]">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
                 <a href="/" class="flex items-center gap-3" aria-label="Sport Center home">
-                    <span class="grid h-11 w-11 place-items-center rounded-2xl bg-[#d8ff62] text-xl">✳</span>
+                    <img src="/logo.png" alt="Sport Center" class="h-11 w-11 rounded-xl object-contain" />
                     <span>
                         <span class="block text-lg font-black tracking-tight">sport<span class="text-[#6b8e23]">center.</span></span>
                         <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Move your way</span>
@@ -295,7 +295,7 @@ function pricingLabel(model: string) {
 
         <footer class="border-t border-[#e0e5d9] bg-white">
             <div class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-                <a href="/" class="flex items-center gap-2 font-black text-[#172720]"><span class="grid h-8 w-8 place-items-center rounded-xl bg-[#d8ff62]">✳</span> sportcenter.</a>
+                <a href="/" class="flex items-center gap-2 font-black text-[#172720]"><img src="/logo.png" alt="Sport Center" class="h-8 w-8 rounded-lg object-contain" /> sportcenter.</a>
                 <p>© {{ currentYear }} Sport Center. Move your way.</p>
                 <div class="flex gap-5 font-semibold"><a href="#zones" class="hover:text-[#172720]">Fasilitas</a><a href="#coaches" class="hover:text-[#172720]">Pelatih</a><a href="#extras" class="hover:text-[#172720]">Add-on</a></div>
             </div>
