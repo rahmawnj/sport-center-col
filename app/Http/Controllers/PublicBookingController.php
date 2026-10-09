@@ -23,7 +23,7 @@ class PublicBookingController extends Controller
 
     private const DEFAULT_CLOSE = '23:00';
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $facilities = Facility::query()
             ->where('status', 'active')
@@ -51,8 +51,15 @@ class PublicBookingController extends Controller
                 ])->values(),
             ]);
 
+        $requestedFacility = (string) $request->query('facility', '');
+        $initialFacility = $facilities->first(
+            fn ($facility) => $facility['slug'] === $requestedFacility
+                || (string) $facility['id'] === $requestedFacility
+        );
+
         return Inertia::render('book/Index', [
             'facilities' => $facilities,
+            'initialFacilityId' => $initialFacility['id'] ?? null,
         ]);
     }
 
