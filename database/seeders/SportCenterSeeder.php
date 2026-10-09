@@ -64,7 +64,7 @@ class SportCenterSeeder extends Seeder
             ]],
         ];
 
-        foreach ($facilities as [$name, $slug, $online, $turnaround, $courts, $packages]) {
+        foreach ($facilities as [$name, $slug, $online, $turnaround, $spaces, $packages]) {
             $facility = Facility::updateOrCreate(
                 ['name' => $name],
                 ['icon' => $slug]
