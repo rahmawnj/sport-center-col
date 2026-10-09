@@ -174,7 +174,11 @@ function unitLabel(unit: Rate['unit_type']) {
 </script>
 
 <template>
-    <Head title="Booking — Sport Center" />
+    <Head>
+        <title>Booking Fasilitas Olahraga | Sport Center</title>
+        <meta head-key="description" name="description" content="Pilih zona, ruang, tanggal, jam, dan add-on. Lihat total harga sebelum konfirmasi booking olahraga tanpa akun member." />
+        <meta head-key="robots" name="robots" content="noindex, follow" />
+    </Head>
     <div class="min-h-screen bg-[#f6f7f2] text-[#15251f]">
         <header class="border-b border-black/5 bg-white">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
