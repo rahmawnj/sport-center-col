@@ -20,13 +20,13 @@ class SportCenterSeeder extends Seeder
         $member = User::where('email', 'test@example.com')->first();
 
         foreach ([
-            ['Andi Pratama', 'Personal Trainer Gym', '081234567890'],
-            ['Budi Santoso', 'Padel & Functional Training', '081234567891'],
-            ['Citra Lestari', 'Yoga & Pilates', '081234567892'],
-        ] as [$name, $specialty, $phone]) {
+            ['Andi Pratama', 'Personal Trainer Gym'],
+            ['Budi Santoso', 'Padel & Functional Training'],
+            ['Citra Lestari', 'Yoga & Pilates'],
+        ] as [$name, $specialty]) {
             Trainer::updateOrCreate(
                 ['name' => $name],
-                ['specialty' => $specialty, 'phone' => $phone]
+                ['specialty' => $specialty]
             );
         }
 
