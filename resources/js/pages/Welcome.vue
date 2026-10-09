@@ -36,7 +36,7 @@ const zoneImages: Record<string, string> = {
     padel: 'photo-1626224583764-f87db24ac4ea',
     billiard: 'photo-1609710228159-0fa9bd7c0bcb',
     gym: 'photo-1534438327276-14e5300c3a48',
-    yoga: 'photo- yoga',
+    yoga: 'photo-1506126613408-eca07ce68773',
     pilates: 'photo-1518611012118-696072aa579a',
     'ice skating': 'photo-1517466787929-bc90951d0974',
     spinning: 'photo-1576678927484-cc907957088c',
