@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     $zones = Zone::query()
-        ->with(['zoneSpaces.pricingRates', 'zoneSpaces.facilities'])
+        ->with(['zoneSpaces' => fn ($query) => $query->whereNull('deleted_at')->with(['pricingRates', 'facilities'])])
         ->orderBy('name')
         ->get()
         ->map(fn (Zone $zone) => [
