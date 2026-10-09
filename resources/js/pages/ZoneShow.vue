@@ -139,12 +139,6 @@ function unitLabel(unit: string) {
                 <p class="mt-2 text-sm text-slate-500">Ruang yang ditambahkan oleh pengelola akan muncul di sini.</p>
             </div>
 
-            <div class="mt-10 rounded-3xl bg-[#001428] p-6 text-white sm:p-8">
-                <h2 class="text-2xl font-black">Siap untuk mulai?</h2>
-                <p class="mt-2 max-w-xl text-sm leading-6 text-white/65">Pilih ruang dan jadwal yang tersedia, cek harga otomatis, lalu booking tanpa harus mendaftar sebagai member.</p>
-                <Link v-if="zone.is_online_bookable" :href="`/book?zone_id=${zone.id}`" class="group mt-5 inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-white">Booking zona ini <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></Link>
-                <Link v-else href="/" class="group mt-5 inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-white">Lihat zona lainnya <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></Link>
-            </div>
         </section>
     </main>
 </template>
