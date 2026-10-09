@@ -90,7 +90,7 @@ const facilityDescription = (slug: string) => {
 </script>
 
 <template>
-    <Head title="Sport Center — Olahraga, Lebih Mudah" />
+    <Head title="Sport Center — Olahraga, Lebih Mudah"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" /></Head>
 
     <div class="dream-home min-h-screen bg-white text-[#001428]">
         <header class="site-header sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur">
@@ -199,7 +199,7 @@ const facilityDescription = (slug: string) => {
                             <div class="mt-6 flex items-end justify-between border-t border-slate-100 pt-5">
                                 <div>
                                     <p class="text-xs font-semibold text-slate-500">Mulai dari</p>
-                                    <p class="mt-1 text-lg font-black text-[#001428]">{{ lowestPrice(facility) !== null ? formatCurrency(lowestPrice(facility)!) : 'Cek tarif' }}<span v-if="lowestPrice(facility) !== null" class="text-xs font-semibold text-slate-400"> / paket</span></p>
+                                    <p class="mt-1 text-lg font-black text-[#001428]">{{ lowestPrice(facility) !== null ? formatCurrency(lowestPrice(facility) ?? 0) : 'Cek tarif' }}<span v-if="lowestPrice(facility) !== null" class="text-xs font-semibold text-slate-400"> / paket</span></p>
                                 </div>
                                 <Link href="/book" class="btn-lime inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-extrabold">Pesan <i class="fa-solid fa-arrow-right"></i></Link>
                             </div>
