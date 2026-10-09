@@ -145,6 +145,10 @@ function chooseRate(rate: Rate) {
     selectedSlot.value = null;
     selectedSlots.value = [];
 }
+function normalizeTime(time: string) {
+    return time.slice(0, 5);
+}
+
 function chooseAvailableSlot(slot: Slot) {
     if (!isHourly.value) {
         selectedSlot.value = slot;
@@ -161,9 +165,9 @@ function chooseAvailableSlot(slot: Slot) {
     } else {
         const first = selectedSlots.value[0];
         const last = selectedSlots.value[selectedSlots.value.length - 1];
-        if (slot.start_time === last.end_time) {
+        if (normalizeTime(slot.start_time) === normalizeTime(last.end_time)) {
             selectedSlots.value = [...selectedSlots.value, slot];
-        } else if (slot.end_time === first.start_time) {
+        } else if (normalizeTime(slot.end_time) === normalizeTime(first.start_time)) {
             selectedSlots.value = [slot, ...selectedSlots.value];
         } else {
             selectedSlots.value = [slot];
@@ -309,7 +313,7 @@ function unitLabel(unit: Rate['unit_type']) {
                             <p v-else-if="slotError" class="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{{ slotError }}</p>
                             <div v-else-if="date" class="mt-5">
                                 <p class="mb-2 text-sm font-bold">Jam yang tersedia</p>
-                                <p class="mb-3 text-xs text-slate-500">{{ isHourly ? 'Pilih jam mulai, lalu pilih jam berikutnya secara berurutan untuk menambah durasi.' : 'Pilih jam mulai yang tersedia.' }}</p>
+                                <p class="mb-3 text-xs text-slate-500">{{ isHourly ? 'Pilih beberapa slot jam berurutan. Setiap slot yang dipilih akan ditandai, dan durasi serta harga total dihitung otomatis.' : 'Pilih jam mulai yang tersedia.' }}</p>
                                 <div v-if="slots.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                     <button v-for="slot in slots" :key="slot.start_time" type="button" class="rounded-xl border p-3 text-left transition"  :class="selectedSlots.some(item => item.start_time === slot.start_time) ? 'border-[#8ba83d] bg-[#f3f8e7] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df] hover:border-[#9db55f]'" @click="chooseAvailableSlot(slot)">
                                         <span class="block font-black">{{ slot.start_time }}–{{ slot.end_time }}</span>
