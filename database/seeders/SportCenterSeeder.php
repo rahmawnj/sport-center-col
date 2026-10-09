@@ -2,7 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Court;
+use App\Models\Zone;
+use App\Models\ZoneSpace;
 use App\Models\Facility;
 use App\Models\Package;
 use App\Models\PackagePricingRule;
@@ -70,11 +71,26 @@ class SportCenterSeeder extends Seeder
                 ['icon' => $slug]
             );
 
-            foreach ($courts as $court) {
-                Court::updateOrCreate(
-                    ['facility_id' => $facility->id, 'name' => $court],
-                    ['status' => 'available']
+            $pricingModel = match ($slug) {
+                'padel' => 'per_space',
+                'billiard' => 'per_table',
+                'gym' => 'per_person',
+                'yoga', 'pilates' => 'per_trainer_session',
+                default => 'per_space',
+            };
+
+            $zone = Zone::updateOrCreate(
+                ['name' => $name],
+                ['pricing_model' => $pricingModel, 'is_online_bookable' => $online]
+            );
+
+            foreach ($spaces as $spaceName) {
+                $space = ZoneSpace::updateOrCreate(
+                    ['zone_id' => $zone->id, 'name' => $spaceName],
+                    ['capacity' => 1, 'status' => 'available']
                 );
+
+                $space->facilities()->syncWithoutDetaching([$facility->id]);
             }
 
             foreach ($packages as [$packageName, $type, $minutes, $days, $rules]) {
