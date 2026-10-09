@@ -124,7 +124,7 @@ function pricingLabel(model: string) {
     </Head>
 
     <div class="min-h-screen overflow-hidden bg-[#f6f7f2] text-[#15251f]">
-        <header class="relative z-20 border-b border-black/5 bg-[#f6f7f2]">
+        <header class="sticky top-0 z-50 border-b border-black/5 bg-[#f6f7f2]/95 backdrop-blur-md">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
                 <a href="/" class="flex items-center gap-3" aria-label="Sport Center home">
                     <img src="/logo.png" alt="Sport Center" class="h-11 w-11 rounded-xl object-contain" />
