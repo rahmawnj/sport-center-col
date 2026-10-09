@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 type Rate = {
     id: number;
@@ -42,6 +42,8 @@ const selectedSlots = ref<Slot[]>([]);
 const loadingSlots = ref(false);
 const slotError = ref('');
 const addOnQuantities = ref<Record<number, number>>({});
+const liveAddOns = ref<AddOn[]>([...props.addOns]);
+let addOnStockTimer: ReturnType<typeof setInterval> | null = null;
 const today = (() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -66,9 +68,10 @@ const selectedRate = computed(() => selectedSpace.value?.rates.find((rate) => ra
 const isHourly = computed(() => selectedRate.value?.unit_type === 'per_hour' || (selectedRate.value?.unit_type === 'per_session' && /jam|hour/i.test(selectedRate.value?.rental_type ?? '')));
 const currentPrice = computed(() => selectedRate.value ? selectedRate.value.price * (isHourly.value ? duration.value : 1) : 0);
 const selectedEndTime = computed(() => selectedSlots.value.length ? selectedSlots.value[selectedSlots.value.length - 1].end_time : selectedSlot.value?.end_time ?? '');
-const addOnTotal = computed(() => props.addOns.reduce((sum, item) => sum + item.price * (addOnQuantities.value[item.id] ?? 0), 0));
+const addOnMultiplier = computed(() => isHourly.value ? duration.value : 1);
+const addOnTotal = computed(() => liveAddOns.value.reduce((sum, item) => sum + item.price * (addOnQuantities.value[item.id] ?? 0) * addOnMultiplier.value, 0));
 const total = computed(() => currentPrice.value + addOnTotal.value);
-const selectedAddOns = computed(() => props.addOns
+const selectedAddOns = computed(() => liveAddOns.value
     .filter((item) => (addOnQuantities.value[item.id] ?? 0) > 0)
     .map((item) => ({ id: item.id, quantity: addOnQuantities.value[item.id] })));
 
@@ -80,7 +83,26 @@ const steps = [
     { id: 5, label: 'Data pemesan' },
 ];
 
+async function refreshAddOnStock() {
+    try {
+        const response = await fetch('/book/add-ons-stock', { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        const latest: AddOn[] = data.addOns ?? [];
+        liveAddOns.value = latest;
+        for (const item of latest) {
+            const quantity = addOnQuantities.value[item.id] ?? 0;
+            if (quantity > item.stock) addOnQuantities.value[item.id] = item.stock;
+            if (item.stock < 1) addOnQuantities.value[item.id] = 0;
+        }
+    } catch {
+        // Keep the last known stock visible when a temporary network error occurs.
+    }
+}
+
 onMounted(() => {
+    void refreshAddOnStock();
+    addOnStockTimer = setInterval(() => { void refreshAddOnStock(); }, 10000);
     if (props.initialSpaceId && selectedZone.value) {
         const space = selectedZone.value.spaces.find((item) => item.id === props.initialSpaceId);
         if (space) {
@@ -340,8 +362,8 @@ function unitLabel(unit: Rate['unit_type']) {
                         <div v-else-if="step === 4">
                             <h2 class="text-xl font-black">Tambahan untuk booking</h2>
                             <p class="mt-1 text-sm text-slate-500">Opsional. Pilih add-on yang kamu perlukan.</p>
-                            <div v-if="props.addOns.length" class="mt-5 space-y-3">
-                                <div v-for="item in props.addOns" :key="item.id" class="rounded-2xl border p-4 transition" :class="(addOnQuantities[item.id] ?? 0) > 0 ? 'border-[#8ba83d] bg-[#f8faef] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df]'">
+                            <div v-if="liveAddOns.length" class="mt-5 space-y-3">
+                                <div v-for="item in liveAddOns" :key="item.id" class="rounded-2xl border p-4 transition" :class="(addOnQuantities[item.id] ?? 0) > 0 ? 'border-[#8ba83d] bg-[#f8faef] ring-1 ring-[#8ba83d]' : 'border-[#e4e8df]'">
                                     <div class="flex items-start gap-3">
                                         <input
                                             :id="`addon-${item.id}`"
@@ -353,8 +375,8 @@ function unitLabel(unit: Rate['unit_type']) {
                                         />
                                         <label :for="`addon-${item.id}`" class="min-w-0 flex-1 cursor-pointer">
                                             <span class="block font-black">{{ item.name }}</span>
-                                            <span class="mt-1 block text-sm font-bold text-[#607a2f]">{{ formatIDR(item.price) }} <span class="font-medium text-slate-400">/ item</span></span>
-                                            <span class="mt-1 block text-xs text-slate-500">Stok tersedia: {{ item.stock }}</span>
+                                            <span class="mt-1 block text-sm font-bold text-[#607a2f]">{{ formatIDR(item.price) }} <span class="font-medium text-slate-400">/ item / jam</span></span>
+                                            <span class="mt-1 block text-xs text-slate-500">Stok tersedia sekarang: {{ item.stock }} item</span>
                                         </label>
                                         <span v-if="(addOnQuantities[item.id] ?? 0) > 0" class="rounded-full bg-[#d8ff62] px-3 py-1 text-xs font-black text-[#172720]">Dipilih</span>
                                     </div>
@@ -372,7 +394,7 @@ function unitLabel(unit: Rate['unit_type']) {
                                         </label>
                                         <div class="text-right">
                                             <p class="text-xs text-slate-500">Subtotal</p>
-                                            <p class="mt-1 font-black">{{ formatIDR(item.price * (addOnQuantities[item.id] ?? 0)) }}</p>
+                                            <p class="mt-1 font-black">{{ formatIDR(item.price * (addOnQuantities[item.id] ?? 0) * addOnMultiplier) }}</p>
                                         </div>
                                     </div>
                                 </div>
