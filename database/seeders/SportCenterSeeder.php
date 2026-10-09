@@ -5,20 +5,15 @@ namespace Database\Seeders;
 use App\Models\Zone;
 use App\Models\ZoneSpace;
 use App\Models\Facility;
-use App\Models\Package;
-use App\Models\PackagePricingRule;
+use App\Models\PricingRate;
 use App\Models\Trainer;
 use App\Models\User;
-use App\Models\UserMembership;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 
 class SportCenterSeeder extends Seeder
 {
     public function run(): void
     {
-        $member = User::where('email', 'test@example.com')->first();
-
         foreach ([
             ['Andi Pratama', 'Personal Trainer Gym'],
             ['Budi Santoso', 'Padel & Functional Training'],
@@ -94,43 +89,45 @@ class SportCenterSeeder extends Seeder
             }
 
             foreach ($packages as [$packageName, $type, $minutes, $days, $rules]) {
-                $package = Package::updateOrCreate(
-                    ['facility_id' => $facility->id, 'name' => $packageName],
-                    ['type' => $type, 'duration_minutes' => $minutes, 'duration_days' => $days]
-                );
+                // The current database schema uses pricing_rates, not packages/package_pricing_rules.
+                // pricing_rates supports one price per space and rental type, not day/time windows.
+                $firstRule = $rules[0] ?? null;
 
-                foreach ($rules as [$dayType, $start, $end, $price, $priority]) {
-                    PackagePricingRule::updateOrCreate(
+                if (!$firstRule) {
+                    continue;
+                }
+
+                $price = $firstRule[3];
+                $unitType = match ($type) {
+                    'session' => 'per_session',
+                    'visit', 'membership', 'package' => 'per_visit',
+                    default => 'per_hour',
+                };
+                $minimumDuration = $minutes ? max(1, (int) ceil($minutes / 60)) : 1;
+
+                foreach ($spaces as $spaceName) {
+                    $space = ZoneSpace::where('zone_id', $zone->id)
+                        ->where('name', $spaceName)
+                        ->first();
+
+                    if (!$space) {
+                        continue;
+                    }
+
+                    PricingRate::updateOrCreate(
                         [
-                            'package_id' => $package->id,
-                            'day_type' => $dayType,
-                            'start_time' => $start,
-                            'end_time' => $end,
+                            'zone_space_id' => $space->id,
+                            'rental_type' => $packageName,
                         ],
                         [
-                            'date_start' => null,
-                            'date_end' => null,
                             'price' => $price,
-                            'priority' => $priority,
+                            'unit_type' => $unitType,
+                            'min_booking_duration' => $minimumDuration,
                         ]
                     );
                 }
             }
         }
 
-        if ($member) {
-            $gym = Package::where('name', 'Gym Iuran Bulanan')->first();
-
-            if ($gym) {
-                UserMembership::updateOrCreate(
-                    ['user_id' => $member->id, 'package_id' => $gym->id],
-                    [
-                        'start_date' => Carbon::today(),
-                        'end_date' => Carbon::today()->addDays(30),
-                        'status' => 'active',
-                    ]
-                );
-            }
-        }
     }
 }
