@@ -20,6 +20,39 @@ use App\Models\ZoneSpace;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
+
+Route::get('/sitemap.xml', function () {
+    $baseUrl = rtrim(config('app.url'), '/');
+    $zones = Zone::query()->orderBy('updated_at', 'desc')->get(['id', 'updated_at']);
+
+    $urls = [
+        ['loc' => $baseUrl.'/', 'changefreq' => 'daily', 'priority' => '1.0'],
+    ];
+
+    foreach ($zones as $zone) {
+        $urls[] = [
+            'loc' => $baseUrl.'/zones/'.$zone->id,
+            'lastmod' => optional($zone->updated_at)->toAtomString(),
+            'changefreq' => 'weekly',
+            'priority' => '0.8',
+        ];
+    }
+
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>';
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+    foreach ($urls as $item) {
+        $xml .= '<url><loc>'.e($item['loc']).'</loc>';
+        if (!empty($item['lastmod'])) {
+            $xml .= '<lastmod>'.e($item['lastmod']).'</lastmod>';
+        }
+        $xml .= '<changefreq>'.e($item['changefreq']).'</changefreq>';
+        $xml .= '<priority>'.e($item['priority']).'</priority></url>';
+    }
+    $xml .= '</urlset>';
+
+    return response($xml, 200)->header('Content-Type', 'application/xml; charset=UTF-8');
+})->name('sitemap');
+
 Route::get('/', function () {
     $zones = Zone::query()
         ->with(['zoneSpaces' => fn ($query) => $query->whereNull('deleted_at')->with(['pricingRates', 'facilities'])])
