@@ -59,6 +59,34 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+Route::get('/zones/{zone}', function (Zone $zone) {
+    $zone->load(['zoneSpaces' => fn ($query) => $query
+        ->whereNull('deleted_at')
+        ->with(['pricingRates', 'facilities'])]);
+
+    return Inertia::render('ZoneShow', [
+        'zone' => [
+            'id' => $zone->id,
+            'name' => $zone->name,
+            'pricing_model' => $zone->pricing_model,
+            'is_online_bookable' => $zone->is_online_bookable,
+            'spaces' => $zone->zoneSpaces->map(fn (ZoneSpace $space) => [
+                'id' => $space->id,
+                'name' => $space->name,
+                'capacity' => $space->capacity,
+                'status' => $space->status,
+                'facilities' => $space->facilities->pluck('name')->values(),
+                'pricing_rates' => $space->pricingRates->map(fn ($rate) => [
+                    'rental_type' => $rate->rental_type,
+                    'price' => $rate->price,
+                    'unit_type' => $rate->unit_type,
+                    'min_booking_duration' => $rate->min_booking_duration,
+                ])->values(),
+            ])->values(),
+        ],
+    ]);
+})->name('zones.show');
+
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
 Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
 Route::post('book', [PublicBookingController::class, 'store'])->name('booking.store');
