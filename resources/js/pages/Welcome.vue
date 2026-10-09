@@ -134,7 +134,7 @@ function pricingLabel(model: string) {
 
                     <div class="mt-10 grid max-w-lg grid-cols-3 border-t border-[#dce1d5] pt-6">
                         <div>
-                            <p class="text-3xl font-black tracking-tight">{{ zones.length }}<span class="text-[#8ba83d]">+</span></p>
+                            <p class="text-3xl font-black tracking-tight">{{ props.zones.length }}<span class="text-[#8ba83d]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Zona olahraga</p>
                         </div>
                         <div class="border-l border-[#dce1d5] pl-5">
@@ -142,7 +142,7 @@ function pricingLabel(model: string) {
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Ruang tersedia</p>
                         </div>
                         <div class="border-l border-[#dce1d5] pl-5">
-                            <p class="text-3xl font-black tracking-tight">{{ trainers.length }}<span class="text-[#8ba83d]">+</span></p>
+                            <p class="text-3xl font-black tracking-tight">{{ props.trainers.length }}<span class="text-[#8ba83d]">+</span></p>
                             <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">Pelatih</p>
                         </div>
                     </div>
@@ -192,8 +192,8 @@ function pricingLabel(model: string) {
                     <Link href="/book" class="inline-flex w-fit items-center gap-2 text-sm font-extrabold">Lihat proses booking <span>↗</span></Link>
                 </div>
 
-                <div v-if="zones.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <article v-for="(zone, index) in zones" :key="zone.id" class="group overflow-hidden rounded-[1.6rem] border border-[#e4e8df] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#26351c]/10">
+                <div v-if="props.zones.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <article v-for="(zone, index) in props.zones" :key="zone.id" class="group overflow-hidden rounded-[1.6rem] border border-[#e4e8df] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#26351c]/10">
                         <div class="relative h-52 overflow-hidden bg-[#e8ecdf]">
                             <img :src="imageForZone(zone.name, index)" :alt="zone.name" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                             <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
@@ -232,8 +232,8 @@ function pricingLabel(model: string) {
                         <p class="mt-4 max-w-md text-sm leading-7 text-slate-600 sm:text-base">Kenali tim pelatih yang terdaftar dan temukan spesialisasi yang sesuai dengan target latihanmu.</p>
                         <Link href="/trainers" class="mt-7 inline-flex items-center gap-3 rounded-full bg-[#172720] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#2d4436]">Kenali pelatih <span>↗</span></Link>
                     </div>
-                    <div v-if="trainers.length" class="grid gap-3 sm:grid-cols-2">
-                        <article v-for="(trainer, index) in trainers.slice(0, 4)" :key="trainer.id" class="flex items-center gap-4 rounded-2xl border border-white/80 bg-white p-4 shadow-sm">
+                    <div v-if="props.trainers.length" class="grid gap-3 sm:grid-cols-2">
+                        <article v-for="(trainer, index) in props.props.trainers.slice(0, 4)" :key="trainer.id" class="flex items-center gap-4 rounded-2xl border border-white/80 bg-white p-4 shadow-sm">
                             <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xl font-black" :class="index % 2 === 0 ? 'bg-[#d8ff62] text-[#26351c]' : 'bg-[#e7ebdf] text-[#60734a]'">{{ trainer.name.split(' ').map((part) => part[0]).slice(0, 2).join('') }}</div>
                             <div class="min-w-0">
                                 <p class="truncate font-extrabold">{{ trainer.name }}</p>
@@ -251,8 +251,8 @@ function pricingLabel(model: string) {
                     <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Lengkapi sesi olahragamu.</h2>
                     <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Add-on yang tersedia ditampilkan berdasarkan stok yang tercatat.</p>
                 </div>
-                <div v-if="addOns.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <article v-for="addon in addOns" :key="addon.id" class="flex items-center justify-between gap-4 rounded-2xl border border-[#e3e7dc] bg-white p-5 transition hover:border-[#bdce8f]">
+                <div v-if="props.addOns.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <article v-for="addon in props.addOns" :key="addon.id" class="flex items-center justify-between gap-4 rounded-2xl border border-[#e3e7dc] bg-white p-5 transition hover:border-[#bdce8f]">
                         <div class="flex items-center gap-4">
                             <span class="grid h-12 w-12 place-items-center rounded-2xl bg-[#eff5e1] text-xl">＋</span>
                             <div>
