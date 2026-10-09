@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('facilities', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('icon')->nullable();
             $table->string('slug')->unique();
             $table->boolean('is_bookable_online')->default(true);
             $table->enum('status', ['active', 'maintenance', 'inactive'])->default('active');
