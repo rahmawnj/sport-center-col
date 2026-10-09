@@ -146,7 +146,7 @@ function pricingLabel(model: string) {
                         <Link :href="login()" class="hidden rounded-full px-4 py-2.5 text-sm font-bold sm:inline-flex">Masuk</Link>
                     </template>
                     <Link href="#zones" class="rounded-full bg-[#172720] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#2d4436] sm:px-5">
-                        Cari fasilitas <span class="ml-1">↗</span>
+                        Cari fasilitas <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1 h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </Link>
                 </div>
             </div>
@@ -168,8 +168,8 @@ function pricingLabel(model: string) {
                         Cari tempat olahraga untuk latihan atau bermain bersama teman. Bandingkan fasilitas, lihat harga sewa, cek jadwal yang tersedia, dan booking ruang olahraga secara online tanpa perlu daftar sebagai member.
                     </p>
                     <div class="mt-8 flex flex-wrap items-center gap-3">
-                        <a href="#zones" class="inline-flex items-center gap-3 rounded-full bg-[#172720] px-6 py-4 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#2d4436]">
-                            Jelajahi fasilitas <span class="text-lg">↗</span>
+                        <a href="#zones" class="group inline-flex items-center gap-3 rounded-full bg-[#172720] px-6 py-4 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#2d4436]">
+                            Jelajahi fasilitas <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </a>
                         <Link v-if="!$page.props.auth.user" :href="register()" class="rounded-full border border-[#d7ddcf] px-6 py-4 text-sm font-bold transition hover:bg-white">
                             Buat akun
@@ -264,7 +264,7 @@ function pricingLabel(model: string) {
                             </div>
                             <div class="mt-5 flex items-center justify-between border-t border-[#edf0e9] pt-4">
                                 <span class="text-xs font-semibold text-slate-500">{{ zone.spaces.filter((space) => space.status === 'available').length }} ruang tersedia</span>
-                                <span class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-lg text-white transition group-hover:bg-[#d8ff62] group-hover:text-[#172720]" aria-hidden="true">↗</span>
+                                <span class="grid h-10 w-10 place-items-center rounded-full bg-[#172720] text-white transition-colors duration-200 group-hover:bg-[#d8ff62] group-hover:text-[#172720]" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
                             </div>
                         </div>
                     </Link>
@@ -281,7 +281,7 @@ function pricingLabel(model: string) {
                         <p class="text-xs font-black uppercase tracking-[0.22em] text-[#234832]">Better with guidance</p>
                         <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Latihan bareng pelatih.</h2>
                         <p class="mt-4 max-w-md text-sm leading-7 text-[#234832] sm:text-base">Kenali tim pelatih yang terdaftar dan temukan spesialisasi yang sesuai dengan target latihanmu.</p>
-                        <Link href="/trainers" class="mt-7 inline-flex items-center gap-3 rounded-full bg-[#172720] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#2d4436]">Kenali pelatih <span>↗</span></Link>
+                        <Link href="/trainers" class="group mt-7 inline-flex items-center gap-3 rounded-full bg-[#172720] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#2d4436]">Kenali pelatih <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></Link>
                     </div>
                     <div v-if="props.trainers.length" class="grid gap-3 sm:grid-cols-2">
                         <article v-for="(trainer, index) in props.trainers.slice(0, 4)" :key="trainer.id" class="flex items-center gap-4 rounded-2xl border border-white/80 bg-white p-4 shadow-sm">
@@ -328,7 +328,7 @@ function pricingLabel(model: string) {
                             <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Siap bergerak hari ini?</h2>
                             <p class="mt-3 text-sm leading-7 text-white/65 sm:text-base">Jelajahi zona, cek ruang, dan rencanakan waktu olahraga berikutnya.</p>
                         </div>
-                        <a href="#zones" class="inline-flex w-fit shrink-0 items-center gap-4 rounded-full bg-[#d8ff62] px-6 py-4 text-sm font-black text-[#172720] transition hover:bg-white">Temukan ruang <span class="text-lg">↗</span></a>
+                        <a href="#zones" class="group inline-flex w-fit shrink-0 items-center gap-4 rounded-full bg-[#d8ff62] px-6 py-4 text-sm font-black text-[#172720] transition hover:bg-white">Temukan ruang <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
                     </div>
                 </div>
             </section>
