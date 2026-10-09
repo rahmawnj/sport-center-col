@@ -13,9 +13,51 @@ use App\Http\Controllers\SportController;
 use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VerifyController;
+use App\Models\AddOn;
+use App\Models\Trainer;
+use App\Models\Zone;
+use App\Models\ZoneSpace;
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', function () {
+    $zones = Zone::query()
+        ->with(['zoneSpaces.pricingRates', 'zoneSpaces.facilities'])
+        ->orderBy('name')
+        ->get()
+        ->map(fn (Zone $zone) => [
+            'id' => $zone->id,
+            'name' => $zone->name,
+            'pricing_model' => $zone->pricing_model,
+            'is_online_bookable' => $zone->is_online_bookable,
+            'spaces' => $zone->zoneSpaces->map(fn (ZoneSpace $space) => [
+                'id' => $space->id,
+                'name' => $space->name,
+                'capacity' => $space->capacity,
+                'status' => $space->status,
+                'facilities' => $space->facilities->pluck('name')->values(),
+                'starting_price' => $space->pricingRates->min('price'),
+            ])->values(),
+            'starting_price' => $zone->zoneSpaces
+                ->flatMap(fn (ZoneSpace $space) => $space->pricingRates)
+                ->min('price'),
+        ]);
+
+    $trainers = Trainer::query()
+        ->orderBy('name')
+        ->get(['id', 'name', 'specialty']);
+
+    $addOns = AddOn::query()
+        ->where('stock', '>', 0)
+        ->orderBy('name')
+        ->get(['id', 'name', 'price', 'stock']);
+
+    return Inertia::render('Welcome', [
+        'zones' => $zones,
+        'trainers' => $trainers,
+        'addOns' => $addOns,
+    ]);
+})->name('home');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
 Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
