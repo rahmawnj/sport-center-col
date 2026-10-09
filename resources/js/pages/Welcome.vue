@@ -240,7 +240,7 @@ function pricingLabel(model: string) {
                         <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Cari fasilitas olahraga favoritmu.</h2>
                         <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Jelajahi pilihan fasilitas olahraga, lihat ruang yang tersedia, cek fasilitas pendukung, dan bandingkan harga sebelum melakukan booking.</p>
                     </div>
-                    <Link href="#zones" class="group inline-flex w-fit items-center gap-3 text-sm font-extrabold">Jelajahi fasilitas <span class="grid h-9 w-9 place-items-center rounded-full bg-[#d8ff62] text-[#172720] transition-colors duration-200 group-hover:bg-[#172720] group-hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg></span></Link>
+                    <Link href="#zones" class="group inline-flex w-fit items-center gap-3 text-sm font-extrabold">Jelajahi fasilitas <span class="grid h-9 w-9 place-items-center rounded-full bg-[#d8ff62] text-[#172720] transition-colors duration-200 group-hover:bg-[#172720] group-hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-out group-hover:rotate-0" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span></Link>
                 </div>
 
                 <div v-if="props.zones.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
