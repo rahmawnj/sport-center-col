@@ -36,7 +36,7 @@ class MemberDashboardController extends Controller
             ->where('user_id', $user->id)
             ->latest()
             ->limit(5)
-            ->get();
+            ->get(['id', 'booking_code', 'guest_name', 'user_id', 'total_amount', 'payment_method', 'payment_status', 'created_at']);
 
         return Inertia::render('member/Dashboard', [
             'stats' => [
@@ -50,7 +50,7 @@ class MemberDashboardController extends Controller
                     ->where('status', '!=', 'cancelled')
                     ->whereDate('end_date', '>=', $today)->count(),
                 'payments_count' => $transactions->count(),
-                'payments_total' => (float) $transactions->where('payment_status', 'paid')->sum('amount'),
+                'payments_total' => (float) $transactions->where('payment_status', 'fully_paid')->sum('total_amount'),
             ],
             'bookings' => $bookings,
             'memberships' => $memberships,
@@ -89,21 +89,15 @@ class MemberDashboardController extends Controller
     public function payments(Request $request): Response
     {
         $payments = Transaction::query()
-            ->with('transactionable')
             ->where('user_id', $request->user()->id)
             ->latest()
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Transaction $transaction) => [
                 'id' => $transaction->id,
-                'invoice_number' => $transaction->invoice_number,
-                'reference' => match (class_basename((string) $transaction->transactionable_type)) {
-                    'UserMembership' => 'Membership',
-                    'Booking' => 'Booking',
-                    'Package' => 'Paket',
-                    default => 'Transaksi',
-                },
-                'amount' => (float) $transaction->amount,
+                'booking_code' => $transaction->booking_code,
+                'reference' => $transaction->customer_type === 'member' ? 'Membership / Member' : 'Transaksi',
+                'amount' => (float) $transaction->total_amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
                 'created_at' => $transaction->created_at?->toISOString(),
