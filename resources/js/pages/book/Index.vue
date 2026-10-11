@@ -36,6 +36,7 @@ type Facility = {
     packages: BookingPackage[];
 };
 type Court = { id: number; name: string };
+type AddOn = { id: number; name: string; price: number; stock: number };
 type Slot = {
     start_time: string;
     end_time: string;
@@ -43,7 +44,7 @@ type Slot = {
     courts: Court[];
 };
 
-const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; success?: string | null }>();
+const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; success?: string | null; addOns: AddOn[] }>();
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -60,6 +61,9 @@ const slot = ref<Slot | null>(null);
 const selectedSlots = ref<string[]>([]);
 const slotSelectionError = ref('');
 const courtId = ref<number | null>(null);
+const addOnQuantities = ref<Record<number, number>>({});
+const selectedAddOns = computed(() => props.addOns.filter((item) => (addOnQuantities.value[item.id] ?? 0) > 0).map((item) => ({ id: item.id, qty: addOnQuantities.value[item.id] })));
+const addOnsTotal = computed(() => selectedAddOns.value.reduce((total, selected) => total + (props.addOns.find((item) => item.id === selected.id)?.price ?? 0) * selected.qty, 0));
 
 const form = useForm({
     package_id: null as number | null,
@@ -70,6 +74,7 @@ const form = useForm({
     guest_name: '',
     guest_email: '',
     guest_phone: '',
+    add_ons: [] as { id: number; qty: number }[],
 });
 
 const steps = [
@@ -97,7 +102,7 @@ const packagePrice = computed(() => {
 });
 
 const displayPrice = computed(() =>
-    isSession.value ? (slot.value?.price ?? null) : packagePrice.value,
+    isSession.value ? ((slot.value?.price ?? null) === null ? null : (slot.value?.price ?? 0) + addOnsTotal.value) : (packagePrice.value === null ? null : packagePrice.value + addOnsTotal.value),
 );
 
 const visibleSteps = computed(() => {
@@ -272,6 +277,7 @@ function back() {
 
 function submit() {
     form.package_id = pkg.value?.id ?? null;
+    form.add_ons = selectedAddOns.value;
 
     if (isSession.value) {
         form.date = date.value;
@@ -593,6 +599,24 @@ function formatDuration(minutes: number) {
                 <!-- Step 5: Guest data -->
                 <section v-else class="space-y-4">
                     <h2 class="font-semibold">Data diri</h2>
+
+                    <div class="space-y-3 rounded-xl border border-slate-100 p-4">
+                        <div>
+                            <h3 class="font-semibold">Add-on (opsional)</h3>
+                            <p class="mt-1 text-sm text-muted-foreground">Tambahkan perlengkapan yang kamu butuhkan. Stok diperbarui saat booking dibuat.</p>
+                        </div>
+                        <div v-if="props.addOns.length" class="space-y-2">
+                            <div v-for="item in props.addOns" :key="item.id" class="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-3">
+                                <div class="min-w-0">
+                                    <p class="font-medium">{{ item.name }}</p>
+                                    <p class="text-sm text-muted-foreground">{{ formatIDR(item.price) }} · stok {{ item.stock }}</p>
+                                </div>
+                                <Input v-model.number="addOnQuantities[item.id]" type="number" min="0" :max="item.stock" class="w-24" :aria-label="'Jumlah ' + item.name" />
+                            </div>
+                        </div>
+                        <p v-else class="text-sm text-muted-foreground">Belum ada add-on yang tersedia.</p>
+                        <p v-if="form.errors.add_ons" class="text-xs text-destructive">{{ form.errors.add_ons }}</p>
+                    </div>
 
                     <div class="rounded-xl bg-slate-50 p-4 text-sm">
                         <div class="flex justify-between gap-2">
