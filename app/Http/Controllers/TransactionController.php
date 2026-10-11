@@ -133,7 +133,14 @@ class TransactionController extends Controller
 
         if ($package->type === 'session') {
             $this->storeBooking($package, $data);
-        } elseif ($package->type === 'membership') {
+
+            return redirect()->route('transactions.index')->with(
+                'success',
+                'Booking berhasil disimpan ke tabel bookings. Transaksi pembayaran belum dibuat.'
+            );
+        }
+
+        if ($package->type === 'membership') {
             $this->storeMembership($package, $data);
         } else {
             $package->transactions()->create([
