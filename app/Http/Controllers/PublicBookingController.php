@@ -136,6 +136,17 @@ class PublicBookingController extends Controller
         }
 
         $date = Carbon::parse($data['date']);
+        $courtIsBookable = $package->facility->courts()
+            ->whereKey($data['court_id'])
+            ->where('status', 'available')
+            ->exists();
+
+        if (! $courtIsBookable) {
+            throw ValidationException::withMessages([
+                'court_id' => 'Lapangan yang dipilih tidak tersedia untuk fasilitas ini. Silakan pilih lapangan lain.',
+            ]);
+        }
+
         $startMinutes = $this->toMinutes($data['start_time']);
         $endMinutes = $startMinutes + max(1, (int) $package->duration_minutes);
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
@@ -282,6 +293,11 @@ class PublicBookingController extends Controller
         $end = $this->toMinutes((string) $close);
 
         while ($cursor + $duration <= $end) {
+            if ($date->isToday() && $cursor < (now()->hour * 60 + now()->minute)) {
+                $cursor += $step;
+                continue;
+            }
+
             $price = $this->resolvePrice($rules, $cursor);
 
             if ($price !== null) {
