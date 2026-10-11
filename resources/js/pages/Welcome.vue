@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
@@ -54,6 +54,69 @@ const props = defineProps<{
 }>();
 
 const featuredFacilities = computed(() => props.facilities);
+
+const statsPanel = ref<HTMLElement | null>(null);
+const animatedStats = ref({
+    facilities: 0,
+    courts: 0,
+    trainers: 0,
+    membershipPackages: 0,
+});
+let statsObserver: IntersectionObserver | null = null;
+let animationFrame = 0;
+
+const animateStats = () => {
+    cancelAnimationFrame(animationFrame);
+    const targets = {
+        facilities: Number(props.stats.facilities) || 0,
+        courts: Number(props.stats.courts) || 0,
+        trainers: Number(props.stats.trainers) || 0,
+        membershipPackages: Number(props.stats.membershipPackages) || 0,
+    };
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        animatedStats.value = targets;
+        return;
+    }
+
+    const duration = 1400;
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 4);
+        animatedStats.value = {
+            facilities: Math.round(targets.facilities * eased),
+            courts: Math.round(targets.courts * eased),
+            trainers: Math.round(targets.trainers * eased),
+            membershipPackages: Math.round(targets.membershipPackages * eased),
+        };
+
+        if (progress < 1) animationFrame = requestAnimationFrame(tick);
+    };
+
+    animationFrame = requestAnimationFrame(tick);
+};
+
+onMounted(() => {
+    if (!statsPanel.value) return;
+
+    statsObserver = new IntersectionObserver(
+        ([entry]) => {
+            if (entry.isIntersecting) {
+                animateStats();
+                statsObserver?.disconnect();
+                statsObserver = null;
+            }
+        },
+        { threshold: 0.25 },
+    );
+    statsObserver.observe(statsPanel.value);
+});
+
+onBeforeUnmount(() => {
+    statsObserver?.disconnect();
+    cancelAnimationFrame(animationFrame);
+});
 
 const formatCurrency = (amount: number | string) =>
     new Intl.NumberFormat('id-ID', {
@@ -162,11 +225,11 @@ const facilityDescription = (slug: string) => {
             </section>
 
             <section class="relative z-10 mx-auto -mt-1 max-w-7xl px-5 lg:px-8">
-                <div class="stats-panel grid grid-cols-2 gap-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-900/5 md:grid-cols-4 md:px-10 md:py-7">
-                    <div class="stat-item"><span class="stat-number">{{ stats.facilities }}</span><span class="stat-label">Jenis fasilitas</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ stats.courts }}</span><span class="stat-label">Lapangan tersedia</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ stats.trainers }}</span><span class="stat-label">Pelatih terdaftar</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ stats.membershipPackages }}</span><span class="stat-label">Paket keanggotaan</span></div>
+                <div ref="statsPanel" class="stats-panel grid grid-cols-2 gap-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-900/5 md:grid-cols-4 md:px-10 md:py-7">
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.facilities }}</span><span class="stat-label">Jenis fasilitas</span></div>
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.courts }}</span><span class="stat-label">Lapangan tersedia</span></div>
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.trainers }}</span><span class="stat-label">Pelatih terdaftar</span></div>
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.membershipPackages }}</span><span class="stat-label">Paket keanggotaan</span></div>
                 </div>
             </section>
 
