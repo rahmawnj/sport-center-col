@@ -190,6 +190,42 @@ class BookingLandingPageSeeder extends Seeder
             }
 
             /*
+             * Public booking uses the current Facility -> Package -> PricingRule
+             * schema. Keep it in sync with the hourly catalog above so the
+             * landing page and booking wizard read the same prices and hours.
+             */
+            foreach ($sports as $sportData) {
+                $facility = $facilities[strtolower($sportData['name'])];
+
+                $package = \\App\\Models\\Package::updateOrCreate(
+                    [
+                        'facility_id' => $facility->id,
+                        'name' => 'Sewa ' . $sportData['name'] . ' per Jam',
+                    ],
+                    [
+                        'type' => 'session',
+                        'duration_minutes' => 60,
+                        'duration_days' => null,
+                    ]
+                );
+
+                \\App\\Models\\PackagePricingRule::updateOrCreate(
+                    [
+                        'package_id' => $package->id,
+                        'day_type' => 'all',
+                        'start_time' => substr($sportData['open_time'], 0, 5),
+                        'end_time' => substr($sportData['close_time'], 0, 5),
+                    ],
+                    [
+                        'date_start' => null,
+                        'date_end' => null,
+                        'price' => $sportData['spaces'][0]['price'],
+                        'priority' => 0,
+                    ]
+                );
+            }
+
+            /*
              * Booking add-ons. updateOrCreate keeps catalog data consistent
              * when rerun; stock is reset to the configured seed stock.
              */
