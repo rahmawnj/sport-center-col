@@ -12,7 +12,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -46,7 +45,9 @@ class TransactionController extends Controller
             'transactions' => $transactions,
             'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
-                'today' => $this->paidRevenue(today()),
+                'today' => (float) Transaction::whereDate('created_at', today())
+                    ->where('payment_status', 'paid')
+                    ->sum('amount'),
                 'total' => Transaction::count(),
                 'paid' => Transaction::where('payment_status', 'paid')->count(),
                 'pending' => Transaction::where('payment_status', 'pending')->count(),
@@ -342,16 +343,4 @@ class TransactionController extends Controller
 
         return $day.' · '.$time;
     }
-    /** Return paid revenue only when this database has the amount column. */
-    private function paidRevenue(Carbon $date): float
-    {
-        if (! Schema::hasColumn('transactions', 'amount')) {
-            return 0.0;
-        }
-
-        return (float) Transaction::whereDate('created_at', $date)
-            ->where('payment_status', 'paid')
-            ->sum('amount');
-    }
-
 }
