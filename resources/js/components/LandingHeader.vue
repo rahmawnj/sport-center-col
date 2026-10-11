@@ -14,10 +14,11 @@ import { dashboard, login } from '@/routes';
             <nav class="hidden items-center gap-7 text-sm font-bold md:flex">
                 <Link href="/#olahraga" class="public-nav-link">Olahraga</Link>
                 <Link href="/#pelatih" class="public-nav-link">Pelatih</Link>
-                <Link href="/#membership" class="public-nav-link">Keanggotaan</Link>
+                <Link href="/membership" class="public-nav-link">Membership</Link>
             </nav>
 
             <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <Link href="/membership" class="hidden rounded-full px-3 py-2.5 text-xs font-bold transition hover:bg-slate-100 sm:inline-flex sm:text-sm">Paket</Link>
                 <Link href="/book" class="public-primary-button rounded-full px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:text-sm">Booking</Link>
                 <Link v-if="$page.props.auth.user" :href="dashboard()" class="rounded-full px-3 py-2.5 text-xs font-bold transition hover:bg-slate-100 sm:px-4 sm:text-sm">Dasbor</Link>
                 <Link v-else :href="login()" class="hidden rounded-full px-3 py-2.5 text-sm font-bold transition hover:bg-slate-100 sm:inline-flex">Masuk</Link>
