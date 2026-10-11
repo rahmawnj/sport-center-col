@@ -234,6 +234,14 @@ class BookingLandingPageSeeder extends Seeder
                     );
                 }
 
+                // Reconcile stale court rows from older seed data per sport.
+                $expectedCourtNames = collect($sport['spaces'])->pluck('name')->all();
+                $staleCourts = Court::query()
+                    ->where('facility_id', $facilities[$sport['slug']]->id)
+                    ->whereNotIn('name', $expectedCourtNames);
+                (clone $staleCourts)->whereDoesntHave('bookings')->delete();
+                $staleCourts->whereHas('bookings')->update(['status' => 'inactive']);
+
                 foreach ($sport['packages'] as $packageData) {
                     $package = Package::updateOrCreate(
                         ['facility_id' => $facilities[$sport['slug']]->id, 'name' => $packageData['name']],
