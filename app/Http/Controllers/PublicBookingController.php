@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Court;
 use App\Models\Facility;
 use App\Models\Package;
 use App\Models\PackagePricingRule;
@@ -90,7 +91,11 @@ class PublicBookingController extends Controller
                 'customer_name' => $booking->user?->name ?? $booking->guest_name,
             ])->values();
 
-        $courts = $package->facility->courts
+        $courts = Court::query()
+            ->where('facility_id', $package->facility_id)
+            ->where('status', 'available')
+            ->orderBy('name')
+            ->get()
             ->map(fn ($court) => [
                 'id' => $court->id,
                 'name' => $court->name,
@@ -171,6 +176,9 @@ class PublicBookingController extends Controller
     private function bookingPrice(Package $package, array $data): float
     {
         $date = Carbon::parse($data['date']);
+        if (empty($data['start_time'])) {
+            return (float) ($this->basePrice($package, $date) ?? 0);
+        }
         $rules = $this->matchingRules($package, $date);
         $start = $this->toMinutes($data['start_time']);
         $hours = max(1, (int) ($data['duration_hours'] ?? 1));
@@ -192,11 +200,33 @@ class PublicBookingController extends Controller
      */
     private function storeBooking(Request $request, Package $package, array $data): Booking
     {
-        if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time'])) {
-            throw ValidationException::withMessages(['start_time' => 'Lapangan, tanggal, dan jam wajib dipilih.']);
+        if (empty($data['date'])) {
+            throw ValidationException::withMessages(['date' => 'Tanggal sesi wajib dipilih.']);
         }
 
         $date = Carbon::parse($data['date']);
+        $rules = $this->matchingRules($package, $date);
+        $hasTimedPricing = $rules->contains(fn ($rule) => $rule->start_time && $rule->end_time);
+
+        if (! $hasTimedPricing) {
+            $user = $request->user();
+
+            return Booking::create([
+                'user_id' => $user?->id,
+                'guest_name' => $user ? null : $data['guest_name'],
+                'guest_email' => $user ? null : $data['guest_email'],
+                'guest_phone' => $user ? null : $data['guest_phone'],
+                'court_id' => null,
+                'date' => $date->toDateString(),
+                'start_time' => null,
+                'end_time' => null,
+                'status' => 'pending',
+            ]);
+        }
+
+        if (empty($data['court_id']) || empty($data['start_time'])) {
+            throw ValidationException::withMessages(['start_time' => 'Pilih jam dan lapangan yang tersedia.']);
+        }
         $courtIsBookable = $package->facility->courts()
             ->whereKey($data['court_id'])
             ->where('status', 'available')
@@ -218,7 +248,6 @@ class PublicBookingController extends Controller
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
 
-        $rules = $this->matchingRules($package, $date);
         $price = 0.0;
         for ($minute = $startMinutes; $minute < $endMinutes; $minute += 60) {
             $hourPrice = $this->resolvePrice($rules, $minute);
@@ -342,9 +371,11 @@ class PublicBookingController extends Controller
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
         $step = $duration + $turnaround;
 
-        $courts = $package->facility->courts
+        $courts = Court::query()
+            ->where('facility_id', $package->facility_id)
             ->where('status', 'available')
-            ->values();
+            ->orderBy('name')
+            ->get();
 
         $bookings = Booking::query()
             ->whereIn('court_id', $courts->pluck('id'))
