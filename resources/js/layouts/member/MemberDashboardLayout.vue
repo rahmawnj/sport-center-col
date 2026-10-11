@@ -7,6 +7,7 @@ import {
     CreditCard,
     LayoutDashboard,
     LogOut,
+    House,
     Menu,
     Trophy,
     X,
@@ -76,9 +77,13 @@ const navigation = [
             </nav>
 
             <div class="border-t border-slate-100 p-4">
-                <Link href="/" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">
-                    <LogOut class="size-[18px]" />
+                <Link href="/" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-950" @click="sidebarOpen = false">
+                    <House class="size-[18px]" />
                     Kembali ke website
+                </Link>
+                <Link href="/logout" method="post" as="button" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700" @click="sidebarOpen = false">
+                    <LogOut class="size-[18px]" />
+                    Logout
                 </Link>
                 <p class="px-3 pt-2 text-[11px] text-slate-400">Sport Center · Member Portal</p>
             </div>
