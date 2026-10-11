@@ -115,6 +115,7 @@ class PublicBookingController extends Controller
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:50'],
+            'terms_accepted' => ['required', 'accepted'],
         ]);
 
         $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
