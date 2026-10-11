@@ -175,8 +175,8 @@ class BookingLandingPageSeeder extends Seeder
                     );
                 }
 
-                // Courts are required by the existing booking model for Padel/Billiard.
-                if (in_array($sportData['name'], ['Padel', 'Billiard'], true)) {
+                // The booking flow uses a Court record as the reservable unit for each sport.
+                if (in_array($sportData['name'], ['Padel', 'Billiard', 'Gym'], true)) {
                     foreach ($sportData['spaces'] as $spaceData) {
                         Court::updateOrCreate(
                             [
