@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\MemberProfile;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -40,5 +41,30 @@ class DatabaseSeeder extends Seeder
         }
 
         $admin->save();
+
+        // Demo member account for testing the member experience.
+        $memberRole = Role::firstOrCreate([
+            'name' => 'Member',
+        ]);
+
+        $member = User::firstOrNew([
+            'email' => 'member@example.com',
+        ]);
+
+        $member->name = 'Demo Member';
+        $member->role_id = $memberRole->id;
+        $member->phone = '081234567890';
+
+        if (! $member->exists) {
+            $member->password = Hash::make('password');
+            $member->email_verified_at = now();
+        }
+
+        $member->save();
+
+        MemberProfile::firstOrCreate(
+            ['user_id' => $member->id],
+            ['phone' => $member->phone]
+        );
     }
 }
