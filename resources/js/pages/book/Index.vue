@@ -245,7 +245,7 @@ function formatDuration(minutes: number) {
 <template>
     <Head title="Booking" />
     <PublicLayout>
-    <div class="min-h-screen bg-background text-foreground">
+    <div class="min-h-screen bg-slate-50 text-slate-900">
         <main class="mx-auto w-full max-w-5xl px-4 py-8">
             <div
                 v-if="props.success"
@@ -264,15 +264,11 @@ function formatDuration(minutes: number) {
 
             <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-[.18em] text-primary">Reservasi tanpa akun</p>
                     <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Booking olahraga</h1>
                     <p class="mt-1 text-sm text-muted-foreground">
                         Pilih fasilitas, tentukan jadwal, lalu konfirmasi dengan data kontakmu.
                     </p>
                 </div>
-                <span class="rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                    <Check class="mr-1 inline size-3.5 text-emerald-600" /> Tanpa login
-                </span>
             </div>
             <!-- Stepper -->
             <div class="mt-6 flex flex-wrap items-center gap-2">
@@ -282,23 +278,23 @@ function formatDuration(minutes: number) {
                     class="flex items-center gap-2"
                 >
                     <div
-                        class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
+                        class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
                         :class="
                             step === item.id
-                                ? 'border-primary bg-primary/10 text-primary'
+                                ? 'bg-[#a4da01] text-[#001428]'
                                 : step > item.id
-                                  ? 'border-primary/40 text-primary'
-                                  : 'text-muted-foreground'
+                                  ? 'bg-slate-200 text-slate-700'
+                                  : 'bg-white text-slate-400'
                         "
                     >
                         <span
                             class="flex size-5 items-center justify-center rounded-full text-xs"
                             :class="
                                 step > item.id
-                                    ? 'bg-primary text-primary-foreground'
+                                    ? 'bg-[#001428] text-white'
                                     : step === item.id
-                                      ? 'bg-primary/20'
-                                      : 'bg-muted'
+                                      ? 'bg-white/70'
+                                      : 'bg-slate-100'
                             "
                         >
                             <Check v-if="step > item.id" class="size-3" />
@@ -313,7 +309,7 @@ function formatDuration(minutes: number) {
                 </div>
             </div>
 
-            <div class="mt-6 rounded-2xl border bg-card p-4 shadow-sm md:p-6">
+            <div class="mt-6 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-6">
                 <!-- Step 1: Facility -->
                 <section v-if="step === 1" class="space-y-4">
                     <h2 class="font-semibold">Pilih fasilitas</h2>
@@ -325,10 +321,10 @@ function formatDuration(minutes: number) {
                             v-for="item in props.facilities"
                             :key="item.id"
                             type="button"
-                            class="flex items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
+                            class="flex items-center gap-3 rounded-xl bg-slate-50 p-4 text-left transition-all hover:bg-lime-50 hover:shadow-sm"
                             :class="
                                 facility?.id === item.id
-                                    ? 'border-primary bg-primary/5'
+                                    ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
                                     : ''
                             "
                             @click="chooseFacility(item)"
@@ -366,7 +362,7 @@ function formatDuration(minutes: number) {
                             v-for="item in facility?.packages"
                             :key="item.id"
                             type="button"
-                            class="group relative flex flex-col gap-3 rounded-xl border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-sm"
+                            class="group relative flex flex-col gap-3 rounded-xl bg-slate-50 p-4 text-left transition-all hover:bg-lime-50 hover:shadow-sm"
                             :class="
                                 pkg?.id === item.id
                                     ? 'border-primary ring-2 ring-primary/30'
@@ -406,7 +402,7 @@ function formatDuration(minutes: number) {
                             </div>
 
                             <div
-                                class="mt-auto flex items-end justify-between gap-2 border-t pt-3"
+                                class="mt-auto flex items-end justify-between gap-2 pt-3"
                             >
                                 <div>
                                     <div class="text-xs text-muted-foreground">
@@ -467,11 +463,11 @@ function formatDuration(minutes: number) {
                                 :key="item.start_time"
                                 type="button"
                                 :disabled="item.courts.length === 0"
-                                class="rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                                class="rounded-xl bg-slate-50 p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 :class="
                                     slot?.start_time === item.start_time
-                                        ? 'border-primary bg-primary/5'
-                                        : 'hover:border-primary hover:bg-primary/5'
+                                        ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
+                                        : 'hover:bg-lime-50'
                                 "
                                 @click="chooseSlot(item)"
                             >
@@ -507,10 +503,10 @@ function formatDuration(minutes: number) {
                             v-for="item in slot.courts"
                             :key="item.id"
                             type="button"
-                            class="flex items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
+                            class="flex items-center gap-3 rounded-xl bg-slate-50 p-4 text-left transition-colors hover:bg-lime-50"
                             :class="
                                 courtId === item.id
-                                    ? 'border-primary bg-primary/5'
+                                    ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
                                     : ''
                             "
                             @click="chooseCourt(item.id)"
@@ -528,7 +524,7 @@ function formatDuration(minutes: number) {
                 <section v-else class="space-y-4">
                     <h2 class="font-semibold">Data diri</h2>
 
-                    <div class="rounded-xl border bg-muted/40 p-4 text-sm">
+                    <div class="rounded-xl bg-slate-50 p-4 text-sm">
                         <div class="flex justify-between gap-2">
                             <span class="text-muted-foreground">Fasilitas</span>
                             <span class="font-medium">{{
@@ -619,7 +615,7 @@ function formatDuration(minutes: number) {
                 </section>
 
                 <div
-                    class="mt-6 flex items-center justify-between border-t pt-4"
+                    class="mt-6 flex items-center justify-between pt-4"
                 >
                     <Button
                         type="button"
