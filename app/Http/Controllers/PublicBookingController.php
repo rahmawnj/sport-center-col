@@ -62,6 +62,11 @@ class PublicBookingController extends Controller
 
         return Inertia::render('book/Index', [
             'facilities' => $facilities,
+            'currentUser' => $request->user() ? [
+                'id' => $request->user()->id,
+                'name' => $request->user()->name,
+                'email' => $request->user()->email,
+            ] : null,
             'initialFacilityId' => $initialFacility['id'] ?? null,
             'success' => $request->session()->get('success'),
         ]);
@@ -132,16 +137,25 @@ class PublicBookingController extends Controller
             return redirect()->route('member.membership')->with('success', 'Pembelian membership tersimpan di akunmu. Ikuti status pembayaran pada menu Pembayaran.');
         }
 
-        $data = array_merge($data, $request->validate([
+        $contactRules = $request->user()
+            ? [
+                'guest_name' => ['nullable', 'string', 'max:255'],
+                'guest_email' => ['nullable', 'email', 'max:255'],
+                'guest_phone' => ['nullable', 'string', 'max:50'],
+            ]
+            : [
+                'guest_name' => ['required', 'string', 'max:255'],
+                'guest_email' => ['required', 'email', 'max:255'],
+                'guest_phone' => ['required', 'string', 'max:50'],
+            ];
+
+        $data = array_merge($data, $request->validate(array_merge([
             'court_id' => ['nullable', 'integer', 'exists:courts,id'],
             'date' => ['nullable', 'date', 'after_or_equal:today'],
             'start_time' => ['nullable', 'date_format:H:i'],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
-            'guest_name' => ['required', 'string', 'max:255'],
-            'guest_email' => ['required', 'email', 'max:255'],
-            'guest_phone' => ['required', 'string', 'max:50'],
             'terms_accepted' => ['required', 'accepted'],
-        ]));
+        ], $contactRules)));
 
         if ($package->type !== 'session') {
             $this->storeDirect($request, $package, $data);
@@ -230,8 +244,8 @@ class PublicBookingController extends Controller
 
             return Booking::create([
                 'user_id' => $user?->id,
-                'guest_name' => $user ? null : $data['guest_name'],
-                'guest_email' => $user ? null : $data['guest_email'],
+                'guest_name' => $user ? $user->name : $data['guest_name'],
+                'guest_email' => $user ? $user->email : $data['guest_email'],
                 'guest_phone' => $user ? null : $data['guest_phone'],
                 'court_id' => null,
                 'date' => $date->toDateString(),
@@ -300,8 +314,8 @@ class PublicBookingController extends Controller
             // reservation separately from payment processing.
             return Booking::create([
                 'user_id' => $user?->id,
-                'guest_name' => $user ? null : $data['guest_name'],
-                'guest_email' => $user ? null : $data['guest_email'],
+                'guest_name' => $user ? $user->name : $data['guest_name'],
+                'guest_email' => $user ? $user->email : $data['guest_email'],
                 'guest_phone' => $user ? null : $data['guest_phone'],
                 'court_id' => $data['court_id'],
                 'date' => $date->toDateString(),
@@ -357,7 +371,7 @@ class PublicBookingController extends Controller
         Transaction::query()->create([
             'user_id' => $user?->id,
             'customer_type' => $user ? 'member' : 'general',
-            'guest_name' => $user ? null : $data['guest_name'],
+            'guest_name' => $user ? $user->name : $data['guest_name'],
             'amount' => $price,
             'payment_method' => $data['payment_method'] ?? 'bank_transfer',
             'payment_status' => 'unpaid',
