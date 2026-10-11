@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Package extends Model
 {
@@ -40,8 +39,4 @@ class Package extends Model
         return $this->hasMany(UserMembership::class);
     }
 
-    public function transactions(): MorphMany
-    {
-        return $this->morphMany(Transaction::class, 'transactionable');
-    }
 }
