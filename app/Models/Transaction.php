@@ -12,15 +12,6 @@ class Transaction extends Model
     protected $fillable = [
         'user_id',
         'customer_name',
-        'invoice_number',
-        'qr_code',
-        'transactionable_type',
-        'transactionable_id',
-        'booking_code',
-        'guest_name',
-        'total_amount',
-        'customer_type',
-        'handled_by',
         'amount',
         'payment_method',
         'payment_status',
@@ -30,7 +21,6 @@ class Transaction extends Model
     {
         return [
             'amount' => 'decimal:2',
-            'total_amount' => 'decimal:2',
         ];
     }
 
