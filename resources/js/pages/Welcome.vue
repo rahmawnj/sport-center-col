@@ -301,7 +301,7 @@ const facilityDescription = (slug: string) => {
                             <p class="section-kicker text-[#b6e52b]">Lebih rutin, lebih maksimal</p>
                             <h2 class="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">Jadikan olahraga bagian dari harimu.</h2>
                             <p class="mt-4 max-w-md leading-7 text-slate-300">Lihat pilihan paket keanggotaan yang tersedia dan temukan yang cocok untuk rutinitasmu.</p>
-                            <Link href="/book" class="btn-lime mt-7 inline-flex items-center gap-3 rounded-full px-6 py-3.5 font-extrabold">Lihat pilihan paket <i class="fa-solid fa-arrow-right"></i></Link>
+                            <Link href="/membership" class="btn-lime mt-7 inline-flex items-center gap-3 rounded-full px-6 py-3.5 font-extrabold">Lihat pilihan paket <i class="fa-solid fa-arrow-right"></i></Link>
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <article v-for="(membership, index) in membershipPackages" :key="membership.id" class="membership-card rounded-2xl p-5" :class="index === 0 ? 'membership-card-featured' : ''">
