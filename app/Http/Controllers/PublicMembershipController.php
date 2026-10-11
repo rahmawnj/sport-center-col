@@ -1,11 +1,11 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\Package;
-use Illuminate\\Http\\Request;
-use Inertia\\Inertia;
-use Inertia\\Response;
+use App\Models\Package;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PublicMembershipController extends Controller
 {
@@ -60,7 +60,7 @@ class PublicMembershipController extends Controller
 
     private function descriptionFor(Package $package): string
     {
-        if (preg_match('/(\\d+)\\s*sesi/i', $package->name, $matches)) {
+        if (preg_match('/(\d+)\s*sesi/i', $package->name, $matches)) {
             return 'Paket ' . $matches[1] . ' sesi untuk menjaga rutinitas latihanmu tetap konsisten.';
         }
 
