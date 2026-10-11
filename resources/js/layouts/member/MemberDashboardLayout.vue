@@ -38,8 +38,10 @@ const navigation = [
         >
             <div class="flex h-[76px] items-center justify-between border-b border-slate-100 px-6">
                 <Link href="/" class="flex items-center gap-3" aria-label="Sport Center home">
-                    <span class="grid size-10 place-items-center rounded-xl bg-[#a4da01] text-sm font-black tracking-tight text-[#001428]">SC</span>
-                    <span class="text-lg font-extrabold tracking-tight text-[#001428]">SPORT<span class="text-[#86b400]">CENTER</span></span>
+                    <span class="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-1.5 ring-1 ring-slate-200">
+                        <img src="/logo.png" alt="Logo Sport Center" class="h-full w-full object-contain" />
+                    </span>
+                    <span class="text-base font-extrabold tracking-tight text-[#001428]">SPORT<span class="text-[#86b400]">CENTER</span></span>
                 </Link>
                 <button class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Tutup menu" @click="sidebarOpen = false">
                     <X class="size-5" />
