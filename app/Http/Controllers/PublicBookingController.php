@@ -129,6 +129,10 @@ class PublicBookingController extends Controller
         if ($package->type !== 'session') {
             $this->storeDirect($request, $package, $data);
 
+            if ($package->type === 'membership' && $request->user()) {
+                return redirect()->route('member.membership')->with('success', 'Pembelian membership tersimpan di akunmu. Ikuti status pembayaran pada menu Pembayaran.');
+            }
+
             return redirect()->route('booking.index')->with('success', 'Pesanan berhasil dibuat dan tersimpan.');
         }
 
