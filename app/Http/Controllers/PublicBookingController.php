@@ -8,6 +8,7 @@ use App\Models\Facility;
 use App\Models\Package;
 use App\Models\PackagePricingRule;
 use App\Models\UserMembership;
+use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -341,10 +342,10 @@ class PublicBookingController extends Controller
                     'status' => 'active',
                 ]);
 
-                $membership->transactions()->create([
+                Transaction::query()->create([
                     'user_id' => $user->id,
                     'customer_type' => 'member',
-                    'amount' => $price,
+                    'total_amount' => $price,
                     'payment_method' => $data['payment_method'] ?? 'bank_transfer',
                     'payment_status' => 'unpaid',
                 ]);
@@ -353,10 +354,10 @@ class PublicBookingController extends Controller
             return;
         }
 
-        $package->transactions()->create([
+        Transaction::query()->create([
             'user_id' => $user?->id,
             'customer_type' => $user ? 'member' : 'general',
-            'customer_name' => $user ? null : $data['guest_name'],
+            'guest_name' => $user ? null : $data['guest_name'],
             'amount' => $price,
             'payment_method' => $data['payment_method'] ?? 'bank_transfer',
             'payment_status' => 'unpaid',
