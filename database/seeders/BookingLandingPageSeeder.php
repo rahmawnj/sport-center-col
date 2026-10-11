@@ -178,7 +178,7 @@ class BookingLandingPageSeeder extends Seeder
                     'name' => $trainerData['name'],
                     'specialty' => $trainerData['specialty'],
                 ],
-                ['phone' => $trainerData['phone']]
+                // ['phone' => $trainerData['phone']]
             );
         }
     }
