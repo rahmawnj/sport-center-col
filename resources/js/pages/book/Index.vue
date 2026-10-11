@@ -175,26 +175,45 @@ function choosePackage(item: BookingPackage) {
 
 function chooseSlot(item: Slot) {
     slotSelectionError.value = '';
-    const selected = new Set(selectedSlots.value);
+    const currentlySelected = new Set(selectedSlots.value);
+    const clickedIndex = slots.value.findIndex((entry) => entry.start_time === item.start_time);
 
-    if (selected.has(item.start_time)) {
-        selected.delete(item.start_time);
+    if (currentlySelected.has(item.start_time)) {
+        // Keep the selection continuous when removing a checked hour.
+        const selected = [...currentlySelected]
+            .map((time) => slots.value.findIndex((entry) => entry.start_time === time))
+            .filter((index) => index >= 0)
+            .sort((a, b) => a - b);
+        const first = selected[0];
+        const last = selected[selected.length - 1];
+
+        if (clickedIndex === first) {
+            currentlySelected.delete(item.start_time);
+        } else if (clickedIndex === last) {
+            currentlySelected.delete(item.start_time);
+        } else {
+            // Removing a middle hour trims the booking at that point.
+            selected.forEach((index) => {
+                if (index >= clickedIndex) currentlySelected.delete(slots.value[index].start_time);
+            });
+        }
     } else {
-        selected.add(item.start_time);
+        // Selecting a later/earlier hour automatically fills every hour in between.
+        const selectedIndices = [...currentlySelected]
+            .map((time) => slots.value.findIndex((entry) => entry.start_time === time))
+            .filter((index) => index >= 0);
+        const first = selectedIndices.length ? Math.min(...selectedIndices, clickedIndex) : clickedIndex;
+        const last = selectedIndices.length ? Math.max(...selectedIndices, clickedIndex) : clickedIndex;
+
+        for (let index = first; index <= last; index++) {
+            currentlySelected.add(slots.value[index].start_time);
+        }
     }
 
-    const chosen = [...selected]
+    const chosen = [...currentlySelected]
         .map((time) => slots.value.find((entry) => entry.start_time === time))
         .filter((entry): entry is Slot => !!entry)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-    // A single booking must cover consecutive hours, without gaps.
-    for (let index = 1; index < chosen.length; index++) {
-        if (chosen[index - 1].end_time !== chosen[index].start_time) {
-            slotSelectionError.value = 'Pilih jam yang berurutan agar durasi booking tidak terputus.';
-            return;
-        }
-    }
 
     selectedSlots.value = chosen.map((entry) => entry.start_time);
     courtId.value = null;
@@ -505,7 +524,7 @@ function formatDuration(minutes: number) {
 
                     <template v-else-if="date">
                         <div v-if="slots.length" class="space-y-3">
-                            <p class="text-sm text-slate-600">Pilih satu jam atau centang beberapa jam berurutan untuk booking lebih lama.</p>
+                            <p class="text-sm text-slate-600">Centang jam awal dan akhir yang kamu inginkan. Jam di antaranya akan otomatis ikut dipilih.</p>
                             <div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
                                 <label
                                     v-for="item in slots"
@@ -527,7 +546,6 @@ function formatDuration(minutes: number) {
                                     </span>
                                 </label>
                             </div>
-                            <p v-if="slotSelectionError" class="text-sm font-medium text-rose-600">{{ slotSelectionError }}</p>
                             <div v-if="slot" class="rounded-xl bg-lime-50 p-4 text-sm text-slate-800">
                                 <div class="flex justify-between gap-3"><span>Durasi</span><strong>{{ selectedSlots.length }} jam</strong></div>
                                 <div class="mt-1 flex justify-between gap-3"><span>Waktu</span><strong>{{ slot.start_time }}–{{ slot.end_time }}</strong></div>
