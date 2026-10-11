@@ -29,6 +29,12 @@ class IoTBookingController extends Controller
                     'space' => $detail->zoneSpace?->name,
                     'start_time' => $detail->start_time?->toISOString(),
                     'end_time' => $detail->end_time?->toISOString(),
+                    'duration_seconds' => ($detail->start_time && $detail->end_time)
+                        ? max(0, $detail->end_time->getTimestamp() - $detail->start_time->getTimestamp())
+                        : 0,
+                    'remaining_seconds' => ($detail->end_time && $detail->end_time->isFuture())
+                        ? now()->diffInSeconds($detail->end_time)
+                        : 0,
                 ])->values(),
             ])->values();
 
