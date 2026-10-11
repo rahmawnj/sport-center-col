@@ -12,8 +12,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -127,24 +127,24 @@ class PublicBookingController extends Controller
         }
 
         $booking = $this->storeBooking($request, $package, $data);
-        $receiptUrl = URL::signedRoute(
-            'booking.receipt',
-            [
-                'booking' => $booking->id,
-                'package' => $package->name,
-                'total' => (int) round($this->bookingPrice($package, $data)),
-            ],
-        );
+        $total = (int) round($this->bookingPrice($package, $data));
 
-        return redirect()->to($receiptUrl);
+        // Keep receipt details server-side so the public receipt URL stays short.
+        Cache::put('booking_receipt_' . $booking->id, [
+            'package' => $package->name,
+            'total' => $total,
+        ], now()->addDays(30));
+
+        return redirect()->route('booking.receipt', ['booking' => $booking->id]);
     }
 
     public function receipt(Request $request, Booking $booking): Response
     {
         $booking->load(['court.facility', 'user']);
+        $receiptDetails = Cache::get('booking_receipt_' . $booking->id, []);
 
         return Inertia::render('book/Receipt', [
-            'receiptUrl' => $request->fullUrl(),
+            'receiptUrl' => route('booking.receipt', ['booking' => $booking->id]),
             'receipt' => [
                 'code' => 'BK-' . str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
                 'customerName' => $booking->user?->name ?? $booking->guest_name,
@@ -152,12 +152,12 @@ class PublicBookingController extends Controller
                 'customerPhone' => $booking->guest_phone,
                 'facility' => $booking->court?->facility?->name ?? 'Fasilitas olahraga',
                 'court' => $booking->court?->name ?? '—',
-                'package' => (string) $request->query('package', 'Booking sesi'),
+                'package' => (string) ($receiptDetails['package'] ?? 'Booking sesi'),
                 'date' => $booking->date?->format('d M Y'),
                 'startTime' => substr((string) $booking->start_time, 0, 5),
                 'endTime' => substr((string) $booking->end_time, 0, 5),
                 'status' => (string) $booking->status,
-                'total' => (int) $request->query('total', 0),
+                'total' => (int) ($receiptDetails['total'] ?? 0),
             ],
         ]);
     }
