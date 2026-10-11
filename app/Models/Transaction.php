@@ -15,12 +15,25 @@ class Transaction extends Model
         'amount',
         'payment_method',
         'payment_status',
+        'invoice_number',
+        'qr_code',
+        'transactionable_type',
+        'transactionable_id',
+        'booking_code',
+        'guest_name',
+        'total_amount',
+        'customer_type',
+        'handled_by',
+        'amount',
+        'payment_method',
+        'payment_status',
     ];
 
     protected function casts(): array
     {
         return [
             'amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
         ];
     }
 
