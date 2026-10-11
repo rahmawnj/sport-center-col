@@ -113,6 +113,25 @@ class PublicBookingController extends Controller
     {
         $data = $request->validate([
             'package_id' => ['required', 'integer', 'exists:packages,id'],
+            'payment_method' => ['nullable', 'in:cash,bank_transfer'],
+        ]);
+
+        $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
+
+        if ($package->type === 'membership') {
+            abort_unless($request->user(), 403, 'Silakan login sebagai member untuk membeli membership.');
+            abort_unless($request->user()->role?->name === 'Member', 403, 'Pembelian membership hanya tersedia untuk akun Member.');
+
+            $data = array_merge($data, $request->validate([
+                'terms_accepted' => ['required', 'accepted'],
+            ]));
+
+            $this->storeDirect($request, $package, $data);
+
+            return redirect()->route('member.membership')->with('success', 'Pembelian membership tersimpan di akunmu. Ikuti status pembayaran pada menu Pembayaran.');
+        }
+
+        $data = array_merge($data, $request->validate([
             'court_id' => ['nullable', 'integer', 'exists:courts,id'],
             'date' => ['nullable', 'date', 'after_or_equal:today'],
             'start_time' => ['nullable', 'date_format:H:i'],
@@ -121,17 +140,10 @@ class PublicBookingController extends Controller
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:50'],
             'terms_accepted' => ['required', 'accepted'],
-            'payment_method' => ['nullable', 'in:cash,bank_transfer'],
-        ]);
-
-        $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
+        ]));
 
         if ($package->type !== 'session') {
             $this->storeDirect($request, $package, $data);
-
-            if ($package->type === 'membership' && $request->user()) {
-                return redirect()->route('member.membership')->with('success', 'Pembelian membership tersimpan di akunmu. Ikuti status pembayaran pada menu Pembayaran.');
-            }
 
             return redirect()->route('booking.index')->with('success', 'Pesanan berhasil dibuat dan tersimpan.');
         }
@@ -139,7 +151,6 @@ class PublicBookingController extends Controller
         $booking = $this->storeBooking($request, $package, $data);
         $total = (int) round($this->bookingPrice($package, $data));
 
-        // Keep receipt details server-side so the public receipt URL stays short.
         Cache::put('booking_receipt_' . $booking->id, [
             'package' => $package->name,
             'total' => $total,
