@@ -45,6 +45,11 @@ type Slot = {
 
 const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; success?: string | null }>();
 
+const showSuccessToast = ref(false);
+watch(() => props.success, (message) => {
+    showSuccessToast.value = Boolean(message);
+}, { immediate: true });
+
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
@@ -310,6 +315,13 @@ function formatDuration(minutes: number) {
 <template>
     <Head title="Booking" />
     <PublicLayout>
+    <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="translate-y-2 opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="showSuccessToast && props.success" role="status" aria-live="polite" class="fixed right-4 top-20 z-[100] flex max-w-sm items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-4 text-slate-900 shadow-xl sm:right-6">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Check class="size-5" /></span>
+            <div class="min-w-0"><p class="font-semibold">Booking berhasil!</p><p class="mt-1 text-sm text-slate-600">Jadwal kamu sudah tersimpan.</p></div>
+            <button type="button" aria-label="Tutup notifikasi" class="ml-2 text-slate-400 hover:text-slate-700" @click="showSuccessToast = false">×</button>
+        </div>
+    </Transition>
     <div class="min-h-screen bg-slate-50 text-slate-900">
         <main class="mx-auto w-full max-w-5xl px-4 py-8">
             <div
@@ -714,7 +726,7 @@ function formatDuration(minutes: number) {
                             v-if="form.processing"
                             class="mr-2 size-4 animate-spin"
                         />
-                        Konfirmasi booking
+                        {{ form.processing ? 'Menyimpan booking...' : 'Konfirmasi booking' }}
                     </Button>
                 </div>
             </div>
