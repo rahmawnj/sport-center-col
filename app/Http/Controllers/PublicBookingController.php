@@ -124,7 +124,7 @@ class PublicBookingController extends Controller
             $this->storeDirect($request, $package, $data);
         }
 
-        return redirect()->route('booking.index')->with('success', 'Booking berhasil dibuat. Silakan selesaikan pembayaran.');
+        return redirect()->route('booking.index')->with('success', 'Booking berhasil dibuat dan tersimpan.');
     }
 
     /**
