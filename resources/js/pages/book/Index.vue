@@ -542,7 +542,7 @@ function formatDuration(minutes: number) {
                         <div class="grid max-w-sm gap-2">
                             <Label for="booking-date" class="text-sm font-semibold text-slate-700">Tanggal booking</Label>
                             <div class="rounded-2xl bg-slate-50 p-3">
-                                <Input id="booking-date" v-model="date" type="date" :min="today" class="h-12 rounded-xl border-0 bg-white px-4 text-base font-semibold text-slate-800 shadow-sm ring-1 ring-slate-100 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                                <Input id="booking-date" v-model="date" type="date" :min="today" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base font-semibold text-slate-800 shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
                                 <p class="mt-2 text-xs text-slate-500">Pilih tanggal untuk melihat jam yang tersedia.</p>
                             </div>
                         </div>
@@ -642,6 +642,7 @@ function formatDuration(minutes: number) {
                                 id="guest-name"
                                 v-model="form.guest_name"
                                 placeholder="Nama lengkap"
+                                class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0"
                             />
                             <p
                                 v-if="form.errors.guest_name"
@@ -657,6 +658,7 @@ function formatDuration(minutes: number) {
                                 v-model="form.guest_email"
                                 type="email"
                                 placeholder="email@contoh.com"
+                                class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0"
                             />
                             <p
                                 v-if="form.errors.guest_email"
@@ -671,6 +673,7 @@ function formatDuration(minutes: number) {
                                 id="guest-phone"
                                 v-model="form.guest_phone"
                                 placeholder="08xxxxxxxxxx"
+                                class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0"
                             />
                             <p
                                 v-if="form.errors.guest_phone"
