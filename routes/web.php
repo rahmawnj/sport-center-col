@@ -29,20 +29,20 @@ Route::get('verify', [VerifyController::class, 'show'])->name('verify');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', function (\Illuminate\Http\Request $request) {
-        if ($request->user()->hasRole('Member')) {
+        if ($request->user()->role?->name === 'Member') {
             return redirect()->route('member.dashboard');
         }
 
-        abort_unless($request->user()->hasRole('Superadmin'), 403);
+        abort_unless($request->user()->role?->name === 'Superadmin', 403);
 
         return app(DashboardController::class)->index($request);
     })->name('dashboard');
 
     Route::get('member/dashboard', [\App\Http\Controllers\MemberDashboardController::class, 'index'])
-        ->middleware('role:Member')
+        ->middleware(\App\Http\Middleware\EnsureUserRole::class.':Member')
         ->name('member.dashboard');
 
-    Route::middleware('role:Superadmin')->group(function () {
+    Route::middleware([\App\Http\Middleware\EnsureUserRole::class.':Superadmin'])->group(function () {
 
     Route::get('facilities', [FacilityController::class, 'index'])->name('facilities.index');
     Route::post('facilities', [FacilityController::class, 'store'])->name('facilities.store');
