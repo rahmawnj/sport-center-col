@@ -43,7 +43,7 @@ type Slot = {
     courts: Court[];
 };
 
-const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; success?: string | null }>();
+const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; currentUser: { id: number; name: string; email: string } | null; success?: string | null }>();
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -68,8 +68,8 @@ const form = useForm({
     date: '',
     start_time: '',
     duration_hours: 1,
-    guest_name: '',
-    guest_email: '',
+    guest_name: props.currentUser?.name ?? '',
+    guest_email: props.currentUser?.email ?? '',
     guest_phone: '',
     terms_accepted: false,
 });
@@ -139,7 +139,7 @@ const canNext = computed(() => {
         case 3:
             return !!date.value && (!hasTimedSession.value || (!!slot.value && selectedSlots.value.length > 0 && !!courtId.value));
         case 4:
-            return !!form.guest_name.trim() && !!form.guest_email.trim() && form.guest_email.includes('@') && form.guest_email.includes('.') && !!form.guest_phone.trim();
+            return props.currentUser !== null || (!!form.guest_name.trim() && !!form.guest_email.trim() && form.guest_email.includes('@') && form.guest_email.includes('.') && !!form.guest_phone.trim());
         case 5:
             return true;
         case 6:
@@ -639,52 +639,40 @@ function formatDuration(minutes: number) {
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div v-if="props.currentUser" class="rounded-2xl border border-lime-200 bg-lime-50/70 p-5">
+                        <div class="mb-4 flex items-center gap-3">
+                            <div class="flex size-11 items-center justify-center rounded-xl bg-[#a4da01] text-[#001428]"><Check class="size-5" /></div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Data member terisi otomatis</p>
+                                <p class="mt-1 text-sm text-slate-600">Booking akan ditautkan ke akun yang sedang login.</p>
+                            </div>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="guest-name">Nama</Label>
+                                <Input id="guest-name" v-model="form.guest_name" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="guest-email">Email</Label>
+                                <Input id="guest-email" v-model="form.guest_email" type="email" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" />
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="grid gap-4 sm:grid-cols-2">
                         <div class="grid gap-2 sm:col-span-2">
                             <Label for="guest-name">Nama</Label>
-                            <Input
-                                id="guest-name"
-                                v-model="form.guest_name"
-                                placeholder="Nama lengkap"
-                                class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0"
-                            />
-                            <p
-                                v-if="form.errors.guest_name"
-                                class="text-xs text-destructive"
-                            >
-                                {{ form.errors.guest_name }}
-                            </p>
+                            <Input id="guest-name" v-model="form.guest_name" placeholder="Nama lengkap" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                            <p v-if="form.errors.guest_name" class="text-xs text-destructive">{{ form.errors.guest_name }}</p>
                         </div>
                         <div class="grid gap-2">
                             <Label for="guest-email">Email</Label>
-                            <Input
-                                id="guest-email"
-                                v-model="form.guest_email"
-                                type="email"
-                                placeholder="email@contoh.com"
-                                class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0"
-                            />
-                            <p
-                                v-if="form.errors.guest_email"
-                                class="text-xs text-destructive"
-                            >
-                                {{ form.errors.guest_email }}
-                            </p>
+                            <Input id="guest-email" v-model="form.guest_email" type="email" placeholder="email@contoh.com" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 py-3.5 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                            <p v-if="form.errors.guest_email" class="text-xs text-destructive">{{ form.errors.guest_email }}</p>
                         </div>
                         <div class="grid gap-2">
                             <Label for="guest-phone">No. HP</Label>
-                            <Input
-                                id="guest-phone"
-                                v-model="form.guest_phone"
-                                placeholder="08xxxxxxxxxx"
-                                class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0"
-                            />
-                            <p
-                                v-if="form.errors.guest_phone"
-                                class="text-xs text-destructive"
-                            >
-                                {{ form.errors.guest_phone }}
-                            </p>
+                            <Input id="guest-phone" v-model="form.guest_phone" placeholder="08xxxxxxxxxx" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                            <p v-if="form.errors.guest_phone" class="text-xs text-destructive">{{ form.errors.guest_phone }}</p>
                         </div>
                     </div>
 
@@ -698,12 +686,12 @@ function formatDuration(minutes: number) {
 
                 <!-- Step 5: Order confirmation -->
                 <section v-else-if="step === 5" class="space-y-5">
-                    <div><h2 class="text-xl font-bold">Order confirmation</h2><p class="mt-1 text-sm text-slate-500">Periksa kembali detail pesanan dan informasi pemesan.</p></div>
+                    <div><h2 class="text-xl font-bold">Order confirmation</h2><p class="mt-1 text-sm text-slate-500">Periksa kembali detail pesanan dan data pemesan.</p></div>
                     <div class="rounded-2xl border border-slate-200 p-5">
                         <div class="border-b border-slate-100 pb-4"><p class="font-semibold">{{ facility?.name }}</p><p class="mt-1 text-sm text-slate-500">{{ pkg?.name }}</p></div>
                         <div class="grid gap-4 py-4 sm:grid-cols-2">
-                            <div><p class="text-sm text-slate-500">Nama pemesan</p><p class="mt-1 font-semibold">{{ form.guest_name }}</p></div>
-                            <div><p class="text-sm text-slate-500">Email</p><p class="mt-1 font-semibold break-all">{{ form.guest_email }}</p></div>
+                            <div><p class="text-sm text-slate-500">Nama pemesan</p><p class="mt-1 font-semibold">{{ props.currentUser?.name || form.guest_name }}</p></div>
+                            <div><p class="text-sm text-slate-500">Email</p><p class="mt-1 font-semibold break-all">{{ props.currentUser?.email || form.guest_email }}</p></div>
                             <div><p class="text-sm text-slate-500">Nomor HP</p><p class="mt-1 font-semibold">{{ form.guest_phone }}</p></div>
                             <div v-if="isSession"><p class="text-sm text-slate-500">{{ hasTimedSession ? 'Tanggal & waktu' : 'Tanggal sesi' }}</p><p class="mt-1 font-semibold">{{ date }}<template v-if="hasTimedSession"> · {{ slot?.start_time }}–{{ slot?.end_time }}</template></p></div>
                             <div v-if="hasTimedSession"><p class="text-sm text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || '—' }}</p></div>
