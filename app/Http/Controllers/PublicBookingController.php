@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AddOn;
 use App\Models\Booking;
 use App\Models\Facility;
 use App\Models\Package;
@@ -61,6 +62,7 @@ class PublicBookingController extends Controller
             'facilities' => $facilities,
             'initialFacilityId' => $initialFacility['id'] ?? null,
             'success' => $request->session()->get('success'),
+            'addOns' => AddOn::query()->where('stock', '>', 0)->orderBy('name')->get(['id', 'name', 'price', 'stock'])->map(fn (AddOn $addOn) => ['id' => $addOn->id, 'name' => $addOn->name, 'price' => (float) $addOn->price, 'stock' => (int) $addOn->stock])->values(),
         ]);
     }
 
@@ -114,6 +116,9 @@ class PublicBookingController extends Controller
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:50'],
+            'add_ons' => ['nullable', 'array'],
+            'add_ons.*.id' => ['required', 'integer', 'distinct', 'exists:add_ons,id'],
+            'add_ons.*.qty' => ['required', 'integer', 'min:1', 'max:20'],
         ]);
 
         $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
@@ -188,6 +193,31 @@ class PublicBookingController extends Controller
             }
 
             $user = $request->user();
+            $selectedAddOns = collect($data['add_ons'] ?? []);
+            $addOnRows = [];
+
+            foreach ($selectedAddOns as $selected) {
+                $addOn = AddOn::query()->whereKey($selected['id'])->lockForUpdate()->firstOrFail();
+                $qty = (int) $selected['qty'];
+
+                if ($addOn->stock < $qty) {
+                    throw ValidationException::withMessages([
+                        'add_ons' => "Stok {$addOn->name} tidak mencukupi. Stok tersedia: {$addOn->stock}.",
+                    ]);
+                }
+
+                $unitPrice = (float) $addOn->price;
+                $addOnRows[] = [
+                    'add_on_id' => $addOn->id,
+                    'qty' => $qty,
+                    'price_rate' => $unitPrice,
+                    'subtotal' => $unitPrice * $qty,
+                ];
+                $addOn->decrement('stock', $qty);
+            }
+
+            $addOnTotal = collect($addOnRows)->sum('subtotal');
+            $total = $price + $addOnTotal;
 
             $booking = Booking::create([
                 'user_id' => $user?->id,
@@ -201,11 +231,20 @@ class PublicBookingController extends Controller
                 'status' => 'pending',
             ]);
 
-            $booking->transactions()->create([
+            $transaction = $booking->transactions()->create([
                 'user_id' => $user?->id,
-                'amount' => $price,
+                'customer_name' => $user?->name ?? ($data['guest_name'] ?? null),
+                'amount' => $total,
                 'payment_status' => 'pending',
             ]);
+
+            foreach ($addOnRows as $row) {
+                DB::table('transaction_add_ons')->insert($row + [
+                    'transaction_id' => $transaction->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         });
     }
 
