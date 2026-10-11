@@ -69,6 +69,25 @@ const lowestPrice = (facility: FacilityItem) => {
     return prices.length ? Math.min(...prices) : null;
 };
 
+const priceUnit = (facility: FacilityItem) => {
+    switch (facility.slug.toLowerCase()) {
+        case 'padel':
+        case 'billiard':
+            return '/ jam';
+        case 'yoga':
+        case 'pilates':
+            return '/ sesi';
+        case 'spinning':
+            return '/ masuk';
+        case 'ice-skating':
+            return '/ jam';
+        case 'gym':
+            return ' · berbagai paket';
+        default:
+            return '';
+    }
+};
+
 const heroImages: Record<string, string> = {
     padel: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1100&q=85',
     billiard: 'https://images.unsplash.com/photo-1606925797300-0b35e9d1794e?auto=format&fit=crop&w=1100&q=85',
@@ -179,7 +198,7 @@ const facilityDescription = (slug: string) => {
                             <div class="mt-6 flex items-end justify-between border-t border-slate-100 pt-5">
                                 <div>
                                     <p class="text-xs font-semibold text-slate-500">Mulai dari</p>
-                                    <p class="mt-1 text-lg font-black text-[#001428]">{{ lowestPrice(facility) !== null ? formatCurrency(lowestPrice(facility) ?? 0) : 'Cek tarif' }}<span v-if="lowestPrice(facility) !== null" class="text-xs font-semibold text-slate-400"> / paket</span></p>
+                                    <p class="mt-1 text-lg font-black text-[#001428]">{{ lowestPrice(facility) !== null ? formatCurrency(lowestPrice(facility) ?? 0) : 'Cek tarif' }}<span v-if="lowestPrice(facility) !== null" class="text-xs font-semibold text-slate-400"> {{ priceUnit(facility) }}</span></p>
                                 </div>
                                 <Link :href="`/book?facility=${encodeURIComponent(facility.slug)}`" class="btn-lime inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-extrabold">Pesan <i class="fa-solid fa-arrow-right"></i></Link>
                             </div>
