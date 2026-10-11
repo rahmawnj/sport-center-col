@@ -57,6 +57,8 @@ const date = ref('');
 const slots = ref<Slot[]>([]);
 const loadingSlots = ref(false);
 const slot = ref<Slot | null>(null);
+const selectedSlots = ref<string[]>([]);
+const slotSelectionError = ref('');
 const courtId = ref<number | null>(null);
 
 const form = useForm({
@@ -64,6 +66,7 @@ const form = useForm({
     court_id: null as number | null,
     date: '',
     start_time: '',
+    duration_hours: 1,
     guest_name: '',
     guest_email: '',
     guest_phone: '',
@@ -127,7 +130,7 @@ const canNext = computed(() => {
         case 2:
             return !!pkg.value;
         case 3:
-            return !!date.value && !!slot.value;
+            return !!date.value && !!slot.value && selectedSlots.value.length > 0;
         case 4:
             return !!courtId.value;
         default:
@@ -137,6 +140,8 @@ const canNext = computed(() => {
 
 watch(date, () => {
     slot.value = null;
+    selectedSlots.value = [];
+    slotSelectionError.value = '';
     courtId.value = null;
     slots.value = [];
 
@@ -169,8 +174,46 @@ function choosePackage(item: BookingPackage) {
 }
 
 function chooseSlot(item: Slot) {
-    slot.value = item;
+    slotSelectionError.value = '';
+    const selected = new Set(selectedSlots.value);
+
+    if (selected.has(item.start_time)) {
+        selected.delete(item.start_time);
+    } else {
+        selected.add(item.start_time);
+    }
+
+    const chosen = [...selected]
+        .map((time) => slots.value.find((entry) => entry.start_time === time))
+        .filter((entry): entry is Slot => !!entry)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    // A single booking must cover consecutive hours, without gaps.
+    for (let index = 1; index < chosen.length; index++) {
+        if (chosen[index - 1].end_time !== chosen[index].start_time) {
+            slotSelectionError.value = 'Pilih jam yang berurutan agar durasi booking tidak terputus.';
+            return;
+        }
+    }
+
+    selectedSlots.value = chosen.map((entry) => entry.start_time);
     courtId.value = null;
+
+    if (!chosen.length) {
+        slot.value = null;
+        return;
+    }
+
+    const commonCourts = chosen[0].courts.filter((court) =>
+        chosen.every((entry) => entry.courts.some((available) => available.id === court.id)),
+    );
+
+    slot.value = {
+        start_time: chosen[0].start_time,
+        end_time: chosen[chosen.length - 1].end_time,
+        price: chosen.reduce((total, entry) => total + entry.price, 0),
+        courts: commonCourts,
+    };
 }
 
 function chooseCourt(id: number) {
@@ -188,6 +231,7 @@ function next() {
         form.package_id = pkg.value?.id ?? null;
         form.date = date.value;
         form.start_time = slot.value.start_time;
+        form.duration_hours = selectedSlots.value.length;
     }
 
     if (step.value === 4) {
@@ -213,10 +257,12 @@ function submit() {
     if (isSession.value) {
         form.date = date.value;
         form.start_time = slot.value?.start_time ?? '';
+        form.duration_hours = selectedSlots.value.length || 1;
         form.court_id = courtId.value;
     } else {
         form.date = '';
         form.start_time = '';
+        form.duration_hours = 1;
         form.court_id = null;
     }
 
@@ -435,14 +481,18 @@ function formatDuration(minutes: number) {
                 <!-- Step 3: Date & Slot -->
                 <section v-else-if="step === 3" class="space-y-4">
                     <h2 class="font-semibold">Pilih tanggal & jam</h2>
-                    <div class="grid max-w-xs gap-2">
-                        <Label for="booking-date">Tanggal</Label>
-                        <Input
-                            id="booking-date"
-                            v-model="date"
-                            type="date"
-                            :min="today"
-                        />
+                    <div class="grid max-w-sm gap-2">
+                        <Label for="booking-date" class="text-sm font-semibold text-slate-700">Tanggal booking</Label>
+                        <div class="rounded-2xl bg-slate-50 p-3 transition focus-within:bg-lime-50">
+                            <Input
+                                id="booking-date"
+                                v-model="date"
+                                type="date"
+                                :min="today"
+                                class="h-12 rounded-xl border-0 bg-white px-4 text-base font-semibold text-slate-800 shadow-sm ring-1 ring-slate-100 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0"
+                            />
+                            <p class="mt-2 text-xs text-slate-500">Pilih tanggal untuk melihat jam yang tersedia.</p>
+                        </div>
                     </div>
 
                     <div
@@ -454,33 +504,35 @@ function formatDuration(minutes: number) {
                     </div>
 
                     <template v-else-if="date">
-                        <div
-                            v-if="slots.length"
-                            class="grid gap-2 sm:grid-cols-3 lg:grid-cols-4"
-                        >
-                            <button
-                                v-for="item in slots"
-                                :key="item.start_time"
-                                type="button"
-                                :disabled="item.courts.length === 0"
-                                class="rounded-xl bg-slate-50 p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                                :class="
-                                    slot?.start_time === item.start_time
-                                        ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
-                                        : 'hover:bg-lime-50'
-                                "
-                                @click="chooseSlot(item)"
-                            >
-                                <div class="font-medium">
-                                    {{ item.start_time }}–{{ item.end_time }}
-                                </div>
-                                <div class="text-sm text-primary">
-                                    {{ formatIDR(item.price) }}
-                                </div>
-                                <div class="text-xs text-muted-foreground">
-                                    {{ item.courts.length }} lapangan tersedia
-                                </div>
-                            </button>
+                        <div v-if="slots.length" class="space-y-3">
+                            <p class="text-sm text-slate-600">Pilih satu jam atau centang beberapa jam berurutan untuk booking lebih lama.</p>
+                            <div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                                <label
+                                    v-for="item in slots"
+                                    :key="item.start_time"
+                                    class="flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50 p-3 transition-colors has-[:disabled]:cursor-not-allowed has-[:checked]:bg-lime-100 hover:bg-lime-50"
+                                    :class="selectedSlots.includes(item.start_time) ? 'ring-2 ring-inset ring-[#a4da01]' : ''"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="selectedSlots.includes(item.start_time)"
+                                        :disabled="item.courts.length === 0"
+                                        class="mt-1 size-4 accent-[#8dbb00] disabled:cursor-not-allowed"
+                                        @change="chooseSlot(item)"
+                                    />
+                                    <span class="min-w-0">
+                                        <span class="block font-semibold text-slate-800">{{ item.start_time }}–{{ item.end_time }}</span>
+                                        <span class="block text-sm font-medium text-slate-700">{{ formatIDR(item.price) }}</span>
+                                        <span class="block text-xs text-slate-500">{{ item.courts.length }} lapangan tersedia</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <p v-if="slotSelectionError" class="text-sm font-medium text-rose-600">{{ slotSelectionError }}</p>
+                            <div v-if="slot" class="rounded-xl bg-lime-50 p-4 text-sm text-slate-800">
+                                <div class="flex justify-between gap-3"><span>Durasi</span><strong>{{ selectedSlots.length }} jam</strong></div>
+                                <div class="mt-1 flex justify-between gap-3"><span>Waktu</span><strong>{{ slot.start_time }}–{{ slot.end_time }}</strong></div>
+                                <div class="mt-1 flex justify-between gap-3"><span>Total harga</span><strong>{{ formatIDR(slot.price) }}</strong></div>
+                            </div>
                         </div>
                         <p v-else class="text-sm text-muted-foreground">
                             Tidak ada jadwal tersedia pada tanggal ini.
