@@ -53,7 +53,7 @@ const props = defineProps<{
     };
 }>();
 
-const featuredFacilities = computed(() => props.facilities.slice(0, 3));
+const featuredFacilities = computed(() => props.facilities);
 
 const formatCurrency = (amount: number | string) =>
     new Intl.NumberFormat('id-ID', {
@@ -73,6 +73,10 @@ const heroImages: Record<string, string> = {
     padel: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1100&q=85',
     billiard: 'https://images.unsplash.com/photo-1606925797300-0b35e9d1794e?auto=format&fit=crop&w=1100&q=85',
     gym: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1100&q=85',
+    yoga: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1100&q=85',
+    pilates: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1100&q=85',
+    spinning: 'https://images.unsplash.com/photo-1558611848-73f7eb4001a1?auto=format&fit=crop&w=1100&q=85',
+    'ice-skating': 'https://images.unsplash.com/photo-1515703407324-5f753afd8be8?auto=format&fit=crop&w=1100&q=85',
 };
 
 const facilityImage = (facility: FacilityItem) =>
