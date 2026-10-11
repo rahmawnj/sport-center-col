@@ -267,6 +267,17 @@ const durationLabel = (days: number) => {
                     </div>
 
                     <form v-else class="space-y-4" @submit.prevent="submitPurchase">
+                        <div class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#eaf5c8] text-[#4f6900]">
+                                <i class="fa-solid fa-user-check text-lg"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Akun member</p>
+                                <p class="mt-1 truncate font-extrabold text-[#001428]">{{ currentUser?.name }}</p>
+                                <p class="mt-0.5 break-all text-sm text-slate-500">{{ currentUser?.email }}</p>
+                                <p class="mt-2 text-xs leading-5 text-slate-500">Identitas diambil otomatis dari akun yang sedang login. Tidak perlu mengisi data kontak lagi.</p>
+                            </div>
+                        </div>
                         <div>
                             <label for="payment-method" class="mb-1.5 block text-sm font-bold text-slate-700">Metode pembayaran</label>
                             <select id="payment-method" v-model="form.payment_method" required class="checkout-input">
