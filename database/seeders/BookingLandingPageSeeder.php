@@ -12,6 +12,7 @@ use App\Models\Zone;
 use App\Models\ZoneSpace;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class BookingLandingPageSeeder extends Seeder
 {
@@ -37,14 +38,20 @@ class BookingLandingPageSeeder extends Seeder
             ];
 
             $facilities = collect($facilityData)->mapWithKeys(function (array $data) {
+                $attributes = [
+                    'name' => $data['name'],
+                    'is_bookable_online' => $data['online'],
+                    'status' => 'active',
+                ];
+
+                // Support existing databases that do not have this optional column.
+                if (Schema::hasColumn('facilities', 'turnaround_minutes')) {
+                    $attributes['turnaround_minutes'] = $data['turnaround_minutes'];
+                }
+
                 $facility = Facility::updateOrCreate(
                     ['slug' => $data['slug']],
-                    [
-                        'name' => $data['name'],
-                        'is_bookable_online' => $data['online'],
-                        'turnaround_minutes' => $data['turnaround_minutes'],
-                        'status' => 'active',
-                    ]
+                    $attributes
                 );
 
                 return [$data['slug'] => $facility];
@@ -195,20 +202,29 @@ class BookingLandingPageSeeder extends Seeder
 
                     // Keep the existing pricing_rates catalog in sync; detailed
                     // day/time prices are stored in the existing package_pricing_rules table.
+                    $pricingRateValues = [
+                        'trainer_id' => null,
+                        'price' => $sport['packages'][0]['rules'][0][3],
+                        'unit_type' => 'per_hour',
+                        'min_booking_duration' => 1,
+                        'day_of_week' => null,
+                        'start_time' => $sport['open'],
+                        'end_time' => $sport['close'],
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    // Older database schemas may not include every optional pricing column.
+                    $pricingRateValues = array_filter(
+                        $pricingRateValues,
+                        fn ($value, $column) => Schema::hasColumn('pricing_rates', $column),
+                        ARRAY_FILTER_USE_BOTH
+                    );
+
                     DB::table('pricing_rates')->updateOrInsert(
                         ['zone_space_id' => $space->id, 'rental_type' => 'Reguler'],
-                        [
-                            'trainer_id' => null,
-                            'price' => $sport['packages'][0]['rules'][0][3],
-                            'unit_type' => 'per_hour',
-                            'min_booking_duration' => 1,
-                            'day_of_week' => null,
-                            'start_time' => $sport['open'],
-                            'end_time' => $sport['close'],
-                            'is_active' => true,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]
+                        $pricingRateValues
                     );
 
                     // The existing booking wizard uses courts as bookable units.
