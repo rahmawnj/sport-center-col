@@ -317,21 +317,23 @@ class PublicBookingController extends Controller
             $start = Carbon::today();
             $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)));
 
-            $membership = UserMembership::create([
-                'user_id' => $user->id,
-                'package_id' => $package->id,
-                'start_date' => $start->toDateString(),
-                'end_date' => $end->toDateString(),
-                'status' => 'active',
-            ]);
+            DB::transaction(function () use ($user, $package, $start, $end, $price, $data) {
+                $membership = UserMembership::create([
+                    'user_id' => $user->id,
+                    'package_id' => $package->id,
+                    'start_date' => $start->toDateString(),
+                    'end_date' => $end->toDateString(),
+                    'status' => 'active',
+                ]);
 
-            $membership->transactions()->create([
-                'user_id' => $user->id,
-                'customer_type' => 'member',
-                'amount' => $price,
-                'payment_method' => $data['payment_method'] ?? 'bank_transfer',
-                'payment_status' => 'unpaid',
-            ]);
+                $membership->transactions()->create([
+                    'user_id' => $user->id,
+                    'customer_type' => 'member',
+                    'amount' => $price,
+                    'payment_method' => $data['payment_method'] ?? 'bank_transfer',
+                    'payment_status' => 'unpaid',
+                ]);
+            });
 
             return;
         }
