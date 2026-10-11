@@ -365,7 +365,7 @@ function formatDuration(minutes: number) {
                             class="group relative flex flex-col gap-3 rounded-xl bg-slate-50 p-4 text-left transition-all hover:bg-lime-50 hover:shadow-sm"
                             :class="
                                 pkg?.id === item.id
-                                    ? 'border-primary ring-2 ring-primary/30'
+                                    ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
                                     : ''
                             "
                             @click="choosePackage(item)"
