@@ -17,7 +17,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(BookingLandingPageSeeder::class);
+        $this->call([
+            BookingLandingPageSeeder::class,
+            MembershipPackageSeeder::class,
+        ]);
 
         // This project uses its own roles table (name only) and users.role_id.
         $adminRole = Role::firstOrCreate([
@@ -31,7 +34,7 @@ class DatabaseSeeder extends Seeder
         $admin->name = 'Superadmin';
         $admin->role_id = $adminRole->id;
 
-        if (!$admin->exists) {
+        if (! $admin->exists) {
             $admin->password = Hash::make('password');
             $admin->email_verified_at = now();
         }
