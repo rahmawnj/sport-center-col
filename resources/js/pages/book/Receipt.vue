@@ -147,7 +147,7 @@ async function shareLink() {
                                 </button>
                             </div>
                             <p v-if="feedback" role="status" class="mt-3 text-sm font-medium text-lime-800">{{ feedback }}</p>
-                            <p class="mt-2 text-xs leading-5 text-slate-500">Siapa pun yang memiliki tautan ini dapat melihat nota dan informasi pemesan. Bagikan hanya kepada orang yang kamu percaya. Tautan berlaku selama 30 hari.</p>
+                            <p class="mt-2 text-xs leading-5 text-slate-500">Siapa pun yang memiliki tautan ini dapat melihat nota dan informasi pemesan. Bagikan hanya kepada orang yang kamu percaya.</p>
                         </section>
                     </div>
                 </article>
