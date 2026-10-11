@@ -45,11 +45,6 @@ type Slot = {
 
 const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; success?: string | null }>();
 
-const showSuccessToast = ref(false);
-watch(() => props.success, (message) => {
-    showSuccessToast.value = Boolean(message);
-}, { immediate: true });
-
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
@@ -315,30 +310,55 @@ function formatDuration(minutes: number) {
 <template>
     <Head title="Booking" />
     <PublicLayout>
-    <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="translate-y-2 opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-        <div v-if="showSuccessToast && props.success" role="status" aria-live="polite" class="fixed right-4 top-20 z-[100] flex max-w-sm items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-4 text-slate-900 shadow-xl sm:right-6">
-            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><Check class="size-5" /></span>
-            <div class="min-w-0"><p class="font-semibold">Booking berhasil!</p><p class="mt-1 text-sm text-slate-600">Jadwal kamu sudah tersimpan.</p></div>
-            <button type="button" aria-label="Tutup notifikasi" class="ml-2 text-slate-400 hover:text-slate-700" @click="showSuccessToast = false">×</button>
-        </div>
-    </Transition>
     <div class="min-h-screen bg-slate-50 text-slate-900">
         <main class="mx-auto w-full max-w-5xl px-4 py-8">
-            <div
-                v-if="props.success"
-                role="status"
-                class="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900"
-            >
-                <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                    <Check class="size-4" />
-                </span>
-                <div>
-                    <p class="font-semibold">Booking berhasil disimpan!</p>
-                    <p class="mt-1 text-sm leading-6">{{ props.success }}</p>
-                    <p class="mt-1 text-xs text-emerald-800">Simpan nama dan nomor kontak yang kamu masukkan agar tim kami mudah menghubungimu.</p>
+            <section v-if="props.success" class="flex min-h-[75vh] items-center justify-center py-10">
+                <div class="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_80px_rgba(15,23,42,0.12)]">
+                    <div class="relative overflow-hidden bg-[#001428] px-6 py-12 text-center text-white sm:px-12 sm:py-16">
+                        <div class="pointer-events-none absolute -right-12 -top-16 size-56 rounded-full border-[30px] border-white/5"></div>
+                        <div class="pointer-events-none absolute -bottom-24 -left-10 size-64 rounded-full border-[36px] border-white/5"></div>
+                        <div class="relative mx-auto flex size-24 items-center justify-center rounded-full bg-[#a4da01] text-[#001428] shadow-lg shadow-black/20 sm:size-28">
+                            <Check class="size-12 sm:size-14" :stroke-width="3" />
+                        </div>
+                        <p class="relative mt-7 text-sm font-semibold uppercase tracking-[0.22em] text-[#c9f36a]">Konfirmasi berhasil</p>
+                        <h1 class="relative mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Booking berhasil!</h1>
+                        <p class="relative mx-auto mt-4 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">Jadwal booking kamu sudah tersimpan. Terima kasih sudah memilih fasilitas kami.</p>
+                    </div>
+                    <div class="px-6 py-8 sm:px-12 sm:py-10">
+                        <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 sm:p-6">
+                            <div class="flex items-start gap-3">
+                                <Check class="mt-0.5 size-5 shrink-0 text-emerald-700" />
+                                <div>
+                                    <p class="font-semibold text-emerald-950">Booking tercatat di sistem</p>
+                                    <p class="mt-1 text-sm leading-6 text-emerald-900">{{ props.success }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-7 grid gap-4 sm:grid-cols-3">
+                            <div class="rounded-2xl bg-slate-50 p-4">
+                                <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm"><Check class="size-5" /></div>
+                                <p class="font-semibold text-slate-900">Data tersimpan</p>
+                                <p class="mt-1 text-sm leading-5 text-slate-500">Informasi booking sudah masuk ke sistem.</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 p-4">
+                                <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm"><Clock class="size-5" /></div>
+                                <p class="font-semibold text-slate-900">Menunggu konfirmasi</p>
+                                <p class="mt-1 text-sm leading-5 text-slate-500">Status booking dapat ditindaklanjuti oleh pengelola.</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 p-4">
+                                <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm"><Check class="size-5" /></div>
+                                <p class="font-semibold text-slate-900">Simpan kontak</p>
+                                <p class="mt-1 text-sm leading-5 text-slate-500">Pastikan nomor HP dan email yang kamu isi aktif.</p>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                            <a href="/" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Kembali ke beranda</a>
+                            <a href="/book" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] transition hover:bg-[#b6ed19]">Booking fasilitas lain <ArrowRight class="ml-2 size-4" /></a>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
+            </section>
+            <template v-else>
             <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Booking olahraga</h1>
@@ -730,6 +750,7 @@ function formatDuration(minutes: number) {
                     </Button>
                 </div>
             </div>
+        </template>
         </main>
     </div>
     </PublicLayout>
