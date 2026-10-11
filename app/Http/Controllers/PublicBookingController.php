@@ -28,7 +28,7 @@ class PublicBookingController extends Controller
         $facilities = Facility::query()
             ->where('status', 'active')
             ->where('is_bookable_online', true)
-            ->with(['packages' => fn ($query) => $query->orderBy('name')->with('pricingRules')])
+            ->with(['packages' => fn ($query) => $query->where('type', 'session')->orderBy('name')->with('pricingRules')])
             ->orderBy('name')
             ->get()
             ->map(fn (Facility $facility) => [
@@ -60,6 +60,7 @@ class PublicBookingController extends Controller
         return Inertia::render('book/Index', [
             'facilities' => $facilities,
             'initialFacilityId' => $initialFacility['id'] ?? null,
+            'success' => $request->session()->get('success'),
         ]);
     }
 
