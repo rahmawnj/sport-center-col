@@ -97,9 +97,18 @@ const displayPrice = computed(() =>
     isSession.value ? (slot.value?.price ?? null) : packagePrice.value,
 );
 
-const visibleSteps = computed(() =>
-    steps.filter((item) => isSession.value || (item.id !== 3 && item.id !== 4)),
-);
+const visibleSteps = computed(() => {
+    // Before a package is selected, show the complete flow so the stepper
+    // does not prematurely jump from step 2 to step 5.
+    if (!pkg.value) {
+        return steps;
+    }
+
+    // Membership/entry packages skip the date and court selection steps.
+    return steps.filter(
+        (item) => isSession.value || (item.id !== 3 && item.id !== 4),
+    );
+});
 
 function packagePriceLabel(item: BookingPackage) {
     if (!item.pricing_rules.length) {
