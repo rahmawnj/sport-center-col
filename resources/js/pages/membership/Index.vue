@@ -212,7 +212,7 @@ const durationLabel = (days: number) => {
                         <div class="step-card">
                             <span class="step-number">02</span>
                             <h3>Periksa detail</h3>
-                            <p>Pastikan nama paket, harga, dan kontakmu benar sebelum mengirim pesanan.</p>
+                            <p>Pastikan nama paket dan harga sudah sesuai sebelum mengirim pesanan.</p>
                         </div>
                         <div class="step-card">
                             <span class="step-number">03</span>
@@ -277,13 +277,13 @@ const durationLabel = (days: number) => {
                         </div>
                         <label class="flex cursor-pointer items-start gap-3 text-sm leading-5 text-slate-600">
                             <input v-model="form.terms_accepted" type="checkbox" required class="mt-1 h-4 w-4 accent-[#789900]" />
-                            <span>Saya memastikan detail pesanan dan kontak sudah benar, serta setuju mengikuti ketentuan membership.</span>
+                            <span>Saya memastikan detail paket sudah benar dan setuju mengikuti ketentuan membership.</span>
                         </label>
                         <p v-if="form.errors.package_id" class="text-sm text-rose-600">{{ form.errors.package_id }}</p>
                         <p v-if="form.errors.terms_accepted" class="text-sm text-rose-600">{{ form.errors.terms_accepted }}</p>
                         <div class="rounded-xl border border-slate-200 p-3 text-xs leading-5 text-slate-500">
                             <i class="fa-solid fa-shield-halved mr-1 text-[#789900]"></i>
-                            Periksa kembali detail sebelum melanjutkan. Status transaksi dan instruksi pembayaran mengikuti proses yang tersedia di sistem.
+                            Data akun member akan digunakan otomatis. Periksa kembali paket dan metode pembayaran sebelum melanjutkan.
                         </div>
                         <button type="submit" :disabled="form.processing" class="flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3.5 font-extrabold text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-60">
                             <i v-if="form.processing" class="fa-solid fa-spinner fa-spin"></i>
