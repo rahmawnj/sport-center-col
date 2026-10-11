@@ -71,6 +71,7 @@ const form = useForm({
     guest_name: '',
     guest_email: '',
     guest_phone: '',
+    terms_accepted: false,
 });
 
 const steps = [
@@ -267,6 +268,7 @@ function back() {
 }
 
 function submit() {
+    form.terms_accepted = termsAccepted.value;
     form.package_id = pkg.value?.id ?? null;
 
     if (isSession.value) {
