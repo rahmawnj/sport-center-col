@@ -24,16 +24,16 @@ class BookingLandingPageSeeder extends Seeder
     {
         DB::transaction(function (): void {
             $facilityData = [
-                ['name' => 'Padel', 'slug' => 'padel', 'online' => true, 'turnaround' => 5],
-                ['name' => 'Billiard', 'slug' => 'billiard', 'online' => true, 'turnaround' => 5],
-                ['name' => 'Gym', 'slug' => 'gym', 'online' => true, 'turnaround' => 5],
-                ['name' => 'Ice Skating', 'slug' => 'ice-skating', 'online' => true, 'turnaround' => 5],
-                ['name' => 'Yoga', 'slug' => 'yoga', 'online' => true, 'turnaround' => 10],
-                ['name' => 'Pilates', 'slug' => 'pilates', 'online' => true, 'turnaround' => 10],
-                ['name' => 'Spinning', 'slug' => 'spinning', 'online' => true, 'turnaround' => 10],
-                ['name' => 'AC', 'slug' => 'ac', 'online' => false, 'turnaround' => 0],
-                ['name' => 'Free WiFi', 'slug' => 'free-wifi', 'online' => false, 'turnaround' => 0],
-                ['name' => 'Loker', 'slug' => 'loker', 'online' => false, 'turnaround' => 0],
+                ['name' => 'Padel', 'slug' => 'padel', 'online' => true, 'turnaround_minutes' => 5],
+                ['name' => 'Billiard', 'slug' => 'billiard', 'online' => true, 'turnaround_minutes' => 5],
+                ['name' => 'Gym', 'slug' => 'gym', 'online' => true, 'turnaround_minutes' => 5],
+                ['name' => 'Ice Skating', 'slug' => 'ice-skating', 'online' => true, 'turnaround_minutes' => 5],
+                ['name' => 'Yoga', 'slug' => 'yoga', 'online' => true, 'turnaround_minutes' => 10],
+                ['name' => 'Pilates', 'slug' => 'pilates', 'online' => true, 'turnaround_minutes' => 10],
+                ['name' => 'Spinning', 'slug' => 'spinning', 'online' => true, 'turnaround_minutes' => 10],
+                ['name' => 'AC', 'slug' => 'ac', 'online' => false, 'turnaround_minutes' => 0],
+                ['name' => 'Free WiFi', 'slug' => 'free-wifi', 'online' => false, 'turnaround_minutes' => 0],
+                ['name' => 'Loker', 'slug' => 'loker', 'online' => false, 'turnaround_minutes' => 0],
             ];
 
             $facilities = collect($facilityData)->mapWithKeys(function (array $data) {
@@ -42,7 +42,7 @@ class BookingLandingPageSeeder extends Seeder
                     [
                         'name' => $data['name'],
                         'is_bookable_online' => $data['online'],
-                        'turnaround_minutes' => $data['turnaround'],
+                        'turnaround_minutes' => $data['turnaround_minutes'],
                         'status' => 'active',
                     ]
                 );
@@ -253,7 +253,8 @@ class BookingLandingPageSeeder extends Seeder
                 ['name' => 'Handuk', 'price' => 10000, 'stock' => 50],
                 ['name' => 'Bola Billiard Tambahan', 'price' => 15000, 'stock' => 5],
             ] as $addOn) {
-                AddOn::updateOrCreate(
+                // Do not replenish stock when this seeder is run again.
+                AddOn::firstOrCreate(
                     ['name' => $addOn['name']],
                     ['price' => $addOn['price'], 'stock' => $addOn['stock']]
                 );
