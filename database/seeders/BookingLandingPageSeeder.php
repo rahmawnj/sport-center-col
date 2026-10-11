@@ -1,15 +1,15 @@
 <?php
 
-namespace Database\\Seeders;
+namespace Database\Seeders;
 
-use App\\Models\\AddOn;
-use App\\Models\\Court;
-use App\\Models\\Facility;
-use App\\Models\\Trainer;
-use App\\Models\\Zone;
-use App\\Models\\ZoneSpace;
-use Illuminate\\Database\\Seeder;
-use Illuminate\\Support\\Facades\\DB;
+use App\Models\AddOn;
+use App\Models\Court;
+use App\Models\Facility;
+use App\Models\Trainer;
+use App\Models\Zone;
+use App\Models\ZoneSpace;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class BookingLandingPageSeeder extends Seeder
 {
