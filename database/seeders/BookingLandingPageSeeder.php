@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\AddOn;
 use App\Models\Court;
 use App\Models\Facility;
+use App\Models\Package;
+use App\Models\PackagePricingRule;
 use App\Models\Trainer;
 use App\Models\Zone;
 use App\Models\ZoneSpace;
@@ -197,7 +199,7 @@ class BookingLandingPageSeeder extends Seeder
             foreach ($sports as $sportData) {
                 $facility = $facilities[strtolower($sportData['name'])];
 
-                $package = \\App\\Models\\Package::updateOrCreate(
+                $package = Package::updateOrCreate(
                     [
                         'facility_id' => $facility->id,
                         'name' => 'Sewa ' . $sportData['name'] . ' per Jam',
@@ -209,7 +211,7 @@ class BookingLandingPageSeeder extends Seeder
                     ]
                 );
 
-                \\App\\Models\\PackagePricingRule::updateOrCreate(
+                PackagePricingRule::updateOrCreate(
                     [
                         'package_id' => $package->id,
                         'day_type' => 'all',
