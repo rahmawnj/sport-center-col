@@ -110,6 +110,7 @@ class PublicBookingController extends Controller
             'court_id' => ['nullable', 'integer', 'exists:courts,id'],
             'date' => ['nullable', 'date', 'after_or_equal:today'],
             'start_time' => ['nullable', 'date_format:H:i'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:50'],
@@ -148,17 +149,23 @@ class PublicBookingController extends Controller
         }
 
         $startMinutes = $this->toMinutes($data['start_time']);
-        $endMinutes = $startMinutes + max(1, (int) $package->duration_minutes);
+        $durationHours = max(1, (int) ($data['duration_hours'] ?? 1));
+        $durationMinutes = $durationHours * 60;
+        $endMinutes = $startMinutes + $durationMinutes;
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
 
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
 
-        $price = $this->resolvePrice($this->matchingRules($package, $date), $startMinutes);
-
-        if ($price === null) {
-            throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih tidak memiliki tarif.']);
+        $rules = $this->matchingRules($package, $date);
+        $price = 0.0;
+        for ($minute = $startMinutes; $minute < $endMinutes; $minute += 60) {
+            $hourPrice = $this->resolvePrice($rules, $minute);
+            if ($hourPrice === null) {
+                throw ValidationException::withMessages(['start_time' => 'Durasi yang dipilih melewati jam operasional atau tidak memiliki tarif.']);
+            }
+            $price += $hourPrice;
         }
 
         DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround, $price) {
