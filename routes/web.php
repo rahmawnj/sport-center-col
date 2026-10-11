@@ -42,11 +42,11 @@ Route::middleware(['auth'])->group(function () {
         ->middleware(\App\Http\Middleware\EnsureUserRole::class.':Member')
         ->name('member.dashboard');
 
-    Route::prefix('member')->name('member.')->middleware(\App\\Http\\Middleware\\EnsureUserRole::class.':Member')->group(function () {
-        Route::get('bookings', [\App\\Http\\Controllers\\MemberDashboardController::class, 'bookings'])->name('bookings');
-        Route::get('membership', [\App\\Http\\Controllers\\MemberDashboardController::class, 'membership'])->name('membership');
-        Route::get('payments', [\App\\Http\\Controllers\\MemberDashboardController::class, 'payments'])->name('payments');
-        Route::get('profile', [\App\\Http\\Controllers\\MemberDashboardController::class, 'profile'])->name('profile');
+    Route::prefix('member')->name('member.')->middleware(\App\Http\Middleware\EnsureUserRole::class.':Member')->group(function () {
+        Route::get('bookings', [\App\Http\Controllers\MemberDashboardController::class, 'bookings'])->name('bookings');
+        Route::get('membership', [\App\Http\Controllers\MemberDashboardController::class, 'membership'])->name('membership');
+        Route::get('payments', [\App\Http\Controllers\MemberDashboardController::class, 'payments'])->name('payments');
+        Route::get('profile', [\App\Http\Controllers\MemberDashboardController::class, 'profile'])->name('profile');
         Route::redirect('settings', '/member/profile')->name('settings');
     });
 
