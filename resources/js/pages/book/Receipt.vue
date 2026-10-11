@@ -75,16 +75,16 @@ async function shareLink() {
                 </div>
 
                 <article class="overflow-hidden rounded-3xl bg-white shadow-[0_20px_70px_rgba(15,23,42,0.10)]">
-                    <header class="bg-[#001428] px-6 py-6 text-white sm:px-8">
+                    <header class="border-b border-lime-100 bg-white px-6 py-6 text-slate-900 sm:px-8">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-lime-300">Booking reference</p>
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-lime-700">Booking reference</p>
                                 <h2 class="mt-2 text-2xl font-bold">{{ receipt.code }}</h2>
-                                <p class="mt-2 text-sm text-slate-300">Status: <span class="font-semibold capitalize text-lime-300">{{ receipt.status }}</span></p>
+                                <p class="mt-2 text-sm text-slate-500">Status: <span class="font-semibold capitalize text-lime-700">{{ receipt.status }}</span></p>
                             </div>
-                            <div class="rounded-xl bg-white/10 px-4 py-3">
-                                <p class="text-xs text-slate-300">Total booking</p>
-                                <p class="mt-1 text-xl font-bold text-lime-300">{{ formatIDR(receipt.total) }}</p>
+                            <div class="rounded-xl border border-lime-100 bg-lime-50 px-4 py-3">
+                                <p class="text-xs text-slate-500">Total booking</p>
+                                <p class="mt-1 text-xl font-bold text-lime-800">{{ formatIDR(receipt.total) }}</p>
                             </div>
                         </div>
                     </header>
@@ -154,7 +154,7 @@ async function shareLink() {
 
                 <div class="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
                     <a href="/" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"><ArrowLeft class="mr-2 size-4" /> Kembali ke beranda</a>
-                    <a href="/book" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#001428] px-6 py-3 text-sm font-bold text-white hover:bg-slate-800">Buat booking lain</a>
+                    <a href="/book" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] hover:bg-lime-400">Buat booking lain</a>
                 </div>
             </div>
         </main>
