@@ -21,6 +21,7 @@ Route::get('/', [PublicHomeController::class, 'index'])->name('home');
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
 Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
 Route::post('book', [PublicBookingController::class, 'store'])->name('booking.store');
+Route::get('booking/receipt/{booking}', [PublicBookingController::class, 'receipt'])->middleware('signed')->name('booking.receipt');
 
 Route::get('verify', [VerifyController::class, 'show'])->name('verify');
 
