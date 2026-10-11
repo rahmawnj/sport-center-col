@@ -193,7 +193,6 @@ const facilityDescription = (slug: string) => {
                             <h2 class="section-title">Kenalan dengan <span>pelatih kami</span></h2>
                             <p class="mt-3 max-w-xl text-slate-500">Temukan dukungan latihan dari pelatih yang terdaftar di pusat olahraga kami.</p>
                         </div>
-                        <Link href="/book" class="inline-flex items-center gap-2 self-start text-sm font-extrabold sm:self-auto">Tanya jadwal <i class="fa-solid fa-arrow-right"></i></Link>
                     </div>
                     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                         <article v-for="(trainer, index) in trainers" :key="trainer.id" class="trainer-card rounded-2xl bg-white p-5">
