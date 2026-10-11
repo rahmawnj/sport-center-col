@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -118,19 +119,78 @@ class PublicBookingController extends Controller
 
         $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
 
-        if ($package->type === 'session') {
-            $this->storeBooking($request, $package, $data);
-        } else {
+        if ($package->type !== 'session') {
             $this->storeDirect($request, $package, $data);
+
+            return redirect()->route('booking.index')->with('success', 'Pesanan berhasil dibuat dan tersimpan.');
         }
 
-        return redirect()->route('booking.index')->with('success', 'Booking berhasil dibuat dan tersimpan.');
+        $booking = $this->storeBooking($request, $package, $data);
+        $receiptUrl = URL::temporarySignedRoute(
+            'booking.receipt',
+            now()->addDays(30),
+            [
+                'booking' => $booking->id,
+                'package' => $package->name,
+                'total' => (int) round($this->bookingPrice($package, $data)),
+            ],
+        );
+
+        return redirect()->to($receiptUrl);
+    }
+
+    public function receipt(Request $request, Booking $booking): Response
+    {
+        $booking->load(['court.facility', 'user']);
+
+        return Inertia::render('book/Receipt', [
+            'receiptUrl' => $request->fullUrl(),
+            'receipt' => [
+                'code' => 'BK-' . str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
+                'customerName' => $booking->user?->name ?? $booking->guest_name,
+                'customerEmail' => $booking->guest_email,
+                'customerPhone' => $booking->guest_phone,
+                'facility' => $booking->court?->facility?->name ?? 'Fasilitas olahraga',
+                'court' => $booking->court?->name ?? '—',
+                'package' => (string) $request->query('package', 'Booking sesi'),
+                'date' => $booking->date?->format('d M Y'),
+                'startTime' => substr((string) $booking->start_time, 0, 5),
+                'endTime' => substr((string) $booking->end_time, 0, 5),
+                'status' => (string) $booking->status,
+                'total' => (int) $request->query('total', 0),
+            ],
+        ]);
+    }
+
+
+    /**
+     * Calculate the server-side total for the selected continuous booking hours.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function bookingPrice(Package $package, array $data): float
+    {
+        $date = Carbon::parse($data['date']);
+        $rules = $this->matchingRules($package, $date);
+        $start = $this->toMinutes($data['start_time']);
+        $hours = max(1, (int) ($data['duration_hours'] ?? 1));
+        $total = 0.0;
+
+        for ($minute = $start; $minute < $start + ($hours * 60); $minute += 60) {
+            $price = $this->resolvePrice($rules, $minute);
+            if ($price === null) {
+                throw ValidationException::withMessages(['start_time' => 'Tarif untuk jadwal ini tidak ditemukan.']);
+            }
+            $total += $price;
+        }
+
+        return $total;
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    private function storeBooking(Request $request, Package $package, array $data): void
+    private function storeBooking(Request $request, Package $package, array $data): Booking
     {
         if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time'])) {
             throw ValidationException::withMessages(['start_time' => 'Lapangan, tanggal, dan jam wajib dipilih.']);
@@ -168,7 +228,7 @@ class PublicBookingController extends Controller
             $price += $hourPrice;
         }
 
-        DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround, $price) {
+        return DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround, $price) {
             $conflict = Booking::query()
                 ->where('court_id', $data['court_id'])
                 ->whereDate('date', $date->toDateString())
@@ -192,7 +252,7 @@ class PublicBookingController extends Controller
             // Public court bookings are stored in bookings only. Do not create a
             // payment transaction here: the current booking flow confirms the
             // reservation separately from payment processing.
-            Booking::create([
+            return Booking::create([
                 'user_id' => $user?->id,
                 'guest_name' => $user ? null : $data['guest_name'],
                 'guest_email' => $user ? null : $data['guest_email'],
