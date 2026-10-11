@@ -121,6 +121,7 @@ class PublicBookingController extends Controller
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:50'],
             'terms_accepted' => ['required', 'accepted'],
+            'payment_method' => ['nullable', 'in:cash,bank_transfer'],
         ]);
 
         $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
@@ -326,8 +327,10 @@ class PublicBookingController extends Controller
 
             $membership->transactions()->create([
                 'user_id' => $user->id,
+                'customer_type' => 'member',
                 'amount' => $price,
-                'payment_status' => 'pending',
+                'payment_method' => $data['payment_method'] ?? 'bank_transfer',
+                'payment_status' => 'unpaid',
             ]);
 
             return;
@@ -335,9 +338,11 @@ class PublicBookingController extends Controller
 
         $package->transactions()->create([
             'user_id' => $user?->id,
+            'customer_type' => $user ? 'member' : 'general',
             'customer_name' => $user ? null : $data['guest_name'],
             'amount' => $price,
-            'payment_status' => 'pending',
+            'payment_method' => $data['payment_method'] ?? 'bank_transfer',
+            'payment_status' => 'unpaid',
         ]);
     }
 
