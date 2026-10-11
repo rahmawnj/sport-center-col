@@ -8,7 +8,6 @@ import {
     LayoutDashboard,
     LogOut,
     Menu,
-    Settings,
     Trophy,
     X,
 } from '@lucide/vue';
@@ -25,7 +24,6 @@ const navigation = [
     { label: 'Membership Saya', href: '/member/membership', icon: Trophy },
     { label: 'Pembayaran', href: '/member/payments', icon: CreditCard },
     { label: 'Profil Saya', href: '/member/profile', icon: CircleUserRound },
-    { label: 'Pengaturan', href: '/member/settings', icon: Settings },
 ];
 </script>
 
