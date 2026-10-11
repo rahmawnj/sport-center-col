@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
 </script>
 
 <template>
@@ -18,12 +18,9 @@ import { dashboard, login, register } from '@/routes';
             </nav>
 
             <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                <Link href="/book" class="public-book-link rounded-full px-3 py-2.5 text-xs font-extrabold sm:px-4 sm:text-sm">Booking</Link>
-                <Link v-if="$page.props.auth.user" :href="dashboard()" class="public-primary-button rounded-full px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:text-sm">Dasbor</Link>
-                <template v-else>
-                    <Link :href="login()" class="hidden rounded-full px-3 py-2.5 text-sm font-bold transition hover:bg-slate-100 sm:inline-flex">Masuk</Link>
-                    <Link :href="register()" class="public-primary-button rounded-full px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:text-sm">Daftar</Link>
-                </template>
+                <Link href="/book" class="public-primary-button rounded-full px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:text-sm">Booking</Link>
+                <Link v-if="$page.props.auth.user" :href="dashboard()" class="rounded-full px-3 py-2.5 text-xs font-bold transition hover:bg-slate-100 sm:px-4 sm:text-sm">Dasbor</Link>
+                <Link v-else :href="login()" class="hidden rounded-full px-3 py-2.5 text-sm font-bold transition hover:bg-slate-100 sm:inline-flex">Masuk</Link>
             </div>
         </div>
     </header>
