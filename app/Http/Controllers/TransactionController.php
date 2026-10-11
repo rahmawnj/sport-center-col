@@ -227,20 +227,15 @@ class TransactionController extends Controller
                 ]);
             }
 
-            $booking = Booking::create([
+            // For session bookings, save the reservation only.
+            // Payment transactions are intentionally not created in this flow.
+            Booking::create([
                 'guest_name' => $data['customer_name'] ?? null,
                 'court_id' => $data['court_id'],
                 'date' => $date->toDateString(),
                 'start_time' => $startTime,
                 'end_time' => $endTime,
-                'status' => $data['payment_status'] === 'paid' ? 'confirmed' : 'pending',
-            ]);
-
-            $booking->transactions()->create([
-                'customer_name' => $data['customer_name'] ?? null,
-                'amount' => $data['amount'],
-                'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_status'],
+                'status' => 'pending',
             ]);
         });
     }
