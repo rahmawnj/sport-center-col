@@ -62,7 +62,7 @@ const selectedSlots = ref<string[]>([]);
 const slotSelectionError = ref('');
 const courtId = ref<number | null>(null);
 const addOnQuantities = ref<Record<number, number>>({});
-const selectedAddOns = computed(() => props.addOns.filter((item) => (addOnQuantities.value[item.id] ?? 0) > 0).map((item) => ({ id: item.id, qty: addOnQuantities.value[item.id] })));
+const selectedAddOns = computed(() => props.addOns.filter((item) => (addOnQuantities.value[item.id] ?? 0) > 0).map((item) => ({ id: item.id, qty: Number(addOnQuantities.value[item.id]) })));
 const addOnsTotal = computed(() => selectedAddOns.value.reduce((total, selected) => total + (props.addOns.find((item) => item.id === selected.id)?.price ?? 0) * selected.qty, 0));
 
 const form = useForm({
@@ -600,7 +600,7 @@ function formatDuration(minutes: number) {
                 <section v-else class="space-y-4">
                     <h2 class="font-semibold">Data diri</h2>
 
-                    <div class="space-y-3 rounded-xl border border-slate-100 p-4">
+                    <div v-if="isSession" class="space-y-3 rounded-xl border border-slate-100 p-4">
                         <div>
                             <h3 class="font-semibold">Add-on (opsional)</h3>
                             <p class="mt-1 text-sm text-muted-foreground">Tambahkan perlengkapan yang kamu butuhkan. Stok diperbarui saat booking dibuat.</p>
