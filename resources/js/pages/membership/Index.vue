@@ -25,9 +25,6 @@ const selectedPackage = ref<MembershipPackage | null>(null);
 const checkoutOpen = ref(false);
 const form = useForm({
     package_id: 0,
-    guest_name: props.currentUser?.name ?? '',
-    guest_email: props.currentUser?.email ?? '',
-    guest_phone: '',
     terms_accepted: false,
     payment_method: 'bank_transfer',
 });
@@ -271,27 +268,12 @@ const durationLabel = (days: number) => {
 
                     <form v-else class="space-y-4" @submit.prevent="submitPurchase">
                         <div>
-                            <label for="member-name" class="mb-1.5 block text-sm font-bold text-slate-700">Nama pemesan</label>
-                            <input id="member-name" v-model="form.guest_name" type="text" autocomplete="name" required maxlength="255" class="checkout-input" />
-                            <p v-if="form.errors.guest_name" class="mt-1 text-xs text-rose-600">{{ form.errors.guest_name }}</p>
-                        </div>
-                        <div>
-                            <label for="member-email" class="mb-1.5 block text-sm font-bold text-slate-700">Email</label>
-                            <input id="member-email" v-model="form.guest_email" type="email" autocomplete="email" required maxlength="255" class="checkout-input" />
-                            <p v-if="form.errors.guest_email" class="mt-1 text-xs text-rose-600">{{ form.errors.guest_email }}</p>
-                        </div>
-                        <div>
                             <label for="payment-method" class="mb-1.5 block text-sm font-bold text-slate-700">Metode pembayaran</label>
                             <select id="payment-method" v-model="form.payment_method" required class="checkout-input">
                                 <option value="bank_transfer">Transfer bank</option>
                                 <option value="cash">Bayar tunai di tempat</option>
                             </select>
                             <p v-if="form.errors.payment_method" class="mt-1 text-xs text-rose-600">{{ form.errors.payment_method }}</p>
-                        </div>
-                        <div>
-                            <label for="member-phone" class="mb-1.5 block text-sm font-bold text-slate-700">Nomor telepon</label>
-                            <input id="member-phone" v-model="form.guest_phone" type="tel" autocomplete="tel" required maxlength="50" placeholder="Contoh: 081234567890" class="checkout-input" />
-                            <p v-if="form.errors.guest_phone" class="mt-1 text-xs text-rose-600">{{ form.errors.guest_phone }}</p>
                         </div>
                         <label class="flex cursor-pointer items-start gap-3 text-sm leading-5 text-slate-600">
                             <input v-model="form.terms_accepted" type="checkbox" required class="mt-1 h-4 w-4 accent-[#789900]" />
