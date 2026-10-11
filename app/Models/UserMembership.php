@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class UserMembership extends Model
 {
@@ -34,10 +33,6 @@ class UserMembership extends Model
         return $this->belongsTo(Package::class);
     }
 
-    public function transactions(): MorphMany
-    {
-        return $this->morphMany(Transaction::class, 'transactionable');
-    }
 
     public function isActive(): bool
     {
