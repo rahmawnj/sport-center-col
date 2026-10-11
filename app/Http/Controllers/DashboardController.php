@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\UserMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,8 +20,7 @@ class DashboardController extends Controller
         $nowTime = Carbon::now()->format('H:i');
 
         $stats = [
-            'revenue_today' => (float) Transaction::whereDate('created_at', $today)
-                ->where('payment_status', 'paid')->sum('amount'),
+            'revenue_today' => $this->paidRevenue($today),
             'transactions_today' => Transaction::whereDate('created_at', $today)->count(),
             'bookings_today' => Booking::whereDate('date', $today)
                 ->whereNotIn('status', ['cancelled'])->count(),
@@ -34,8 +34,7 @@ class DashboardController extends Controller
 
             $revenue[] = [
                 'label' => $day->translatedFormat('d M'),
-                'total' => (float) Transaction::whereDate('created_at', $day)
-                    ->where('payment_status', 'paid')->sum('amount'),
+                'total' => $this->paidRevenue($day),
             ];
         }
 
@@ -95,4 +94,16 @@ class DashboardController extends Controller
             'bookings' => $bookings,
         ]);
     }
+    /** Return paid revenue only when the installed schema has an amount column. */
+    private function paidRevenue(Carbon $date): float
+    {
+        if (! Schema::hasColumn('transactions', 'amount')) {
+            return 0.0;
+        }
+
+        return (float) Transaction::whereDate('created_at', $date)
+            ->where('payment_status', 'paid')
+            ->sum('amount');
+    }
+
 }
