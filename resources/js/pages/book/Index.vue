@@ -90,6 +90,7 @@ const packageTypeLabel: Record<string, string> = {
 };
 
 const isSession = computed(() => pkg.value?.type === 'session');
+const hasTimedSession = computed(() => isSession.value && !!pkg.value?.pricing_rules.some((rule) => rule.start_time && rule.end_time));
 const selectedDurationHours = computed(() => selectedSlots.value.length);
 const selectedDurationLabel = computed(() => {
     const hours = selectedDurationHours.value;
@@ -105,7 +106,7 @@ const packagePrice = computed(() => {
 });
 
 const displayPrice = computed(() =>
-    isSession.value ? (slot.value?.price ?? null) : packagePrice.value,
+    hasTimedSession.value ? (slot.value?.price ?? null) : packagePrice.value,
 );
 
 const visibleSteps = computed(() => {
@@ -116,7 +117,7 @@ const visibleSteps = computed(() => {
     }
 
     // Membership/entry packages skip the date and court selection steps.
-    return steps.filter((item) => isSession.value || item.id !== 3);
+    return steps.filter((item) => hasTimedSession.value || item.id !== 3);
 });
 
 function packagePriceLabel(item: BookingPackage) {
@@ -136,7 +137,7 @@ const canNext = computed(() => {
         case 2:
             return !!pkg.value;
         case 3:
-            return !!date.value && !!slot.value && selectedSlots.value.length > 0 && !!courtId.value;
+            return !!date.value && (!hasTimedSession.value || (!!slot.value && selectedSlots.value.length > 0 && !!courtId.value));
         case 4:
             return !!form.guest_name.trim() && !!form.guest_email.trim() && form.guest_email.includes('@') && form.guest_email.includes('.') && !!form.guest_phone.trim();
         case 5:
@@ -180,6 +181,11 @@ function chooseFacility(item: Facility) {
 
 function choosePackage(item: BookingPackage) {
     pkg.value = item;
+    date.value = '';
+    slots.value = [];
+    slot.value = null;
+    selectedSlots.value = [];
+    courtId.value = null;
     step.value = item.type === 'session' ? 3 : 5;
 }
 
@@ -254,12 +260,12 @@ function next() {
         step.value = 4;
         return;
     }
-    if (step.value === 3 && slot.value) {
+    if (step.value === 3) {
         form.package_id = pkg.value?.id ?? null;
         form.date = date.value;
-        form.start_time = slot.value.start_time;
-        form.duration_hours = selectedSlots.value.length;
-        form.court_id = courtId.value;
+        form.start_time = hasTimedSession.value ? (slot.value?.start_time ?? '') : '';
+        form.duration_hours = hasTimedSession.value ? selectedSlots.value.length : 1;
+        form.court_id = hasTimedSession.value ? courtId.value : null;
     }
     step.value = Math.min(6, step.value + 1);
 }
@@ -278,9 +284,9 @@ function submit() {
 
     if (isSession.value) {
         form.date = date.value;
-        form.start_time = slot.value?.start_time ?? '';
-        form.duration_hours = selectedSlots.value.length || 1;
-        form.court_id = courtId.value;
+        form.start_time = hasTimedSession.value ? (slot.value?.start_time ?? '') : '';
+        form.duration_hours = hasTimedSession.value ? (selectedSlots.value.length || 1) : 1;
+        form.court_id = hasTimedSession.value ? courtId.value : null;
     } else {
         form.date = '';
         form.start_time = '';
@@ -536,18 +542,18 @@ function formatDuration(minutes: number) {
                 <section v-else-if="step === 3" class="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.9fr)]">
                     <div class="space-y-5">
                         <div>
-                            <h2 class="text-lg font-semibold">Pilih tanggal, jam & lapangan</h2>
-                            <p class="mt-1 text-sm text-slate-500">Pilih jam yang tersedia, lalu pilih lapangan di bawahnya.</p>
+                            <h2 class="text-lg font-semibold">{{ hasTimedSession ? 'Pilih tanggal, jam & lapangan' : 'Pilih tanggal sesi' }}</h2>
+                            <p class="mt-1 text-sm text-slate-500">{{ hasTimedSession ? 'Pilih tanggal dan jam yang tersedia, lalu pilih lapangan.' : 'Paket ini tidak memakai pilihan jam atau lapangan. Cukup tentukan tanggal sesi.' }}</p>
                         </div>
                         <div class="grid max-w-sm gap-2">
                             <Label for="booking-date" class="text-sm font-semibold text-slate-700">Tanggal booking</Label>
                             <div class="rounded-2xl bg-slate-50 p-3">
                                 <Input id="booking-date" v-model="date" type="date" :min="today" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base font-semibold text-slate-800 shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
-                                <p class="mt-2 text-xs text-slate-500">Pilih tanggal untuk melihat jam yang tersedia.</p>
+                                <p class="mt-2 text-xs text-slate-500">{{ hasTimedSession ? 'Pilih tanggal untuk melihat jam dan lapangan yang tersedia.' : 'Pilih tanggal pelaksanaan sesi.' }}</p>
                             </div>
                         </div>
-                        <div v-if="loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
-                        <template v-else-if="date">
+                        <div v-if="hasTimedSession && loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
+                        <template v-else-if="date && hasTimedSession">
                             <div v-if="slots.length" class="space-y-3">
                                 <p class="text-sm text-slate-600">Centang jam awal dan akhir yang diinginkan. Jam di antaranya otomatis ikut dipilih.</p>
                                 <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -563,7 +569,7 @@ function formatDuration(minutes: number) {
                             </div>
                             <p v-else class="text-sm text-muted-foreground">Tidak ada jadwal tersedia pada tanggal ini.</p>
                         </template>
-                        <div class="space-y-3 border-t border-slate-100 pt-5">
+                        <div v-if="hasTimedSession" class="space-y-3 border-t border-slate-100 pt-5">
                             <div>
                                 <h3 class="font-semibold">Pilih lapangan</h3>
                                 <p class="mt-1 text-sm text-slate-500">{{ slot ? slot.start_time + '–' + slot.end_time : 'Pilih jam terlebih dahulu.' }}</p>
@@ -583,13 +589,13 @@ function formatDuration(minutes: number) {
                             <div><p class="text-slate-500">Fasilitas</p><p class="mt-1 font-semibold">{{ facility?.name || 'Belum dipilih' }}</p></div>
                             <div><p class="text-slate-500">Paket</p><p class="mt-1 font-semibold">{{ pkg?.name || 'Belum dipilih' }}</p></div>
                             <div><p class="text-slate-500">Tanggal</p><p class="mt-1 font-semibold">{{ date || 'Belum dipilih' }}</p></div>
-                            <div><p class="text-slate-500">Jam mulai – selesai</p><p class="mt-1 font-semibold">{{ slot ? slot.start_time + '–' + slot.end_time : 'Belum dipilih' }}</p></div>
-                            <div><p class="text-slate-500">Durasi sesi</p><p class="mt-1 font-semibold">{{ slot && selectedDurationHours ? selectedDurationLabel : 'Belum dipilih' }}</p></div>
-                            <div v-if="slot && selectedDurationHours > 1" class="rounded-xl border border-lime-200 bg-lime-50 p-3 text-xs leading-5 text-lime-900">
+                            <div v-if="hasTimedSession"><p class="text-slate-500">Jam mulai – selesai</p><p class="mt-1 font-semibold">{{ slot ? slot.start_time + '–' + slot.end_time : 'Belum dipilih' }}</p></div>
+                            <div v-if="hasTimedSession"><p class="text-slate-500">Durasi sesi</p><p class="mt-1 font-semibold">{{ slot && selectedDurationHours ? selectedDurationLabel : 'Belum dipilih' }}</p></div>
+                            <div v-if="hasTimedSession && slot && selectedDurationHours > 1" class="rounded-xl border border-lime-200 bg-lime-50 p-3 text-xs leading-5 text-lime-900">
                                 Timer perangkat mengikuti keseluruhan durasi {{ selectedDurationLabel }} sampai {{ slot.end_time }}, bukan direset setiap pergantian jam.
                             </div>
-                            <div><p class="text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || 'Belum dipilih' }}</p></div>
-                            <div class="border-t border-slate-200 pt-4"><p class="text-slate-500">Total</p><p class="mt-1 text-2xl font-bold text-slate-900">{{ slot ? formatIDR(slot.price) : '—' }}</p></div>
+                            <div v-if="hasTimedSession"><p class="text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || 'Belum dipilih' }}</p></div>
+                            <div class="border-t border-slate-200 pt-4"><p class="text-slate-500">Total</p><p class="mt-1 text-2xl font-bold text-slate-900">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
                         </div>
                     </aside>
                 </section>
