@@ -156,7 +156,7 @@ watch(date, () => {
     courtId.value = null;
     slots.value = [];
 
-    if (!pkg.value || !date.value) {
+    if (!pkg.value || !date.value || !hasTimedSession.value) {
         return;
     }
 
@@ -622,9 +622,7 @@ function formatDuration(minutes: number) {
                         >
                             <span class="text-muted-foreground">Jadwal</span>
                             <span class="font-medium">
-                                {{ date }} · {{ slot?.start_time }}–{{
-                                    slot?.end_time
-                                }}
+                                {{ date }}<template v-if="hasTimedSession"> · {{ slot?.start_time }}–{{ slot?.end_time }}</template>
                             </span>
                         </div>
                         <div
@@ -707,8 +705,8 @@ function formatDuration(minutes: number) {
                             <div><p class="text-sm text-slate-500">Nama pemesan</p><p class="mt-1 font-semibold">{{ form.guest_name }}</p></div>
                             <div><p class="text-sm text-slate-500">Email</p><p class="mt-1 font-semibold break-all">{{ form.guest_email }}</p></div>
                             <div><p class="text-sm text-slate-500">Nomor HP</p><p class="mt-1 font-semibold">{{ form.guest_phone }}</p></div>
-                            <div v-if="isSession"><p class="text-sm text-slate-500">Tanggal & waktu</p><p class="mt-1 font-semibold">{{ date }} · {{ slot?.start_time }}–{{ slot?.end_time }}</p></div>
-                            <div v-if="isSession"><p class="text-sm text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || '—' }}</p></div>
+                            <div v-if="isSession"><p class="text-sm text-slate-500">{{ hasTimedSession ? 'Tanggal & waktu' : 'Tanggal sesi' }}</p><p class="mt-1 font-semibold">{{ date }}<template v-if="hasTimedSession"> · {{ slot?.start_time }}–{{ slot?.end_time }}</template></p></div>
+                            <div v-if="hasTimedSession"><p class="text-sm text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || '—' }}</p></div>
                         </div>
                         <div class="flex items-center justify-between border-t border-slate-200 pt-4"><div><p class="font-semibold">Total pesanan</p><p class="mt-1 text-xs text-slate-500">Sesuai paket dan jadwal yang dipilih</p></div><p class="text-2xl font-bold">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
                     </div>
