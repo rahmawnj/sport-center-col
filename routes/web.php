@@ -28,7 +28,21 @@ Route::get('booking/receipt/{booking}', [PublicBookingController::class, 'receip
 Route::get('verify', [VerifyController::class, 'show'])->name('verify');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard', function (\Illuminate\Http\Request $request) {
+        if ($request->user()->hasRole('Member')) {
+            return redirect()->route('member.dashboard');
+        }
+
+        abort_unless($request->user()->hasRole('Superadmin'), 403);
+
+        return app(DashboardController::class)->index($request);
+    })->name('dashboard');
+
+    Route::get('member/dashboard', [\App\Http\Controllers\MemberDashboardController::class, 'index'])
+        ->middleware('role:Member')
+        ->name('member.dashboard');
+
+    Route::middleware('role:Superadmin')->group(function () {
 
     Route::get('facilities', [FacilityController::class, 'index'])->name('facilities.index');
     Route::post('facilities', [FacilityController::class, 'store'])->name('facilities.store');
@@ -79,6 +93,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
     Route::post('transactions', [TransactionController::class, 'store'])->name('transactions.store');
     Route::get('transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
+    });
 });
 
 require __DIR__.'/settings.php';
