@@ -127,9 +127,8 @@ class PublicBookingController extends Controller
         }
 
         $booking = $this->storeBooking($request, $package, $data);
-        $receiptUrl = URL::temporarySignedRoute(
+        $receiptUrl = URL::signedRoute(
             'booking.receipt',
-            now()->addDays(30),
             [
                 'booking' => $booking->id,
                 'package' => $package->name,
