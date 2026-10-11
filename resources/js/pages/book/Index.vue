@@ -43,7 +43,7 @@ type Slot = {
     courts: Court[];
 };
 
-const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null }>();
+const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; success?: string | null }>();
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -238,11 +238,33 @@ function formatDuration(minutes: number) {
     <PublicLayout>
     <div class="min-h-screen bg-background text-foreground">
         <main class="mx-auto w-full max-w-5xl px-4 py-8">
-            <h1 class="text-2xl font-semibold tracking-tight">Booking</h1>
-            <p class="mt-1 text-sm text-muted-foreground">
-                Pilih fasilitas dan paket, lalu lengkapi data pemesanan.
-            </p>
+            <div
+                v-if="props.success"
+                role="status"
+                class="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900"
+            >
+                <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                    <Check class="size-4" />
+                </span>
+                <div>
+                    <p class="font-semibold">Booking berhasil disimpan!</p>
+                    <p class="mt-1 text-sm leading-6">{{ props.success }}</p>
+                    <p class="mt-1 text-xs text-emerald-800">Simpan nama dan nomor kontak yang kamu masukkan agar tim kami mudah menghubungimu.</p>
+                </div>
+            </div>
 
+            <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[.18em] text-primary">Reservasi tanpa akun</p>
+                    <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Booking olahraga</h1>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Pilih fasilitas, tentukan jadwal, lalu konfirmasi dengan data kontakmu.
+                    </p>
+                </div>
+                <span class="rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                    <Check class="mr-1 inline size-3.5 text-emerald-600" /> Tanpa login
+                </span>
+            </div>
             <!-- Stepper -->
             <div class="mt-6 flex flex-wrap items-center gap-2">
                 <div
