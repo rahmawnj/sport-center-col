@@ -9,30 +9,18 @@ use Illuminate\Http\JsonResponse;
 class MemberController extends Controller
 {
     /**
-     * Public member data endpoint. No API key or authentication required.
+     * Public list of member names for the standalone face-registration app.
      */
     public function index(): JsonResponse
     {
         $members = MemberProfile::query()
-            ->with(['user.userMemberships'])
+            ->with('user:id,name')
             ->whereHas('user')
             ->orderBy('id')
             ->get()
-            ->map(function (MemberProfile $profile): array {
-                $user = $profile->user;
-                $hasActiveMembership = $user->userMemberships->contains(
-                    fn ($membership): bool => $membership->isActive()
-                );
-
-                return [
-                    'id' => $profile->id,
-                    'user_id' => $user->id,
-                    'member_code' => $profile->member_code,
-                    'name' => $user->name,
-                    'qr_code' => $profile->qr_code,
-                    'membership_status' => $hasActiveMembership ? 'active' : 'inactive',
-                ];
-            })
+            ->map(fn (MemberProfile $profile): array => [
+                'name' => $profile->user->name,
+            ])
             ->values();
 
         return response()->json([
