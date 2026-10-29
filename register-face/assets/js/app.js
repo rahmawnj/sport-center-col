@@ -33,9 +33,14 @@
     selectedMember = button.dataset.name || '';
     selectedName.textContent = selectedMember || 'Pilih member di sebelah kiri';
     selectedAvatar.textContent = selectedMember ? Array.from(selectedMember)[0].toUpperCase() : '?';
-    captureButton.disabled = !stream || !selectedMember;
-    saveButton.disabled = !capturedBlob || !selectedMember;
-    notify('');
+    const alreadySaved = button.dataset.saved === 'true';
+    captureButton.disabled = !stream || !selectedMember || alreadySaved;
+    saveButton.disabled = !capturedBlob || !selectedMember || alreadySaved;
+    if (alreadySaved) {
+      notify('Foto untuk ' + selectedMember + ' sudah tersimpan. Satu member hanya boleh punya satu foto.', 'error');
+    } else {
+      notify('');
+    }
   }
   list?.querySelectorAll('.member-item').forEach(button => button.addEventListener('click', () => selectMember(button)));
   const firstMember = list?.querySelector('.member-item');
@@ -70,7 +75,8 @@
       await video.play();
       cameraStatus.textContent = 'Aktif';
       cameraButton.textContent = 'Matikan Kamera';
-      captureButton.disabled = !selectedMember;
+      const selectedButton = list.querySelector('.member-item.selected');
+      captureButton.disabled = !selectedMember || selectedButton?.dataset.saved === 'true';
       saveButton.disabled = true;
       capturedBlob = null;
       notify('Kamera aktif. Posisikan wajah lalu ambil foto.', 'success');
@@ -82,7 +88,8 @@
   });
 
   captureButton.addEventListener('click', async () => {
-    if (!stream || !selectedMember || !video.videoWidth) return;
+    const selectedButton = list.querySelector('.member-item.selected');
+    if (!stream || !selectedMember || selectedButton?.dataset.saved === 'true' || !video.videoWidth) return;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -113,7 +120,8 @@
   });
 
   saveButton.addEventListener('click', async () => {
-    if (!capturedBlob || !selectedMember) return;
+    const selectedButton = list.querySelector('.member-item.selected');
+    if (!capturedBlob || !selectedMember || selectedButton?.dataset.saved === 'true') return;
     saveButton.disabled = true;
     saveButton.textContent = 'Menyimpan...';
     try {
@@ -123,13 +131,20 @@
       const response = await fetch('save-photo.php', { method: 'POST', body: form });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || 'Foto gagal disimpan.');
+      if (selectedButton) {
+        selectedButton.dataset.saved = 'true';
+        const detail = selectedButton.querySelector('.member-copy small');
+        if (detail) detail.textContent = 'Foto sudah terdaftar';
+      }
       notify('Foto tersimpan di ' + result.path, 'success');
-      retakeButton.disabled = false;
+      retakeButton.disabled = true;
+      captureButton.disabled = true;
     } catch (error) {
       notify(error.message || 'Gagal menyimpan foto. Periksa izin tulis folder aplikasi.', 'error');
     } finally {
       saveButton.textContent = 'Simpan Foto';
-      saveButton.disabled = !capturedBlob;
+      const selectedButton = list.querySelector('.member-item.selected');
+      saveButton.disabled = !capturedBlob || !selectedMember || selectedButton?.dataset.saved === 'true';
     }
   });
 
