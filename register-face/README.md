@@ -31,3 +31,12 @@ PHP harus tersedia di PATH. Bisa juga menjalankan folder ini menggunakan Apache/
 - Pastikan folder aplikasi dapat ditulis oleh proses PHP.
 - Endpoint member publik tidak menggunakan autentikasi sesuai kebutuhan awal. Jangan mengekspos server ini ke internet tanpa mempertimbangkan privasi.
 - URL API bisa diganti melalui environment variable `MEMBERS_API_URL`.
+
+
+## Pengaturan dan integrasi FaceRec
+
+- Buka menu **Setting FaceRec** untuk mengatur IP perangkat. Nilai awal: `http://192.168.18.165`.
+- IP disimpan di `localStorage` browser pada komputer/browser yang digunakan, bukan ke database.
+- Setelah mengambil foto dan menyimpannya secara lokal, klik **Kirim ke FaceRec** untuk mengirim satu orang ke endpoint `{IP}/action/AddPersons` menggunakan body JSON `operator: AddPersons`, `DeviceID: 1310023`, `Total: 1`, dan `Personinfo_0.picinfo` berisi foto JPEG dalam format data URL/base64.
+- Perangkat harus dapat dijangkau dari komputer yang menjalankan browser. Jika browser memblokir permintaan karena CORS atau mixed-content, perangkat perlu mengizinkan origin aplikasi atau pengiriman perlu dilakukan melalui proxy server lokal.
+- Nilai data person seperti gender, kartu akses, tanggal lahir, alamat, dan nomor telepon saat ini menggunakan nilai default/kosong karena API member hanya menyediakan nama.
