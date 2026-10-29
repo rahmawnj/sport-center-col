@@ -100,7 +100,7 @@
 
   captureButton.addEventListener('click', async () => {
     const selectedButton = list.querySelector('.member-item.selected');
-    if (!stream || !selectedMember || selectedButton?.dataset.saved === 'true' || !video.videoWidth) return;
+    if (!stream || !selectedMember || !video.videoWidth) return;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -134,7 +134,7 @@
 
   saveButton.addEventListener('click', async () => {
     const selectedButton = list.querySelector('.member-item.selected');
-    if (!capturedBlob || !selectedMember || selectedButton?.dataset.saved === 'true') return;
+    if (!capturedBlob || !selectedMember) return;
     saveButton.disabled = true;
     saveButton.textContent = 'Menyimpan...';
     try {
@@ -165,9 +165,8 @@
     } catch (error) {
       notify(error.message || 'Gagal menyimpan foto. Periksa izin tulis folder aplikasi.', 'error');
     } finally {
-      const selectedButton = list.querySelector('.member-item.selected');
-      saveButton.textContent = selectedButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
-      const selectedButton = list.querySelector('.member-item.selected');
+      const currentButton = list.querySelector('.member-item.selected');
+      saveButton.textContent = currentButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
       saveButton.disabled = !capturedBlob || !selectedMember;
     }
   });
