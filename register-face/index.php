@@ -4,6 +4,17 @@ declare(strict_types=1);
 $apiUrl = getenv('MEMBERS_API_URL') ?: 'http://127.0.0.1:8000/api/members';
 $members = [];
 $error = null;
+$savedNames = [];
+$metadataPath = __DIR__ . DIRECTORY_SEPARATOR . 'photos' . DIRECTORY_SEPARATOR . 'index.json';
+if (is_file($metadataPath)) {
+    $savedRecords = json_decode((string) file_get_contents($metadataPath), true);
+    if (is_array($savedRecords)) {
+        foreach ($savedRecords as $record) {
+            $savedName = trim((string) ($record['name'] ?? ''));
+            if ($savedName !== '') $savedNames[mb_strtolower($savedName, 'UTF-8')] = true;
+        }
+    }
+}
 
 $context = stream_context_create([
     'http' => [
@@ -69,9 +80,9 @@ if ($response === false) {
           <label class="search-box"><span>⌕</span><input type="search" id="memberSearch" placeholder="Cari nama member..." autocomplete="off"></label>
           <div class="member-list" id="memberList">
             <?php foreach ($members as $i => $member): ?>
-              <button class="member-item<?= $i === 0 ? ' selected' : '' ?>" type="button" data-name="<?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?>">
+              <button class="member-item<?= $i === 0 ? ' selected' : '' ?>" type="button" data-name="<?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?>" data-saved="<?= isset($savedNames[mb_strtolower($member['name'], 'UTF-8')]) ? 'true' : 'false' ?>">
                 <span class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($member['name'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
-                <span class="member-copy"><strong><?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?></strong><small>Member Sport Center</small></span>
+                <span class="member-copy"><strong><?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?></strong><small><?= isset($savedNames[mb_strtolower($member['name'], 'UTF-8')]) ? 'Foto sudah terdaftar' : 'Member Sport Center' ?></small></span>
                 <span class="member-chevron">›</span>
               </button>
             <?php endforeach; ?>
