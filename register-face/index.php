@@ -59,7 +59,8 @@ if ($response === false) {
       <div class="brand-mark">SC</div>
       <div class="brand-copy"><strong>SPORT CENTER</strong><span>MEMBER SYSTEM</span></div>
       <div class="side-label">WORKSPACE</div>
-      <div class="side-link active"><span class="side-icon">◉</span> Register Face</div>
+      <button type="button" class="side-link active" id="navRegister"><span class="side-icon">◉</span> Register Face</button>
+      <button type="button" class="side-link" id="navSettings"><span class="side-icon">⚙</span> Setting FaceRec</button>
       <div class="sidebar-note"><span class="status-dot"></span> Standalone local app</div>
       <div class="sidebar-bottom">Face data is stored on this PC.</div>
     </aside>
@@ -70,6 +71,18 @@ if ($response === false) {
         <div class="local-badge"><span class="status-dot"></span> LOCAL STORAGE</div>
       </header>
 
+      <section class="settings-panel panel" id="settingsPanel" hidden>
+        <div class="panel-heading"><div><div class="eyebrow">DEVICE CONFIGURATION</div><h2>Setting IP FaceRec</h2></div><span class="count-pill">Disimpan di browser</span></div>
+        <p class="settings-description">Masukkan alamat perangkat FaceRec. Pengaturan disimpan di localStorage browser ini, bukan di database.</p>
+        <form id="faceRecSettingsForm" class="settings-form">
+          <label for="faceRecIp">IP / URL perangkat FaceRec</label>
+          <div class="settings-input-row"><input id="faceRecIp" name="faceRecIp" type="url" placeholder="http://192.168.18.165" autocomplete="url" required><button type="submit" class="button button-primary">Simpan Pengaturan</button></div>
+          <small>Endpoint yang digunakan: <code>/action/AddPersons</code></small>
+          <div id="settingsMessage" class="message" role="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <div id="registerContent">
       <section class="stats-row">
         <article class="stat-card"><div class="stat-label">TOTAL MEMBER</div><div class="stat-number"><?= count($members) ?></div><div class="stat-foot">Diambil dari API Laravel</div></article>
         <article class="stat-card"><div class="stat-label">PENYIMPANAN</div><div class="stat-number stat-word">Local PC</div><div class="stat-foot">Foto tidak dikirim ke API</div></article>
@@ -113,6 +126,7 @@ if ($response === false) {
           <div id="message" class="message" role="status" aria-live="polite"></div>
         </div>
       </section>
+      </div>
       <footer class="footer"><span>SPORT CENTER · REGISTER FACE</span><span>Standalone PHP · Local PC</span></footer>
     </main>
   </div>
