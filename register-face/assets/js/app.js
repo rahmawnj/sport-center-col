@@ -130,6 +130,11 @@
       form.append('photo', capturedBlob, 'face.jpg');
       const response = await fetch('save-photo.php', { method: 'POST', body: form });
       const result = await response.json();
+      if (response.status === 409 && selectedButton) {
+        selectedButton.dataset.saved = 'true';
+        const detail = selectedButton.querySelector('.member-copy small');
+        if (detail) detail.textContent = 'Foto sudah terdaftar';
+      }
       if (!response.ok || !result.success) throw new Error(result.message || 'Foto gagal disimpan.');
       if (selectedButton) {
         selectedButton.dataset.saved = 'true';
