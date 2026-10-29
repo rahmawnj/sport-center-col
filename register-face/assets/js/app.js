@@ -28,9 +28,9 @@
   let lastSavedDataUrl = null;
 
   function normalizeDeviceUrl(value) {
-    let url = String(value || '').trim().replace(/\\/+$/, '');
+    let url = String(value || '').trim().replace(/\/+$/, '');
     if (!url) return '';
-    if (!/^https?:\\/\\//i.test(url)) url = 'http://' + url;
+    if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
     return url;
   }
   function showView(view) {
