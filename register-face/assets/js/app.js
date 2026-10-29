@@ -114,7 +114,6 @@
     video.hidden = true;
     retakeButton.disabled = false;
     saveButton.disabled = false;
-    const selectedButton = list.querySelector('.member-item.selected');
     saveButton.textContent = selectedButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
     notify(selectedButton?.dataset.saved === 'true' ? 'Foto baru siap. Simpan perubahan untuk mengganti foto lama.' : 'Foto berhasil diambil. Periksa pratinjau sebelum menyimpan.', 'success');
   });
