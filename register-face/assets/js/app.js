@@ -76,6 +76,9 @@
     selectedName.textContent = selectedMember || 'Pilih member di sebelah kiri';
     selectedAvatar.textContent = selectedMember ? Array.from(selectedMember)[0].toUpperCase() : '?';
     capturedBlob = null;
+    lastSavedDataUrl = null;
+    const sendButton = document.getElementById('sendFaceRecButton');
+    if (sendButton) sendButton.hidden = true;
     const alreadySaved = button.dataset.saved === 'true';
     captureButton.disabled = !stream || !selectedMember;
     saveButton.disabled = true;
@@ -151,6 +154,9 @@
       notify('Foto gagal diproses. Coba ambil ulang.', 'error');
       return;
     }
+    lastSavedDataUrl = null;
+    const sendButton = document.getElementById('sendFaceRecButton');
+    if (sendButton) sendButton.hidden = true;
     preview.src = URL.createObjectURL(capturedBlob);
     preview.hidden = false;
     video.hidden = true;
