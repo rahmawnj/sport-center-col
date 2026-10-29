@@ -13,9 +13,51 @@
   const selectedName = document.getElementById('selectedName');
   const selectedAvatar = document.querySelector('.selected-avatar');
   const message = document.getElementById('message');
+  const navRegister = document.getElementById('navRegister');
+  const navSettings = document.getElementById('navSettings');
+  const registerContent = document.getElementById('registerContent');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const settingsForm = document.getElementById('faceRecSettingsForm');
+  const faceRecIpInput = document.getElementById('faceRecIp');
+  const settingsMessage = document.getElementById('settingsMessage');
+  const FACE_REC_IP_KEY = 'sportCenter.faceRecIp';
+  const FACE_REC_DEVICE_ID_KEY = 'sportCenter.faceRecDeviceId';
   let selectedMember = '';
   let stream = null;
   let capturedBlob = null;
+  let lastSavedDataUrl = null;
+
+  function normalizeDeviceUrl(value) {
+    let url = String(value || '').trim().replace(/\\/+$/, '');
+    if (!url) return '';
+    if (!/^https?:\\/\\//i.test(url)) url = 'http://' + url;
+    return url;
+  }
+  function showView(view) {
+    const settings = view === 'settings';
+    registerContent.hidden = settings;
+    settingsPanel.hidden = !settings;
+    navRegister.classList.toggle('active', !settings);
+    navSettings.classList.toggle('active', settings);
+  }
+  navRegister?.addEventListener('click', () => showView('register'));
+  navSettings?.addEventListener('click', () => showView('settings'));
+  if (faceRecIpInput) faceRecIpInput.value = localStorage.getItem(FACE_REC_IP_KEY) || 'http://192.168.18.165';
+  settingsForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    const url = normalizeDeviceUrl(faceRecIpInput.value);
+    try {
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Gunakan URL HTTP atau HTTPS.');
+      localStorage.setItem(FACE_REC_IP_KEY, parsed.origin);
+      faceRecIpInput.value = parsed.origin;
+      settingsMessage.textContent = 'Pengaturan FaceRec tersimpan di localStorage: ' + parsed.origin;
+      settingsMessage.className = 'message success';
+    } catch (error) {
+      settingsMessage.textContent = error.message || 'Alamat IP / URL tidak valid.';
+      settingsMessage.className = 'message error';
+    }
+  });
 
   function notify(text, type = '') {
     message.textContent = text;
@@ -158,7 +200,9 @@
       preview.src = result.path + '?v=' + Date.now();
       preview.hidden = false;
       video.hidden = true;
-      notify(result.replaced ? 'Foto lama berhasil dihapus dan diganti: ' + result.path : 'Foto tersimpan di ' + result.path, 'success');
+      lastSavedDataUrl = await blobToDataUrl(capturedBlob);
+      notify(result.replaced ? 'Foto lama berhasil dihapus dan diganti: ' + result.path + '. Foto lokal siap dikirim ke FaceRec.' : 'Foto tersimpan di ' + result.path + '. Foto lokal siap dikirim ke FaceRec.', 'success');
+      showSendToFaceRecButton();
       retakeButton.disabled = true;
       captureButton.disabled = true;
     } catch (error) {
@@ -169,6 +213,95 @@
       saveButton.disabled = !capturedBlob || !selectedMember;
     }
   });
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('Foto gagal dibaca untuk dikirim ke FaceRec.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function showSendToFaceRecButton() {
+    let button = document.getElementById('sendFaceRecButton');
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.id = 'sendFaceRecButton';
+      button.className = 'button button-primary';
+      button.textContent = 'Kirim ke FaceRec';
+      document.querySelector('.save-row')?.appendChild(button);
+      button.addEventListener('click', sendToFaceRec);
+    }
+    button.hidden = false;
+  }
+
+  async function sendToFaceRec() {
+    const button = document.getElementById('sendFaceRecButton');
+    if (!selectedMember || !lastSavedDataUrl) {
+      notify('Simpan foto lokal terlebih dahulu.', 'error');
+      return;
+    }
+    const baseUrl = normalizeDeviceUrl(localStorage.getItem(FACE_REC_IP_KEY) || 'http://192.168.18.165');
+    if (!baseUrl) {
+      notify('Atur IP FaceRec terlebih dahulu di menu Setting FaceRec.', 'error');
+      showView('settings');
+      return;
+    }
+    button.disabled = true;
+    button.textContent = 'Mengirim...';
+    const now = new Date();
+    const dateTime = value => value.toISOString().slice(0, 19);
+    const validBegin = dateTime(now);
+    const validEndDate = new Date(now);
+    validEndDate.setFullYear(validEndDate.getFullYear() + 10);
+    const person = {
+      PersonType: 0,
+      Name: selectedMember,
+      Gender: 0,
+      Nation: 1,
+      CardType: 0,
+      IdCard: '',
+      Birthday: '',
+      Telnum: '',
+      Native: '',
+      Address: '',
+      Notes: 'Sport Center member',
+      MjCardFrom: 2,
+      WiegandType: 1,
+      CardMode: 0,
+      MjCardNo: 0,
+      Tempvalid: 0,
+      CustomizeID: 120,
+      PersonUUID: (typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); })),
+      isCheckSimilarity: 0,
+      ValidBegin: validBegin,
+      ValidEnd: dateTime(validEndDate),
+      picinfo: lastSavedDataUrl
+    };
+    const payload = {
+      operator: 'AddPersons',
+      DeviceID: Number(localStorage.getItem(FACE_REC_DEVICE_ID_KEY) || 1310023),
+      Total: 1,
+      Personinfo_0: person
+    };
+    try {
+      const response = await fetch(baseUrl + '/action/AddPersons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/plain, */*' },
+        body: JSON.stringify(payload)
+      });
+      const responseText = await response.text();
+      if (!response.ok) throw new Error('FaceRec merespons HTTP ' + response.status + (responseText ? ': ' + responseText.slice(0, 250) : ''));
+      notify('Permintaan pendaftaran wajah terkirim ke FaceRec. Respons perangkat: ' + (responseText || '(kosong)'), 'success');
+    } catch (error) {
+      notify('Foto sudah tersimpan lokal, tetapi pengiriman ke FaceRec gagal. Periksa IP, koneksi perangkat, dan dukungan CORS browser. Detail: ' + (error.message || 'koneksi gagal'), 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Kirim ke FaceRec';
+    }
+  }
 
   window.addEventListener('beforeunload', stopCamera);
 })();
