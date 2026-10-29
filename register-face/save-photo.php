@@ -127,19 +127,26 @@ if (is_file($destination) && !in_array($destinationName, $oldFiles, true) && !$m
     respond(409, ['success' => false, 'message' => 'File tujuan sudah ada dan tidak dikenali sebagai foto member ini. Foto lama tidak dihapus.']);
 }
 
-if (is_file($destination) && !@unlink($destination)) {
-    @unlink($tempPath);
-    flock($lockHandle, LOCK_UN);
-    fclose($lockHandle);
-    respond(500, ['success' => false, 'message' => 'Foto lama tidak bisa diganti. Periksa izin folder photos/.']);
+// Temporarily move the old canonical file aside so it can be restored if installing the new file fails.
+$backupPath = null;
+if (is_file($destination)) {
+    $backupPath = $photosDir . DIRECTORY_SEPARATOR . '.backup-' . bin2hex(random_bytes(8)) . '.jpg';
+    if (!@rename($destination, $backupPath)) {
+        @unlink($tempPath);
+        flock($lockHandle, LOCK_UN);
+        fclose($lockHandle);
+        respond(500, ['success' => false, 'message' => 'Foto lama tidak bisa dipindahkan untuk diganti. Foto lama tetap aman.']);
+    }
 }
 
 if (!@rename($tempPath, $destination)) {
     @unlink($tempPath);
+    if ($backupPath !== null && is_file($backupPath)) @rename($backupPath, $destination);
     flock($lockHandle, LOCK_UN);
     fclose($lockHandle);
-    respond(500, ['success' => false, 'message' => 'Foto baru gagal dipasang. Foto lama selain file tujuan tetap dipertahankan.']);
+    respond(500, ['success' => false, 'message' => 'Foto baru gagal dipasang. Foto lama dipulihkan jika memungkinkan.']);
 }
+if ($backupPath !== null && is_file($backupPath)) @unlink($backupPath);
 
 // Once the new photo is safely in place, remove the old filenames and update metadata.
 foreach ($oldFiles as $oldFile) {
