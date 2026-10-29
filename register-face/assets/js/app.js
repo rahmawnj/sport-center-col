@@ -33,12 +33,22 @@
     selectedMember = button.dataset.name || '';
     selectedName.textContent = selectedMember || 'Pilih member di sebelah kiri';
     selectedAvatar.textContent = selectedMember ? Array.from(selectedMember)[0].toUpperCase() : '?';
+    capturedBlob = null;
     const alreadySaved = button.dataset.saved === 'true';
-    captureButton.disabled = !stream || !selectedMember || alreadySaved;
-    saveButton.disabled = !capturedBlob || !selectedMember || alreadySaved;
-    if (alreadySaved) {
-      notify('Foto untuk ' + selectedMember + ' sudah tersimpan. Satu member hanya boleh punya satu foto.', 'error');
+    captureButton.disabled = !stream || !selectedMember;
+    saveButton.disabled = true;
+    saveButton.textContent = alreadySaved ? 'Simpan Perubahan' : 'Simpan Foto';
+    retakeButton.disabled = true;
+    if (alreadySaved && button.dataset.photo) {
+      preview.src = button.dataset.photo + '?v=' + Date.now();
+      preview.hidden = false;
+      video.hidden = true;
+      placeholder.hidden = true;
+      notify('Foto lama ' + selectedMember + ' ditampilkan. Aktifkan kamera dan ambil foto baru untuk menggantinya.', 'success');
     } else {
+      preview.hidden = true;
+      if (!stream) placeholder.hidden = false;
+      else video.hidden = false;
       notify('');
     }
   }
@@ -76,8 +86,9 @@
       cameraStatus.textContent = 'Aktif';
       cameraButton.textContent = 'Matikan Kamera';
       const selectedButton = list.querySelector('.member-item.selected');
-      captureButton.disabled = !selectedMember || selectedButton?.dataset.saved === 'true';
+      captureButton.disabled = !selectedMember;
       saveButton.disabled = true;
+      saveButton.textContent = selectedButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
       capturedBlob = null;
       notify('Kamera aktif. Posisikan wajah lalu ambil foto.', 'success');
     } catch (error) {
@@ -103,7 +114,9 @@
     video.hidden = true;
     retakeButton.disabled = false;
     saveButton.disabled = false;
-    notify('Foto berhasil diambil. Periksa pratinjau sebelum menyimpan.', 'success');
+    const selectedButton = list.querySelector('.member-item.selected');
+    saveButton.textContent = selectedButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
+    notify(selectedButton?.dataset.saved === 'true' ? 'Foto baru siap. Simpan perubahan untuk mengganti foto lama.' : 'Foto berhasil diambil. Periksa pratinjau sebelum menyimpan.', 'success');
   });
 
   retakeButton.addEventListener('click', () => {
@@ -127,6 +140,7 @@
     try {
       const form = new FormData();
       form.append('name', selectedMember);
+      form.append('replace', selectedButton?.dataset.saved === 'true' ? '1' : '0');
       form.append('photo', capturedBlob, 'face.jpg');
       const response = await fetch('save-photo.php', { method: 'POST', body: form });
       const result = await response.json();
@@ -138,18 +152,23 @@
       if (!response.ok || !result.success) throw new Error(result.message || 'Foto gagal disimpan.');
       if (selectedButton) {
         selectedButton.dataset.saved = 'true';
+        selectedButton.dataset.photo = result.path;
         const detail = selectedButton.querySelector('.member-copy small');
         if (detail) detail.textContent = 'Foto sudah terdaftar';
       }
-      notify('Foto tersimpan di ' + result.path, 'success');
+      preview.src = result.path + '?v=' + Date.now();
+      preview.hidden = false;
+      video.hidden = true;
+      notify(result.replaced ? 'Foto lama berhasil dihapus dan diganti: ' + result.path : 'Foto tersimpan di ' + result.path, 'success');
       retakeButton.disabled = true;
       captureButton.disabled = true;
     } catch (error) {
       notify(error.message || 'Gagal menyimpan foto. Periksa izin tulis folder aplikasi.', 'error');
     } finally {
-      saveButton.textContent = 'Simpan Foto';
       const selectedButton = list.querySelector('.member-item.selected');
-      saveButton.disabled = !capturedBlob || !selectedMember || selectedButton?.dataset.saved === 'true';
+      saveButton.textContent = selectedButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
+      const selectedButton = list.querySelector('.member-item.selected');
+      saveButton.disabled = !capturedBlob || !selectedMember;
     }
   });
 
