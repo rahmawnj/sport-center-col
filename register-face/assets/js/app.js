@@ -49,12 +49,19 @@
   });
 
   cameraButton.addEventListener('click', async () => {
+    if (stream) {
+      stopCamera();
+      placeholder.hidden = false;
+      cameraButton.textContent = 'Aktifkan Kamera';
+      captureButton.disabled = true;
+      notify('Kamera dimatikan.');
+      return;
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       notify('Browser tidak mendukung kamera. Buka aplikasi melalui localhost atau HTTPS.', 'error');
       return;
     }
     try {
-      stopCamera();
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
       video.srcObject = stream;
       video.hidden = false;
@@ -67,15 +74,9 @@
       saveButton.disabled = true;
       capturedBlob = null;
       notify('Kamera aktif. Posisikan wajah lalu ambil foto.', 'success');
-      cameraButton.onclick = () => {
-        stopCamera();
-        placeholder.hidden = false;
-        cameraButton.textContent = 'Aktifkan Kamera';
-        captureButton.disabled = true;
-        notify('Kamera dimatikan.');
-        cameraButton.onclick = null;
-      };
     } catch (error) {
+      stopCamera();
+      cameraButton.textContent = 'Aktifkan Kamera';
       notify('Akses kamera gagal. Periksa izin kamera browser dan pastikan kamera tidak dipakai aplikasi lain.', 'error');
     }
   });
