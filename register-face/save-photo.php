@@ -120,13 +120,6 @@ if (!move_uploaded_file($tmp, $tempPath)) {
     respond(500, ['success' => false, 'message' => 'Foto gagal ditulis ke penyimpanan lokal.']);
 }
 
-if (is_file($destination) && !in_array($destinationName, $oldFiles, true) && !$matchingIndexes) {
-    @unlink($tempPath);
-    flock($lockHandle, LOCK_UN);
-    fclose($lockHandle);
-    respond(409, ['success' => false, 'message' => 'File tujuan sudah ada dan tidak dikenali sebagai foto member ini. Foto lama tidak dihapus.']);
-}
-
 // Temporarily move the old canonical file aside so it can be restored if installing the new file fails.
 $backupPath = null;
 if (is_file($destination)) {
