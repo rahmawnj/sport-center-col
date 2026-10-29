@@ -32,4 +32,9 @@ class Facility extends Model
     {
         return $this->hasMany(Package::class);
     }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
+    }
 }

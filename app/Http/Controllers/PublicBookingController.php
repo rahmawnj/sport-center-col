@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Court;
+use App\Models\Device;
 use App\Models\Facility;
 use App\Models\Package;
 use App\Models\PackagePricingRule;
+use App\Models\Transaction;
 use App\Models\UserMembership;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -28,7 +32,7 @@ class PublicBookingController extends Controller
         $facilities = Facility::query()
             ->where('status', 'active')
             ->where('is_bookable_online', true)
-            ->with(['packages' => fn ($query) => $query->orderBy('name')->with('pricingRules')])
+            ->with(['packages' => fn ($query) => $query->where('type', 'session')->orderBy('name')->with('pricingRules')])
             ->orderBy('name')
             ->get()
             ->map(fn (Facility $facility) => [
@@ -59,7 +63,13 @@ class PublicBookingController extends Controller
 
         return Inertia::render('book/Index', [
             'facilities' => $facilities,
+            'currentUser' => $request->user() ? [
+                'id' => $request->user()->id,
+                'name' => $request->user()->name,
+                'email' => $request->user()->email,
+            ] : null,
             'initialFacilityId' => $initialFacility['id'] ?? null,
+            'success' => $request->session()->get('success'),
         ]);
     }
 
@@ -88,10 +98,16 @@ class PublicBookingController extends Controller
                 'customer_name' => $booking->user?->name ?? $booking->guest_name,
             ])->values();
 
-        $courts = $package->facility->courts
+        $courts = Court::query()
+            ->where('facility_id', $package->facility_id)
+            ->where('status', 'available')
+            ->orderBy('name')
+            ->get()
             ->map(fn ($court) => [
                 'id' => $court->id,
                 'name' => $court->name,
+                'amenities' => $court->amenities ?? [],
+                'price_adjustment' => (float) $court->price_adjustment,
                 'status' => $court->status,
             ])->values();
 
@@ -106,50 +122,185 @@ class PublicBookingController extends Controller
     {
         $data = $request->validate([
             'package_id' => ['required', 'integer', 'exists:packages,id'],
-            'court_id' => ['nullable', 'integer', 'exists:courts,id'],
-            'date' => ['nullable', 'date', 'after_or_equal:today'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'guest_name' => ['required', 'string', 'max:255'],
-            'guest_email' => ['required', 'email', 'max:255'],
-            'guest_phone' => ['required', 'string', 'max:50'],
+            'payment_method' => ['nullable', 'in:cash,bank_transfer'],
         ]);
 
         $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
 
-        if ($package->type === 'session') {
-            $this->storeBooking($request, $package, $data);
-        } else {
+        if ($package->type === 'membership') {
+            abort_unless($request->user(), 403, 'Silakan login sebagai member untuk membeli membership.');
+            abort_unless($request->user()->role?->name === 'Member', 403, 'Pembelian membership hanya tersedia untuk akun Member.');
+
+            $data = array_merge($data, $request->validate([
+                'terms_accepted' => ['required', 'accepted'],
+            ]));
+
             $this->storeDirect($request, $package, $data);
+
+            return redirect()->route('member.membership')->with('success', 'Pembelian membership tersimpan di akunmu. Ikuti status pembayaran pada menu Pembayaran.');
         }
 
-        return redirect()->route('booking.index')->with('success', 'Booking berhasil dibuat. Silakan selesaikan pembayaran.');
+        $contactRules = $request->user()
+            ? [
+                'guest_name' => ['nullable', 'string', 'max:255'],
+                'guest_email' => ['nullable', 'email', 'max:255'],
+                'guest_phone' => ['nullable', 'string', 'max:50'],
+            ]
+            : [
+                'guest_name' => ['required', 'string', 'max:255'],
+                'guest_email' => ['required', 'email', 'max:255'],
+                'guest_phone' => ['required', 'string', 'max:50'],
+            ];
+
+        $data = array_merge($data, $request->validate(array_merge([
+            'court_id' => ['nullable', 'integer', 'exists:courts,id'],
+            'date' => ['nullable', 'date', 'after_or_equal:today'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
+            'terms_accepted' => ['required', 'accepted'],
+        ], $contactRules)));
+
+        if ($package->type !== 'session') {
+            $this->storeDirect($request, $package, $data);
+
+            return redirect()->route('booking.index')->with('success', 'Pesanan berhasil dibuat dan tersimpan.');
+        }
+
+        $booking = $this->storeBooking($request, $package, $data);
+        $total = (int) round($this->bookingPrice($package, $data));
+
+        Cache::put('booking_receipt_'.$booking->id, [
+            'package' => $package->name,
+            'total' => $total,
+        ], now()->addDays(30));
+
+        return redirect()->route('booking.receipt', ['booking' => $booking->id]);
+    }
+
+    public function receipt(Request $request, Booking $booking): Response
+    {
+        $booking->load(['court.facility', 'user']);
+        $receiptDetails = Cache::get('booking_receipt_'.$booking->id, []);
+
+        return Inertia::render('book/Receipt', [
+            'receiptUrl' => route('booking.receipt', ['booking' => $booking->id]),
+            'receipt' => [
+                'code' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
+                'customerName' => $booking->user?->name ?? $booking->guest_name,
+                'customerEmail' => $booking->guest_email,
+                'customerPhone' => $booking->guest_phone,
+                'facility' => $booking->court?->facility?->name ?? 'Olahraga',
+                'court' => $booking->court?->name ?? '—',
+                'package' => (string) ($receiptDetails['package'] ?? 'Booking sesi'),
+                'date' => $booking->date?->format('d M Y'),
+                'startTime' => substr((string) $booking->start_time, 0, 5),
+                'endTime' => substr((string) $booking->end_time, 0, 5),
+                'status' => (string) $booking->status,
+                'total' => (int) ($receiptDetails['total'] ?? 0),
+            ],
+        ]);
+    }
+
+    /**
+     * Calculate the server-side total for the selected continuous booking hours.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function bookingPrice(Package $package, array $data): float
+    {
+        $date = Carbon::parse($data['date']);
+        $adjustment = $this->courtAdjustment($data['court_id'] ?? null);
+
+        if (empty($data['start_time'])) {
+            return (float) ($this->basePrice($package, $date) ?? 0) + $adjustment;
+        }
+        $rules = $this->matchingRules($package, $date);
+        $start = $this->toMinutes($data['start_time']);
+        $hours = max(1, (int) ($data['duration_hours'] ?? 1));
+        $total = 0.0;
+
+        for ($minute = $start; $minute < $start + ($hours * 60); $minute += 60) {
+            $price = $this->resolvePrice($rules, $minute);
+            if ($price === null) {
+                throw ValidationException::withMessages(['start_time' => 'Tarif untuk jadwal ini tidak ditemukan.']);
+            }
+            $total += $price;
+        }
+
+        return $total + $adjustment;
+    }
+
+    private function courtAdjustment(mixed $courtId): float
+    {
+        return $courtId
+            ? (float) Court::query()->whereKey($courtId)->value('price_adjustment')
+            : 0.0;
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    private function storeBooking(Request $request, Package $package, array $data): void
+    private function storeBooking(Request $request, Package $package, array $data): Booking
     {
-        if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time'])) {
-            throw ValidationException::withMessages(['start_time' => 'Lapangan, tanggal, dan jam wajib dipilih.']);
+        if (empty($data['date'])) {
+            throw ValidationException::withMessages(['date' => 'Tanggal sesi wajib dipilih.']);
         }
 
         $date = Carbon::parse($data['date']);
+        $rules = $this->matchingRules($package, $date);
+        $hasTimedPricing = $rules->contains(fn ($rule) => $rule->start_time && $rule->end_time);
+
+        if (! $hasTimedPricing) {
+            $user = $request->user();
+
+            return Booking::create([
+                'user_id' => $user?->id,
+                'guest_name' => $user ? $user->name : $data['guest_name'],
+                'guest_email' => $user ? $user->email : $data['guest_email'],
+                'guest_phone' => $user ? null : $data['guest_phone'],
+                'court_id' => null,
+                'device_id' => Device::forFacility($package->facility_id)?->id,
+                'date' => $date->toDateString(),
+                'start_time' => null,
+                'end_time' => null,
+                'status' => 'pending',
+            ]);
+        }
+
+        if (empty($data['court_id']) || empty($data['start_time'])) {
+            throw ValidationException::withMessages(['start_time' => 'Pilih jam dan lapangan yang tersedia.']);
+        }
+        $courtIsBookable = $package->facility->courts()
+            ->whereKey($data['court_id'])
+            ->where('status', 'available')
+            ->exists();
+
+        if (! $courtIsBookable) {
+            throw ValidationException::withMessages([
+                'court_id' => 'Lapangan yang dipilih tidak tersedia untuk olahraga ini. Silakan pilih lapangan lain.',
+            ]);
+        }
+
         $startMinutes = $this->toMinutes($data['start_time']);
-        $endMinutes = $startMinutes + max(1, (int) $package->duration_minutes);
+        $durationHours = max(1, (int) ($data['duration_hours'] ?? 1));
+        $durationMinutes = $durationHours * 60;
+        $endMinutes = $startMinutes + $durationMinutes;
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
 
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
 
-        $price = $this->resolvePrice($this->matchingRules($package, $date), $startMinutes);
-
-        if ($price === null) {
-            throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih tidak memiliki tarif.']);
+        $price = 0.0;
+        for ($minute = $startMinutes; $minute < $endMinutes; $minute += 60) {
+            $hourPrice = $this->resolvePrice($rules, $minute);
+            if ($hourPrice === null) {
+                throw ValidationException::withMessages(['start_time' => 'Durasi yang dipilih melewati jam operasional atau tidak memiliki tarif.']);
+            }
+            $price += $hourPrice;
         }
 
-        DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround, $price) {
+        return DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround) {
             $conflict = Booking::query()
                 ->where('court_id', $data['court_id'])
                 ->whereDate('date', $date->toDateString())
@@ -170,22 +321,20 @@ class PublicBookingController extends Controller
 
             $user = $request->user();
 
-            $booking = Booking::create([
+            // Public court bookings are stored in bookings only. Do not create a
+            // payment transaction here: the current booking flow confirms the
+            // reservation separately from payment processing.
+            return Booking::create([
                 'user_id' => $user?->id,
-                'guest_name' => $user ? null : $data['guest_name'],
-                'guest_email' => $user ? null : $data['guest_email'],
+                'guest_name' => $user ? $user->name : $data['guest_name'],
+                'guest_email' => $user ? $user->email : $data['guest_email'],
                 'guest_phone' => $user ? null : $data['guest_phone'],
                 'court_id' => $data['court_id'],
+                'device_id' => Device::forCourt($data['court_id'])?->id,
                 'date' => $date->toDateString(),
                 'start_time' => $this->toTime($startMinutes),
                 'end_time' => $this->toTime($endMinutes),
                 'status' => 'pending',
-            ]);
-
-            $booking->transactions()->create([
-                'user_id' => $user?->id,
-                'amount' => $price,
-                'payment_status' => 'pending',
             ]);
         });
     }
@@ -211,28 +360,36 @@ class PublicBookingController extends Controller
             $start = Carbon::today();
             $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)));
 
-            $membership = UserMembership::create([
-                'user_id' => $user->id,
-                'package_id' => $package->id,
-                'start_date' => $start->toDateString(),
-                'end_date' => $end->toDateString(),
-                'status' => 'active',
-            ]);
+            DB::transaction(function () use ($user, $package, $start, $end, $price, $data) {
+                $membership = UserMembership::create([
+                    'user_id' => $user->id,
+                    'package_id' => $package->id,
+                    'start_date' => $start->toDateString(),
+                    'end_date' => $end->toDateString(),
+                    'status' => 'active',
+                ]);
 
-            $membership->transactions()->create([
-                'user_id' => $user->id,
-                'amount' => $price,
-                'payment_status' => 'pending',
-            ]);
+                Transaction::query()->create([
+                    'user_id' => $user->id,
+                    'device_id' => Device::forFacility($package->facility_id)?->id,
+                    'customer_type' => 'member',
+                    'total_amount' => $price,
+                    'payment_method' => $data['payment_method'] ?? 'bank_transfer',
+                    'payment_status' => 'unpaid',
+                ]);
+            });
 
             return;
         }
 
-        $package->transactions()->create([
+        Transaction::query()->create([
             'user_id' => $user?->id,
-            'customer_name' => $user ? null : $data['guest_name'],
+            'device_id' => Device::forFacility($package->facility_id)?->id,
+            'customer_type' => $user ? 'member' : 'general',
+            'guest_name' => $user ? $user->name : $data['guest_name'],
             'amount' => $price,
-            'payment_status' => 'pending',
+            'payment_method' => $data['payment_method'] ?? 'bank_transfer',
+            'payment_status' => 'unpaid',
         ]);
     }
 
@@ -266,9 +423,11 @@ class PublicBookingController extends Controller
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
         $step = $duration + $turnaround;
 
-        $courts = $package->facility->courts
+        $courts = Court::query()
+            ->where('facility_id', $package->facility_id)
             ->where('status', 'available')
-            ->values();
+            ->orderBy('name')
+            ->get();
 
         $bookings = Booking::query()
             ->whereIn('court_id', $courts->pluck('id'))
@@ -281,6 +440,12 @@ class PublicBookingController extends Controller
         $end = $this->toMinutes((string) $close);
 
         while ($cursor + $duration <= $end) {
+            if ($date->isToday() && $cursor < (now()->hour * 60 + now()->minute)) {
+                $cursor += $step;
+
+                continue;
+            }
+
             $price = $this->resolvePrice($rules, $cursor);
 
             if ($price !== null) {
@@ -296,7 +461,12 @@ class PublicBookingController extends Controller
                                 $turnaround,
                             )
                     ))
-                    ->map(fn ($court) => ['id' => $court->id, 'name' => $court->name])
+                    ->map(fn ($court) => [
+                        'id' => $court->id,
+                        'name' => $court->name,
+                        'amenities' => $court->amenities ?? [],
+                        'price_adjustment' => (float) $court->price_adjustment,
+                    ])
                     ->values();
 
                 $slots[] = [

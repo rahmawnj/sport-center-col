@@ -8,8 +8,8 @@ import {
     Hash,
     User,
 } from '@lucide/vue';
-import { computed } from 'vue';
 import QrcodeVue from 'qrcode.vue';
+import { computed } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 

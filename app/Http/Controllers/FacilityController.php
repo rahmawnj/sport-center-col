@@ -53,6 +53,7 @@ class FacilityController extends Controller
             'courts' => fn ($query) => $query->orderBy('name'),
             'packages' => fn ($query) => $query->orderBy('name'),
             'packages.pricingRules',
+            'devices' => fn ($query) => $query->with('court:id,name')->orderBy('name'),
         ]);
 
         return Inertia::render('facilities/Show', [
@@ -67,6 +68,8 @@ class FacilityController extends Controller
                 'courts' => $facility->courts->map(fn ($court) => [
                     'id' => $court->id,
                     'name' => $court->name,
+                    'amenities' => $court->amenities ?? [],
+                    'price_adjustment' => (float) $court->price_adjustment,
                     'status' => $court->status,
                 ])->values(),
                 'packages' => $facility->packages->map(fn ($package) => [
@@ -86,6 +89,16 @@ class FacilityController extends Controller
                         'priority' => $rule->priority,
                     ])->values(),
                 ])->values(),
+                'devices' => $facility->devices->map(fn ($device) => [
+                    'id' => $device->id,
+                    'name' => $device->name,
+                    'type' => $device->type,
+                    'device_code' => $device->device_code,
+                    'mqtt_topic' => $device->mqtt_topic,
+                    'court_id' => $device->court_id,
+                    'court_name' => $device->court?->name,
+                    'status' => $device->status,
+                ])->values(),
             ],
         ]);
     }
@@ -98,7 +111,7 @@ class FacilityController extends Controller
 
         Facility::create($data);
 
-        return back()->with('success', 'Fasilitas berhasil dibuat.');
+        return back()->with('success', 'Olahraga berhasil dibuat.');
     }
 
     public function update(Request $request, Facility $facility): RedirectResponse
@@ -109,7 +122,7 @@ class FacilityController extends Controller
 
         $facility->update($data);
 
-        return back()->with('success', 'Fasilitas berhasil diperbarui.');
+        return back()->with('success', 'Olahraga berhasil diperbarui.');
     }
 
     public function destroy(Facility $facility): RedirectResponse
@@ -117,12 +130,12 @@ class FacilityController extends Controller
         abort_if(
             $facility->courts()->exists() || $facility->packages()->exists(),
             422,
-            'Fasilitas tidak dapat dihapus karena masih memiliki lapangan atau paket.',
+            'Olahraga tidak dapat dihapus karena masih memiliki lapangan atau paket.',
         );
 
         $facility->delete();
 
-        return back()->with('success', 'Fasilitas berhasil dihapus.');
+        return back()->with('success', 'Olahraga berhasil dihapus.');
     }
 
     /**

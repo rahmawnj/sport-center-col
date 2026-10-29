@@ -10,6 +10,7 @@
 namespace PHPUnit\Framework;
 
 use function assert;
+use function sprintf;
 use PHPUnit\Event;
 use PHPUnit\Event\EventCollection;
 use PHPUnit\Event\NoPreviousThrowableException;
@@ -151,6 +152,24 @@ abstract class IterativeTestSuite extends TestSuite
      */
     abstract protected function execute(array $tests, Event\Emitter $emitter): void;
 
+    /**
+     * Emits the event for a repetition that is skipped because an earlier
+     * repetition failed and returns the message the repetition is skipped with.
+     *
+     * @return non-empty-string
+     */
+    final protected function skipRemainingRepetition(Event\Code\Test $test, int $failedRepetition, Event\Emitter $emitter): string
+    {
+        $message = sprintf(
+            'Remaining repetition skipped after failure in repetition %d',
+            $failedRepetition,
+        );
+
+        $emitter->testSkipped($test, $message);
+
+        return $message;
+    }
+
     final protected function emitAttemptEvent(EventCollection $events, Event\Emitter $emitter): bool
     {
         $duration = $this->durationOf($events);
@@ -189,10 +208,12 @@ abstract class IterativeTestSuite extends TestSuite
 
     /**
      * Determine the wall-clock time spent on an attempt from its collected
-     * events. This mirrors the way duration-aware loggers measure the time
-     * of a test, namely from its Prepared event to its Finished event, so
-     * that the durations of retried attempts can be accounted for even though
-     * the attempt's events themselves are not forwarded.
+     * events, namely from its Prepared event to its Finished event, so that
+     * the durations of retried attempts can be accounted for even though the
+     * attempt's events themselves are not forwarded. This is how the Open
+     * Test Reporting logger and the test run history measure the time of a
+     * test. The JUnit XML logger and the TeamCity logger measure the time of
+     * a test from its PreparationStarted event instead.
      */
     final protected function durationOf(EventCollection $events): Event\Telemetry\Duration
     {

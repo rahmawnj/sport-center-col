@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
 type PricingRule = {
@@ -53,7 +53,75 @@ const props = defineProps<{
     };
 }>();
 
-const featuredFacilities = computed(() => props.facilities.slice(0, 3));
+const featuredFacilities = computed(() => props.facilities);
+
+const statsPanel = ref<HTMLElement | null>(null);
+const animatedStats = ref({
+    facilities: 0,
+    courts: 0,
+    trainers: 0,
+    membershipPackages: 0,
+});
+let statsObserver: IntersectionObserver | null = null;
+let animationFrame = 0;
+
+const animateStats = () => {
+    cancelAnimationFrame(animationFrame);
+    const targets = {
+        facilities: Number(props.stats.facilities) || 0,
+        courts: Number(props.stats.courts) || 0,
+        trainers: Number(props.stats.trainers) || 0,
+        membershipPackages: Number(props.stats.membershipPackages) || 0,
+    };
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        animatedStats.value = targets;
+
+        return;
+    }
+
+    const duration = 1400;
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 4);
+        animatedStats.value = {
+            facilities: Math.round(targets.facilities * eased),
+            courts: Math.round(targets.courts * eased),
+            trainers: Math.round(targets.trainers * eased),
+            membershipPackages: Math.round(targets.membershipPackages * eased),
+        };
+
+        if (progress < 1) {
+animationFrame = requestAnimationFrame(tick);
+}
+    };
+
+    animationFrame = requestAnimationFrame(tick);
+};
+
+onMounted(() => {
+    if (!statsPanel.value) {
+return;
+}
+
+    statsObserver = new IntersectionObserver(
+        ([entry]) => {
+            if (entry.isIntersecting) {
+                animateStats();
+                statsObserver?.disconnect();
+                statsObserver = null;
+            }
+        },
+        { threshold: 0.25 },
+    );
+    statsObserver.observe(statsPanel.value);
+});
+
+onBeforeUnmount(() => {
+    statsObserver?.disconnect();
+    cancelAnimationFrame(animationFrame);
+});
 
 const formatCurrency = (amount: number | string) =>
     new Intl.NumberFormat('id-ID', {
@@ -66,13 +134,37 @@ const lowestPrice = (facility: FacilityItem) => {
     const prices = facility.packages.flatMap((item) =>
         item.pricing_rules.map((rule) => Number(rule.price)),
     );
+
     return prices.length ? Math.min(...prices) : null;
+};
+
+const priceUnit = (facility: FacilityItem) => {
+    switch (facility.slug.toLowerCase()) {
+        case 'padel':
+        case 'billiard':
+            return '/ jam';
+        case 'yoga':
+        case 'pilates':
+            return '/ sesi';
+        case 'spinning':
+            return '/ masuk';
+        case 'ice-skating':
+            return '/ jam';
+        case 'gym':
+            return ' · berbagai paket';
+        default:
+            return '';
+    }
 };
 
 const heroImages: Record<string, string> = {
     padel: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1100&q=85',
     billiard: 'https://images.unsplash.com/photo-1606925797300-0b35e9d1794e?auto=format&fit=crop&w=1100&q=85',
     gym: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1100&q=85',
+    yoga: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1100&q=85',
+    pilates: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1100&q=85',
+    spinning: 'https://images.unsplash.com/photo-1558611848-73f7eb4001a1?auto=format&fit=crop&w=1100&q=85',
+    'ice-skating': 'https://images.unsplash.com/photo-1515703407324-5f753afd8be8?auto=format&fit=crop&w=1100&q=85',
 };
 
 const facilityImage = (facility: FacilityItem) =>
@@ -81,10 +173,20 @@ const facilityImage = (facility: FacilityItem) =>
 
 const facilityDescription = (slug: string) => {
     const key = slug.toLowerCase();
-    if (key.includes('padel')) return 'Rasakan permainan yang seru bersama teman dan tim.';
-    if (key.includes('billiard')) return 'Nikmati waktu santai dengan permainan yang kompetitif.';
-    if (key.includes('gym')) return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
-    return 'Temukan fasilitas olahraga yang sesuai dengan aktivitasmu.';
+
+    if (key.includes('padel')) {
+return 'Rasakan permainan yang seru bersama teman dan tim.';
+}
+
+    if (key.includes('billiard')) {
+return 'Nikmati waktu santai dengan permainan yang kompetitif.';
+}
+
+    if (key.includes('gym')) {
+return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
+}
+
+    return 'Temukan olahraga yang sesuai dengan aktivitasmu.';
 };
 </script>
 
@@ -115,7 +217,7 @@ const facilityDescription = (slug: string) => {
                                 Pesan Lapangan <i class="fa-solid fa-arrow-right"></i>
                             </Link>
                             <a href="#olahraga" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-7 py-4 font-bold text-white transition hover:bg-white/10">
-                                Jelajahi fasilitas <i class="fa-solid fa-arrow-down"></i>
+                                Jelajahi olahraga <i class="fa-solid fa-arrow-down"></i>
                             </a>
                         </div>
                         <div class="mt-10 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-300">
@@ -129,7 +231,7 @@ const facilityDescription = (slug: string) => {
                         <div class="hero-image-small"></div>
                         <div class="hero-floating-card">
                             <span class="mb-1 block text-xs font-semibold text-slate-500">Pilihan aktivitas</span>
-                            <span class="text-lg font-extrabold text-[#001428]">{{ stats.facilities }} fasilitas olahraga</span>
+                            <span class="text-lg font-extrabold text-[#001428]">{{ stats.facilities }} olahraga</span>
                             <span class="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500"><span class="h-2 w-2 rounded-full bg-[#a4da01]"></span>Siap untuk jadwal berikutnya</span>
                         </div>
                         <div class="hero-circle-label"><i class="fa-solid fa-bolt"></i><span>LET'S<br />PLAY</span></div>
@@ -139,11 +241,11 @@ const facilityDescription = (slug: string) => {
             </section>
 
             <section class="relative z-10 mx-auto -mt-1 max-w-7xl px-5 lg:px-8">
-                <div class="stats-panel grid grid-cols-2 gap-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-900/5 md:grid-cols-4 md:px-10 md:py-7">
-                    <div class="stat-item"><span class="stat-number">{{ stats.facilities }}</span><span class="stat-label">Jenis fasilitas</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ stats.courts }}</span><span class="stat-label">Lapangan tersedia</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ stats.trainers }}</span><span class="stat-label">Pelatih terdaftar</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ stats.membershipPackages }}</span><span class="stat-label">Paket keanggotaan</span></div>
+                <div ref="statsPanel" class="stats-panel grid grid-cols-2 gap-5 rounded-2xl border border-white/60 bg-white/65 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur-xl supports-[backdrop-filter]:bg-white/55 md:grid-cols-4 md:px-10 md:py-7">
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.facilities }}</span><span class="stat-label">Jenis olahraga</span></div>
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.courts }}</span><span class="stat-label">Lapangan tersedia</span></div>
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.trainers }}</span><span class="stat-label">Pelatih terdaftar</span></div>
+                    <div class="stat-item"><span class="stat-number">{{ animatedStats.membershipPackages }}</span><span class="stat-label">Paket keanggotaan</span></div>
                 </div>
             </section>
 
@@ -152,9 +254,9 @@ const facilityDescription = (slug: string) => {
                     <div>
                         <p class="section-kicker">Pilih permainanmu</p>
                         <h2 class="section-title">Temukan <span>olahraga favoritmu</span></h2>
-                        <p class="mt-3 max-w-xl text-slate-500">Pilih fasilitas yang kamu suka, cek tarifnya, lalu pesan waktu bermainmu.</p>
+                        <p class="mt-3 max-w-xl text-slate-500">Pilih olahraga yang kamu suka, cek tarifnya, lalu pesan waktu bermainmu.</p>
                     </div>
-                    <Link href="/book" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] hover:text-[#729700] sm:self-auto">Lihat semua fasilitas <i class="fa-solid fa-arrow-right"></i></Link>
+                    <Link href="/book" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] hover:text-[#729700] sm:self-auto">Lihat semua olahraga <i class="fa-solid fa-arrow-right"></i></Link>
                 </div>
 
                 <div v-if="featuredFacilities.length" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -175,14 +277,14 @@ const facilityDescription = (slug: string) => {
                             <div class="mt-6 flex items-end justify-between border-t border-slate-100 pt-5">
                                 <div>
                                     <p class="text-xs font-semibold text-slate-500">Mulai dari</p>
-                                    <p class="mt-1 text-lg font-black text-[#001428]">{{ lowestPrice(facility) !== null ? formatCurrency(lowestPrice(facility) ?? 0) : 'Cek tarif' }}<span v-if="lowestPrice(facility) !== null" class="text-xs font-semibold text-slate-400"> / paket</span></p>
+                                    <p class="mt-1 text-lg font-black text-[#001428]">{{ lowestPrice(facility) !== null ? formatCurrency(lowestPrice(facility) ?? 0) : 'Cek tarif' }}<span v-if="lowestPrice(facility) !== null" class="text-xs font-semibold text-slate-400"> {{ priceUnit(facility) }}</span></p>
                                 </div>
                                 <Link :href="`/book?facility=${encodeURIComponent(facility.slug)}`" class="btn-lime inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-extrabold">Pesan <i class="fa-solid fa-arrow-right"></i></Link>
                             </div>
                         </div>
                     </article>
                 </div>
-                <div v-else class="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500">Fasilitas olahraga belum tersedia. Silakan cek kembali nanti.</div>
+                <div v-else class="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500">Olahraga belum tersedia. Silakan cek kembali nanti.</div>
             </section>
 
             <section v-if="trainers.length" id="pelatih" class="bg-[#f6f8f2]">
@@ -193,7 +295,6 @@ const facilityDescription = (slug: string) => {
                             <h2 class="section-title">Kenalan dengan <span>pelatih kami</span></h2>
                             <p class="mt-3 max-w-xl text-slate-500">Temukan dukungan latihan dari pelatih yang terdaftar di pusat olahraga kami.</p>
                         </div>
-                        <Link href="/book" class="inline-flex items-center gap-2 self-start text-sm font-extrabold sm:self-auto">Tanya jadwal <i class="fa-solid fa-arrow-right"></i></Link>
                     </div>
                     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                         <article v-for="(trainer, index) in trainers" :key="trainer.id" class="trainer-card rounded-2xl bg-white p-5">
@@ -216,7 +317,7 @@ const facilityDescription = (slug: string) => {
                             <p class="section-kicker text-[#b6e52b]">Lebih rutin, lebih maksimal</p>
                             <h2 class="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">Jadikan olahraga bagian dari harimu.</h2>
                             <p class="mt-4 max-w-md leading-7 text-slate-300">Lihat pilihan paket keanggotaan yang tersedia dan temukan yang cocok untuk rutinitasmu.</p>
-                            <Link href="/book" class="btn-lime mt-7 inline-flex items-center gap-3 rounded-full px-6 py-3.5 font-extrabold">Lihat pilihan paket <i class="fa-solid fa-arrow-right"></i></Link>
+                            <Link href="/membership" class="btn-lime mt-7 inline-flex items-center gap-3 rounded-full px-6 py-3.5 font-extrabold">Lihat pilihan paket <i class="fa-solid fa-arrow-right"></i></Link>
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <article v-for="(membership, index) in membershipPackages" :key="membership.id" class="membership-card rounded-2xl p-5" :class="index === 0 ? 'membership-card-featured' : ''">
@@ -238,7 +339,7 @@ const facilityDescription = (slug: string) => {
                     <div>
                         <p class="section-kicker">Mulai dari sekarang</p>
                         <h2 class="mt-2 text-2xl font-black sm:text-3xl">Siap untuk pertandingan berikutnya?</h2>
-                        <p class="mt-2 text-sm text-slate-500">Pilih fasilitas dan amankan jadwal bermainmu.</p>
+                        <p class="mt-2 text-sm text-slate-500">Pilih olahraga dan amankan jadwal bermainmu.</p>
                     </div>
                     <Link href="/book" class="btn-lime inline-flex shrink-0 items-center justify-center gap-3 rounded-full px-7 py-4 font-extrabold">Booking sekarang <i class="fa-solid fa-arrow-right"></i></Link>
                 </div>
@@ -266,7 +367,7 @@ const facilityDescription = (slug: string) => {
 .hero-circle-label { position: absolute; top: 34px; left: 0; display: flex; width: 84px; height: 84px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 50%; background: var(--lime); color: var(--navy); font-size: 10px; font-weight: 900; letter-spacing: .12em; transform: rotate(-12deg); }
 .hero-circle-label i { font-size: 22px; }
 .hero-bottom-line { position: absolute; right: 0; bottom: 0; left: 0; height: 5px; background: linear-gradient(90deg, transparent, var(--lime), transparent); opacity: .8; }
-.stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.stats-panel { -webkit-backdrop-filter: blur(22px) saturate(155%); backdrop-filter: blur(22px) saturate(155%); background: rgba(255,255,255,.64); border-color: rgba(255,255,255,.78); box-shadow: 0 18px 48px rgba(0,20,40,.12), inset 0 1px 0 rgba(255,255,255,.8); }\n.stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .stat-number { font-size: 30px; font-weight: 900; letter-spacing: -.04em; }
 .stat-label { color: #64748b; font-size: 12px; font-weight: 600; }
 .section-kicker { color: #789900; font-size: 11px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }

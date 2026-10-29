@@ -27,7 +27,7 @@ import type { NavGroup, NavItem } from '@/types';
 
 const items: (NavItem | NavGroup)[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
-    { title: 'Fasilitas', href: '/facilities', icon: Building2 },
+    { title: 'Olahraga', href: '/facilities', icon: Building2 },
     { title: 'Member', href: '/members', icon: Users },
     { title: 'Membership', href: '/memberships', icon: BadgeCheck },
     { title: 'Transaksi', href: '/transactions', icon: Receipt },

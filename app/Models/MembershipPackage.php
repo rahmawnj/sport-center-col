@@ -9,10 +9,20 @@ class MembershipPackage extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['name', 'price', 'duration_days', 'description'];
+    protected $fillable = [
+        'name',
+        'price',
+        'duration_days',
+        'session_quota',
+        'description',
+    ];
 
     protected function casts(): array
     {
-        return ['price' => 'decimal:2', 'duration_days' => 'integer'];
+        return [
+            'price' => 'decimal:2',
+            'duration_days' => 'integer',
+            'session_quota' => 'integer',
+        ];
     }
 }

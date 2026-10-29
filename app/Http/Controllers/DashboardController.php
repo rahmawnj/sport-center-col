@@ -20,7 +20,8 @@ class DashboardController extends Controller
 
         $stats = [
             'revenue_today' => (float) Transaction::whereDate('created_at', $today)
-                ->where('payment_status', 'paid')->sum('amount'),
+                ->where('payment_status', 'fully_paid')
+                ->sum('total_amount'),
             'transactions_today' => Transaction::whereDate('created_at', $today)->count(),
             'bookings_today' => Booking::whereDate('date', $today)
                 ->whereNotIn('status', ['cancelled'])->count(),
@@ -35,7 +36,8 @@ class DashboardController extends Controller
             $revenue[] = [
                 'label' => $day->translatedFormat('d M'),
                 'total' => (float) Transaction::whereDate('created_at', $day)
-                    ->where('payment_status', 'paid')->sum('amount'),
+                    ->where('payment_status', 'fully_paid')
+                    ->sum('total_amount'),
             ];
         }
 

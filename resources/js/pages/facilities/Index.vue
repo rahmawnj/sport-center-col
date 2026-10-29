@@ -62,7 +62,7 @@ const formKey = ref(0);
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'all');
 const title = computed(() =>
-    editing.value ? 'Edit fasilitas' : 'Tambah fasilitas',
+    editing.value ? 'Edit olahraga' : 'Tambah olahraga',
 );
 const action = computed(() =>
     editing.value ? `/facilities/${editing.value.id}` : '/facilities',
@@ -86,7 +86,7 @@ const form = ref({
 });
 const statCards = computed(() => [
     {
-        label: 'Total fasilitas',
+        label: 'Total olahraga',
         value: props.stats.total,
         icon: Building2,
         accent: 'sky' as const,
@@ -177,7 +177,7 @@ function reset() {
 }
 
 function removeFacility(facility: Facility) {
-    if (!window.confirm(`Hapus fasilitas ${facility.name}?`)) {
+    if (!window.confirm(`Hapus olahraga ${facility.name}?`)) {
         return;
     }
 
@@ -207,15 +207,15 @@ function initials(value: string) {
 </script>
 
 <template>
-    <Head title="Fasilitas" />
+    <Head title="Olahraga" />
     <div class="space-y-6 p-4 md:p-6">
         <PageHeader
             eyebrow="Data Master"
-            title="Fasilitas"
-            description="Kelola fasilitas olahraga yang tersedia di Sport Center."
+            title="Olahraga"
+            description="Kelola cabang olahraga yang tersedia di Sport Center."
         >
             <Button @click="openCreate"
-                ><Plus class="mr-2 size-4" /> Tambah fasilitas</Button
+                ><Plus class="mr-2 size-4" /> Tambah olahraga</Button
             >
         </PageHeader>
 
@@ -228,7 +228,7 @@ function initials(value: string) {
                 <TableFilters
                     v-model:search="search"
                     v-model:status="status"
-                    search-placeholder="Cari fasilitas..."
+                    search-placeholder="Cari olahraga..."
                     :status-options="statusOptions"
                     @filter="filter"
                     @reset="reset"
@@ -372,9 +372,9 @@ function initials(value: string) {
                 >
                     <Building2 class="size-7" />
                 </div>
-                <p class="mt-4 font-medium">Belum ada fasilitas</p>
+                <p class="mt-4 font-medium">Belum ada olahraga</p>
                 <p class="mt-1 text-sm text-muted-foreground">
-                    Coba ubah filter atau tambahkan fasilitas baru.
+                    Coba ubah filter atau tambahkan olahraga baru.
                 </p>
             </div>
 
@@ -385,7 +385,7 @@ function initials(value: string) {
                 <p class="text-xs text-muted-foreground">
                     Halaman {{ props.facilities.current_page }} dari
                     {{ props.facilities.last_page }} ·
-                    {{ props.facilities.total }} fasilitas
+                    {{ props.facilities.total }} olahraga
                 </p>
                 <div class="flex flex-wrap gap-1">
                     <a
@@ -421,7 +421,7 @@ function initials(value: string) {
             <div class="flex items-start justify-between border-b p-5">
                 <div>
                     <p class="text-sm font-medium text-primary">
-                        Manajemen fasilitas
+                        Manajemen olahraga
                     </p>
                     <h2 class="mt-1 text-xl font-semibold">{{ title }}</h2>
                 </div>
@@ -439,7 +439,7 @@ function initials(value: string) {
             >
                 <div class="grid gap-4">
                     <div class="grid gap-2">
-                        <Label for="facility-name">Nama fasilitas</Label>
+                        <Label for="facility-name">Nama olahraga</Label>
                         <Input
                             id="facility-name"
                             name="name"
@@ -518,7 +518,7 @@ function initials(value: string) {
                                 ? 'Menyimpan...'
                                 : editing
                                   ? 'Simpan perubahan'
-                                  : 'Tambah fasilitas'
+                                  : 'Tambah olahraga'
                         }}
                     </Button>
                 </div>

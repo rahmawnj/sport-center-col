@@ -3,6 +3,7 @@
 namespace Illuminate\Foundation\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\RouteCollection;
@@ -64,7 +65,7 @@ class RouteCacheCommand extends Command
             $route->prepareForSerialization();
         }
 
-        $this->files->put(
+        $this->files->replace(
             $this->laravel->getCachedRoutesPath(), $this->buildRouteCacheFile($routes)
         );
 
@@ -97,6 +98,7 @@ class RouteCacheCommand extends Command
             Facade::clearResolvedInstances();
 
             Facade::setFacadeApplication($this->laravel);
+            Container::setInstance($this->laravel);
         });
     }
 

@@ -20,6 +20,7 @@ use PHPUnit\Runner\Extension\ExtensionBootstrapper;
 use PHPUnit\Runner\Extension\ExtensionFacade;
 use PHPUnit\Runner\Extension\PharLoader;
 use PHPUnit\Runner\Filter\Factory;
+use PHPUnit\Runner\GarbageCollection\GarbageCollectionHandler;
 use PHPUnit\Runner\TestRunHistory\DefaultTestRunHistory;
 use PHPUnit\Runner\TestRunHistory\TestRunHistoryHandler;
 use PHPUnit\Runner\TestSuiteLoader;
@@ -88,36 +89,37 @@ final class ApplicationForWrapperWorker
         }
 
         $this->bootstrap();
+        $emitter = EventFacade::emitter();
 
         if (is_file($testPath) && str_ends_with($testPath, '.phpt')) {
-            $testSuite = TestSuite::empty($testPath);
+            $testSuite = TestSuite::empty($testPath, $emitter);
             $testSuite->addTestFile($testPath);
         } else {
             $testSuiteRefl = (new TestSuiteLoader())->load($testPath);
-            $testSuite     = TestSuite::fromClassReflector($testSuiteRefl);
+            $testSuite     = TestSuite::fromClassReflector($testSuiteRefl, $emitter);
         }
 
-        EventFacade::emitter()->testSuiteLoaded(
+        $emitter->testSuiteLoaded(
             TestSuiteBuilder::from($testSuite),
         );
 
-        EventFacade::emitter()->testRunnerStarted();
+        $emitter->testRunnerStarted();
 
         if ($this->configuration->executionOrder() === TestSuiteSorter::ORDER_RANDOMIZED) {
             mt_srand($this->configuration->randomOrderSeed());
         }
 
-        (new TestSuiteFilterProcessor())->process($this->configuration, $testSuite);
+        (new TestSuiteFilterProcessor($emitter))->process($this->configuration, $testSuite);
 
         if ($filter !== null) {
             $testSuite->injectFilter($filter);
 
-            EventFacade::emitter()->testSuiteFiltered(
+            $emitter->testSuiteFiltered(
                 TestSuiteBuilder::from($testSuite),
             );
         }
 
-        EventFacade::emitter()->testRunnerExecutionStarted(
+        $emitter->testRunnerExecutionStarted(
             TestSuiteBuilder::from($testSuite),
         );
 
@@ -135,22 +137,23 @@ final class ApplicationForWrapperWorker
         }
 
         ExcludeList::addDirectory(__DIR__);
-        EventFacade::emitter()->applicationStarted();
+        $emitter = EventFacade::emitter();
+        $emitter->applicationStarted();
 
         $this->configuration = (new Builder())->build($this->argv);
 
-        (new PhpHandler())->handle($this->configuration->php());
+        (new PhpHandler($emitter))->handle($this->configuration->php());
 
         if ($this->configuration->hasBootstrap()) {
             $bootstrapFilename = $this->configuration->bootstrap();
             include_once $bootstrapFilename;
-            EventFacade::emitter()->testRunnerBootstrapFinished($bootstrapFilename);
+            $emitter->testRunnerBootstrapFinished($bootstrapFilename);
         }
 
         $extensionRequiresCodeCoverageCollection = false;
         if (! $this->configuration->noExtensions()) {
             if ($this->configuration->hasPharExtensionDirectory()) {
-                (new PharLoader())->loadPharExtensionsInDirectory(
+                (new PharLoader($emitter))->loadPharExtensionsInDirectory(
                     $this->configuration->pharExtensionDirectory(),
                 );
             }
@@ -159,6 +162,7 @@ final class ApplicationForWrapperWorker
             $extensionBootstrapper = new ExtensionBootstrapper(
                 $this->configuration,
                 $extensionFacade,
+                $emitter,
             );
 
             foreach ($this->configuration->extensionBootstrappers() as $bootstrapper) {
@@ -217,6 +221,13 @@ final class ApplicationForWrapperWorker
             );
         }
 
+        if ($this->configuration->controlGarbageCollector()) {
+            new GarbageCollectionHandler(
+                EventFacade::instance(),
+                $this->configuration->numberOfTestsBeforeGarbageCollection(),
+            );
+        }
+
         if ($this->configuration->source()->useBaseline()) {
             $baselineFile = $this->configuration->source()->baseline();
             $baseline     = null;
@@ -224,7 +235,7 @@ final class ApplicationForWrapperWorker
             try {
                 $baseline = (new Reader())->read($baselineFile);
             } catch (CannotLoadBaselineException $e) {
-                EventFacade::emitter()->testRunnerTriggeredPhpunitWarning($e->getMessage());
+                $emitter->testRunnerTriggeredPhpunitWarning($e->getMessage());
             }
 
             if ($baseline !== null) {

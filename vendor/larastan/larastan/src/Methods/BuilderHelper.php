@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Larastan\Larastan\Reflection\AnnotationScopeMethodParameterReflection;
 use Larastan\Larastan\Reflection\DynamicWhereParameterReflection;
 use Larastan\Larastan\Reflection\EloquentBuilderMethodReflection;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name;
+use PHPStan\Analyser\OutOfClassScope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\MissingMethodFromReflectionException;
@@ -80,6 +82,9 @@ class BuilderHelper
         'dumpRawSql',
         'ddRawSql',
     ];
+
+    /** @var array<string, string> */
+    private array $builderNameCache = [];
 
     public function __construct(
         private ReflectionProvider $reflectionProvider,
@@ -175,6 +180,7 @@ class BuilderHelper
             if ($reflection->hasNativeMethod($methodName)) {
                 $methodReflection  = $reflection->getNativeMethod($methodName);
                 $hasScopeAttribute = false;
+
                 foreach ($methodReflection->getAttributes() as $attribute) {
                     // using string instead of class constant to avoid failing on older Laravel versions
                     if ($attribute->getName() === 'Illuminate\Database\Eloquent\Attributes\Scope') {
@@ -208,6 +214,7 @@ class BuilderHelper
                 $methodTag = $reflection->getMethodTags()[$scopeName];
 
                 $parameters = [];
+
                 foreach ($methodTag->getParameters() as $parameterName => $parameterTag) {
                     $parameters[] = new AnnotationScopeMethodParameterReflection(
                         $parameterName,
@@ -252,7 +259,7 @@ class BuilderHelper
             }
         }
 
-        $queryBuilderReflection = $this->reflectionProvider->getClass(QueryBuilder::class);
+        $queryBuilderReflection = $this->resolveQueryBuilderReflection($eloquentBuilder);
 
         if (in_array($methodName, $this->getPassthru(), true)) {
             return $queryBuilderReflection->getNativeMethod($methodName);
@@ -270,6 +277,31 @@ class BuilderHelper
         return $this->dynamicWhere($methodName, $this->getBuilderType($eloquentBuilder->getName(), $modelType));
     }
 
+    /**
+     * Resolve the query builder class actually used by the given Eloquent builder.
+     *
+     * Custom Eloquent builders (e.g. from packages replacing the underlying query layer,
+     * such as mongodb/laravel-mongodb) commonly advertise this with their own
+     * `@method CustomQueryBuilder toBase()` PHPDoc tag, overriding the inherited native
+     * `toBase(): \Illuminate\Database\Query\Builder` declaration. `getMethod()` already
+     * resolves `@method` tags (which take precedence over, and are invisible to, native
+     * method reflection) as well as native methods, so methods that only exist on the
+     * custom query builder (and are forwarded to it via `__call`) can still be resolved.
+     */
+    public function resolveQueryBuilderReflection(ClassReflection $eloquentBuilder): ClassReflection
+    {
+        if ($eloquentBuilder->hasMethod('toBase')) {
+            $returnType = $eloquentBuilder->getMethod('toBase', new OutOfClassScope())->getVariants()[0]->getReturnType();
+            $classNames = $returnType->getObjectClassNames();
+
+            if (count($classNames) === 1) {
+                return $this->reflectionProvider->getClass($classNames[0]);
+            }
+        }
+
+        return $this->reflectionProvider->getClass(QueryBuilder::class);
+    }
+
     public function getBuilderType(string $builderClassName, Type $modelType): ObjectType
     {
         if (! $this->reflectionProvider->getClass($builderClassName)->isGeneric()) {
@@ -281,12 +313,21 @@ class BuilderHelper
 
     /**
      * @throws MissingMethodFromReflectionException
-     * @throws ShouldNotHappenException
+     * @throws InvalidArgumentException
      */
     public function determineBuilderName(string $modelClassName): string
     {
+        if (array_key_exists($modelClassName, $this->builderNameCache)) {
+            return $this->builderNameCache[$modelClassName];
+        }
+
         $modelReflection = $this->reflectionProvider->getClass($modelClassName);
-        $method          = $modelReflection->getNativeMethod('newEloquentBuilder');
+
+        if (! $modelReflection->is(Model::class)) {
+            throw new InvalidArgumentException($modelClassName . ' is not a Model.');
+        }
+
+        $method = $modelReflection->getNativeMethod('newEloquentBuilder');
 
         if ($method->getDeclaringClass()->getName() === Model::class) {
             $attrs = $modelReflection->getNativeReflection()->getAttributes('Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder'); //@phpstan-ignore argument.type (Attribute class might not exist)
@@ -295,7 +336,7 @@ class BuilderHelper
                 $expr =  $attrs[0]->getArgumentsExpressions()[0];
 
                 if ($expr instanceof ClassConstFetch && $expr->class instanceof Name) {
-                    return $expr->class->toString();
+                    return $this->builderNameCache[$modelClassName] = $expr->class->toString();
                 }
             }
         }
@@ -303,15 +344,28 @@ class BuilderHelper
         $returnType = $method->getVariants()[0]->getReturnType();
 
         if (in_array(EloquentBuilder::class, $returnType->getReferencedClasses(), true)) {
-            return EloquentBuilder::class;
+            return $this->builderNameCache[$modelClassName] = EloquentBuilder::class;
         }
 
         $classNames = $returnType->getObjectClassNames();
 
         if (count($classNames) === 1) {
-            return $classNames[0];
+            return $this->builderNameCache[$modelClassName] = $classNames[0];
         }
 
-        return $returnType->describe(VerbosityLevel::value());
+        return $this->builderNameCache[$modelClassName] = $returnType->describe(VerbosityLevel::value());
+    }
+
+    public function determineBuilderClass(string $modelClassName, Type $modelType): Type|null
+    {
+        try {
+            $builderClassName = $this->determineBuilderName($modelClassName);
+        } catch (InvalidArgumentException) {
+            return null;
+        } catch (MissingMethodFromReflectionException) {
+            $builderClassName = EloquentBuilder::class;
+        }
+
+        return $this->getBuilderType($builderClassName, $modelType);
     }
 }

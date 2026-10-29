@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Device;
 use App\Models\Facility;
 use App\Models\Package;
 use App\Models\Transaction;
@@ -24,9 +25,12 @@ class TransactionController extends Controller
         $search = trim((string) $request->input('search', ''));
         $status = $request->input('status', 'all');
 
+        $statusMap = ['paid' => 'fully_paid', 'pending' => 'unpaid', 'partial' => 'dp_paid'];
+        $dbStatus = $statusMap[$status] ?? null;
+
         $transactions = Transaction::query()
-            ->when($search !== '', fn ($query) => $query->where('customer_name', 'like', "%{$search}%"))
-            ->when($status !== 'all', fn ($query) => $query->where('payment_status', $status))
+            ->when($search !== '', fn ($query) => $query->where('guest_name', 'like', "%{$search}%"))
+            ->when($dbStatus, fn ($query) => $query->where('payment_status', $dbStatus))
             ->latest()
             ->paginate(10)
             ->withQueryString()
@@ -37,7 +41,7 @@ class TransactionController extends Controller
                 'reference' => $this->reference($transaction),
                 'amount' => (float) $transaction->amount,
                 'payment_method' => $transaction->payment_method,
-                'payment_status' => $transaction->payment_status,
+                'payment_status' => $this->normalizeStatus($transaction->payment_status),
                 'created_at' => $transaction->created_at?->toISOString(),
             ]);
 
@@ -46,13 +50,23 @@ class TransactionController extends Controller
             'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
                 'today' => (float) Transaction::whereDate('created_at', today())
-                    ->where('payment_status', 'paid')
-                    ->sum('amount'),
+                    ->where('payment_status', 'fully_paid')
+                    ->sum('total_amount'),
                 'total' => Transaction::count(),
-                'paid' => Transaction::where('payment_status', 'paid')->count(),
-                'pending' => Transaction::where('payment_status', 'pending')->count(),
+                'paid' => Transaction::where('payment_status', 'fully_paid')->count(),
+                'pending' => Transaction::where('payment_status', 'unpaid')->count(),
             ],
         ]);
+    }
+
+    private function normalizeStatus(?string $status): string
+    {
+        return match ($status) {
+            'fully_paid' => 'paid',
+            'dp_paid' => 'partial',
+            'unpaid' => 'pending',
+            default => (string) $status,
+        };
     }
 
     public function create(): Response
@@ -95,20 +109,18 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction): Response
     {
-        $transaction->load('transactionable', 'user');
-
         return Inertia::render('transactions/Show', [
             'transaction' => [
                 'id' => $transaction->id,
                 'invoice_number' => $transaction->invoice_number,
-                'qr_code' => $transaction->qr_code,
+                'qr_code' => $transaction->booking_code,
                 'customer_name' => $transaction->customer_name,
                 'amount' => (float) $transaction->amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
                 'reference' => $this->reference($transaction),
                 'created_at' => $transaction->created_at?->toISOString(),
-                'details' => $this->details($transaction),
+                'details' => [],
             ],
         ]);
     }
@@ -133,10 +145,18 @@ class TransactionController extends Controller
 
         if ($package->type === 'session') {
             $this->storeBooking($package, $data);
-        } elseif ($package->type === 'membership') {
+
+            return redirect()->route('transactions.index')->with(
+                'success',
+                'Booking berhasil disimpan ke tabel bookings. Transaksi pembayaran belum dibuat.'
+            );
+        }
+
+        if ($package->type === 'membership') {
             $this->storeMembership($package, $data);
         } else {
-            $package->transactions()->create([
+            Transaction::create([
+                'device_id' => Device::forFacility($package->facility_id)?->id,
                 'customer_name' => $data['customer_name'] ?? null,
                 'amount' => $data['amount'],
                 'payment_method' => $data['payment_method'],
@@ -170,8 +190,9 @@ class TransactionController extends Controller
                 'status' => 'active',
             ]);
 
-            $membership->transactions()->create([
+            Transaction::create([
                 'user_id' => $data['user_id'],
+                'device_id' => Device::forFacility($package->facility_id)?->id,
                 'customer_name' => $data['customer_name'] ?? null,
                 'amount' => $data['amount'],
                 'payment_method' => $data['payment_method'],
@@ -227,20 +248,16 @@ class TransactionController extends Controller
                 ]);
             }
 
-            $booking = Booking::create([
+            // For session bookings, save the reservation only.
+            // Payment transactions are intentionally not created in this flow.
+            Booking::create([
                 'guest_name' => $data['customer_name'] ?? null,
                 'court_id' => $data['court_id'],
+                'device_id' => Device::forCourt($data['court_id'])?->id,
                 'date' => $date->toDateString(),
                 'start_time' => $startTime,
                 'end_time' => $endTime,
-                'status' => $data['payment_status'] === 'paid' ? 'confirmed' : 'pending',
-            ]);
-
-            $booking->transactions()->create([
-                'customer_name' => $data['customer_name'] ?? null,
-                'amount' => $data['amount'],
-                'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_status'],
+                'status' => 'pending',
             ]);
         });
     }
@@ -260,71 +277,6 @@ class TransactionController extends Controller
     private function toTime(int $minutes): string
     {
         return sprintf('%02d:%02d', intdiv($minutes, 60) % 24, $minutes % 60);
-    }
-
-    /**
-     * @return array<int, array{label: string, value: string|null}>
-     */
-    private function details(Transaction $transaction): array
-    {
-        $item = $transaction->transactionable;
-
-        if ($item instanceof Package) {
-            return [
-                ['label' => 'Paket', 'value' => $item->name],
-                ['label' => 'Tipe', 'value' => $this->packageTypeLabel($item->type)],
-                ['label' => 'Fasilitas', 'value' => $item->facility?->name],
-                ['label' => 'Durasi', 'value' => $item->duration_minutes.' menit'],
-            ];
-        }
-
-        if ($item instanceof Booking) {
-            return [
-                ['label' => 'Lapangan', 'value' => $item->court?->name],
-                ['label' => 'Fasilitas', 'value' => $item->court?->facility?->name],
-                ['label' => 'Tanggal', 'value' => $item->date?->toDateString()],
-                [
-                    'label' => 'Jam',
-                    'value' => substr((string) $item->start_time, 0, 5).'–'.substr((string) $item->end_time, 0, 5),
-                ],
-                ['label' => 'Status booking', 'value' => $item->status],
-            ];
-        }
-
-        if ($item instanceof UserMembership) {
-            return [
-                ['label' => 'Paket', 'value' => $item->package?->name],
-                ['label' => 'Mulai', 'value' => $item->start_date?->toDateString()],
-                ['label' => 'Selesai', 'value' => $item->end_date?->toDateString()],
-                ['label' => 'Status', 'value' => $item->status],
-            ];
-        }
-
-        return [];
-    }
-
-    private function packageTypeLabel(?string $type): string
-    {
-        return match ($type) {
-            'session' => 'Sesi',
-            'membership' => 'Keanggotaan',
-            'entry' => 'Harian',
-            default => (string) $type,
-        };
-    }
-
-    private function reference(Transaction $transaction): string
-    {
-        if (! $transaction->transactionable_type) {
-            return '—';
-        }
-
-        return match (class_basename($transaction->transactionable_type)) {
-            'Package' => 'Paket',
-            'Booking' => 'Booking',
-            'UserMembership' => 'Membership',
-            default => class_basename($transaction->transactionable_type),
-        };
     }
 
     private function ruleLabel($rule): string

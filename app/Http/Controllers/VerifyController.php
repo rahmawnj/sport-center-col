@@ -14,7 +14,7 @@ class VerifyController extends Controller
         $code = (string) $request->query('code', '');
 
         $transaction = $code !== ''
-            ? Transaction::query()->where('qr_code', $code)->first()
+            ? Transaction::query()->where('booking_code', $code)->first()
             : null;
 
         return Inertia::render('verify/Show', [

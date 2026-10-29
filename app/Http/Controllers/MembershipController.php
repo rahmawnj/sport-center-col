@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Device;
+use App\Models\Transaction;
 use App\Models\UserMembership;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -122,8 +124,9 @@ class MembershipController extends Controller
                 'status' => 'active',
             ]);
 
-            $membership->transactions()->create([
+            Transaction::create([
                 'user_id' => $membership->user_id,
+                'device_id' => Device::forFacility($membership->package->facility_id)?->id,
                 'amount' => $price,
                 'payment_method' => $data['payment_method'],
                 'payment_status' => 'paid',

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+type PaymentStatus = 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
 type ReportType = { value: string; label: string };
 type Transaction = {
     id: number;
@@ -79,6 +79,11 @@ const statusMeta: Record<
         label: 'Pending',
         badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
         dot: 'bg-amber-500',
+    },
+    partial: {
+        label: 'DP / Sebagian',
+        badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+        dot: 'bg-sky-500',
     },
     failed: {
         label: 'Gagal',

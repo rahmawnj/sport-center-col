@@ -394,7 +394,11 @@ final class ExecutableLinesFindingVisitor extends NodeVisitorAbstract
      */
     private function enterCallableOrClassLike(Node $node): void
     {
+        // An abstract method is never executed, not even the expressions of
+        // the default values of its parameters
         if ($node instanceof Node\Stmt\ClassMethod && $node->isAbstract()) {
+            $this->markRangeForUnset($node->getStartLine(), $node->getEndLine());
+
             return;
         }
 
@@ -492,6 +496,20 @@ final class ExecutableLinesFindingVisitor extends NodeVisitorAbstract
     private function enterPropertyHook(Node\PropertyHook $node): void
     {
         $this->markParameterLinesForUnset($node);
+
+        if (!is_array($node->body)) {
+            return;
+        }
+
+        // The enclosing property declaration was handled by enterDefault(),
+        // which assigned one branch to all of its lines, including the bodies
+        // of all of its hooks; the statements of a hook body need branches of
+        // their own, just like the statements of a method body
+        foreach ($node->body as $stmt) {
+            for ($line = $stmt->getStartLine(); $line <= $stmt->getEndLine(); $line++) {
+                unset($this->executableLinesGroupedByBranch[$line]);
+            }
+        }
     }
 
     private function enterArrowFunction(Node\Expr\ArrowFunction $node): void

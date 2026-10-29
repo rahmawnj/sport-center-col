@@ -7,7 +7,7 @@ import SummaryCards from '@/components/SummaryCards.vue';
 import TableFilters from '@/components/TableFilters.vue';
 import { Button } from '@/components/ui/button';
 
-type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+type PaymentStatus = 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
 type Transaction = {
     id: number;
     invoice_number: string | null;
@@ -38,6 +38,7 @@ const status = ref(props.filters.status ?? 'all');
 const statusOptions = [
     { value: 'all', label: 'Semua status' },
     { value: 'paid', label: 'Lunas' },
+    { value: 'partial', label: 'DP / Sebagian' },
     { value: 'pending', label: 'Pending' },
     { value: 'failed', label: 'Gagal' },
     { value: 'refunded', label: 'Refund' },
@@ -56,6 +57,11 @@ const statusMeta: Record<
         label: 'Pending',
         badge: 'bg-amber-500/10 text-amber-600',
         dot: 'bg-amber-500',
+    },
+    partial: {
+        label: 'DP / Sebagian',
+        badge: 'bg-sky-500/10 text-sky-600',
+        dot: 'bg-sky-500',
     },
     failed: {
         label: 'Gagal',

@@ -44,7 +44,7 @@ use function trim;
 use function ucfirst;
 use BackedEnum;
 use PHPUnit\Event\Code\TestMethodBuilder;
-use PHPUnit\Event\Facade as EventFacade;
+use PHPUnit\Event\Emitter;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Metadata\Parser\Registry as MetadataRegistry;
 use PHPUnit\Metadata\TestDox;
@@ -79,6 +79,12 @@ final class NamePrettifier
      * @var array<non-empty-string, true>
      */
     private array $erroredFormatters = [];
+    private readonly Emitter $emitter;
+
+    public function __construct(Emitter $emitter)
+    {
+        $this->emitter = $emitter;
+    }
 
     /**
      * @param class-string $className
@@ -93,7 +99,7 @@ final class NamePrettifier
 
                 assert($classLevelTestDox instanceof TestDox);
 
-                return $classLevelTestDox->text();
+                return Sanitizer::sanitizeControlCharacters($classLevelTestDox->text());
             }
         }
 
@@ -237,7 +243,7 @@ final class NamePrettifier
         return Color::dim(' with ') . Color::colorize(
             'fg-cyan',
             Color::visualizeWhitespace(
-                Sanitizer::sanitizeBidirectionalControlCharacters($test->dataName()),
+                Sanitizer::sanitizeControlCharacters($test->dataName()),
             ),
         );
     }
@@ -276,7 +282,7 @@ final class NamePrettifier
         if (is_int($dataName)) {
             $providedData['$_dataName'] = (string) $dataName;
         } else {
-            $providedData['$_dataName'] = Sanitizer::sanitizeBidirectionalControlCharacters($dataName);
+            $providedData['$_dataName'] = Sanitizer::sanitizeControlCharacters($dataName);
         }
 
         foreach ($reflector->getParameters() as $parameter) {
@@ -314,13 +320,11 @@ final class NamePrettifier
                 } else {
                     $value = "''";
                 }
+            } else {
+                $value = Sanitizer::sanitizeControlCharacters($value);
             }
 
-            $providedData['$' . $parameter->getName()] = str_replace(
-                '$',
-                '\\$',
-                Sanitizer::sanitizeBidirectionalControlCharacters($value),
-            );
+            $providedData['$' . $parameter->getName()] = str_replace('$', '\\$', $value);
         }
 
         if ($colorize) {
@@ -357,7 +361,7 @@ final class NamePrettifier
     {
         $placeholdersUsed = false;
 
-        $result = $testDox->text();
+        $result = Sanitizer::sanitizeControlCharacters($testDox->text());
 
         if (str_contains($result, '$')) {
             $annotation   = $result;
@@ -395,7 +399,7 @@ final class NamePrettifier
         }
 
         if (!method_exists($className, $methodName)) {
-            EventFacade::emitter()->testTriggeredPhpunitError(
+            $this->emitter->testTriggeredPhpunitError(
                 TestMethodBuilder::fromTestCase($test, false),
                 sprintf(
                     'Method %s::%s() cannot be used as a TestDox formatter because it does not exist',
@@ -412,7 +416,7 @@ final class NamePrettifier
         $reflector = new ReflectionMethod($className, $methodName);
 
         if (!$reflector->isPublic()) {
-            EventFacade::emitter()->testTriggeredPhpunitError(
+            $this->emitter->testTriggeredPhpunitError(
                 TestMethodBuilder::fromTestCase($test, false),
                 sprintf(
                     'Method %s::%s() cannot be used as a TestDox formatter because it is not public',
@@ -427,7 +431,7 @@ final class NamePrettifier
         }
 
         if (!$reflector->isStatic()) {
-            EventFacade::emitter()->testTriggeredPhpunitError(
+            $this->emitter->testTriggeredPhpunitError(
                 TestMethodBuilder::fromTestCase($test, false),
                 sprintf(
                     'Method %s::%s() cannot be used as a TestDox formatter because it is not static',
@@ -456,9 +460,9 @@ final class NamePrettifier
 
             assert(is_string($result));
 
-            return [$result, true];
+            return [Sanitizer::sanitizeControlCharacters($result), true];
         } catch (Throwable $t) {
-            EventFacade::emitter()->testTriggeredPhpunitError(
+            $this->emitter->testTriggeredPhpunitError(
                 TestMethodBuilder::fromTestCase($test, false),
                 sprintf(
                     'TestDox formatter %s::%s() triggered an error: %s%s%s',

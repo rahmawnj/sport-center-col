@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import PublicLayout from '@/layouts/PublicLayout.vue';
 import {
     ArrowLeft,
     ArrowRight,
@@ -14,6 +13,7 @@ import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import PublicLayout from '@/layouts/PublicLayout.vue';
 
 type DayType = 'weekday' | 'weekend' | 'all';
 type PricingRule = {
@@ -35,7 +35,12 @@ type Facility = {
     slug: string;
     packages: BookingPackage[];
 };
-type Court = { id: number; name: string };
+type Court = {
+    id: number;
+    name: string;
+    amenities?: string[];
+    price_adjustment?: number;
+};
 type Slot = {
     start_time: string;
     end_time: string;
@@ -43,7 +48,7 @@ type Slot = {
     courts: Court[];
 };
 
-const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null }>();
+const props = defineProps<{ facilities: Facility[]; initialFacilityId: number | null; currentUser: { id: number; name: string; email: string } | null; success?: string | null }>();
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -57,24 +62,30 @@ const date = ref('');
 const slots = ref<Slot[]>([]);
 const loadingSlots = ref(false);
 const slot = ref<Slot | null>(null);
+const selectedSlots = ref<string[]>([]);
+const slotSelectionError = ref('');
 const courtId = ref<number | null>(null);
+const termsAccepted = ref(false);
 
 const form = useForm({
     package_id: null as number | null,
     court_id: null as number | null,
     date: '',
     start_time: '',
-    guest_name: '',
-    guest_email: '',
+    duration_hours: 1,
+    guest_name: props.currentUser?.name ?? '',
+    guest_email: props.currentUser?.email ?? '',
     guest_phone: '',
+    terms_accepted: false,
 });
 
 const steps = [
-    { id: 1, label: 'Fasilitas' },
+    { id: 1, label: 'Olahraga' },
     { id: 2, label: 'Paket' },
-    { id: 3, label: 'Jadwal' },
-    { id: 4, label: 'Lapangan' },
-    { id: 5, label: 'Data diri' },
+    { id: 3, label: 'Jadwal & lapangan' },
+    { id: 4, label: 'Personal information' },
+    { id: 5, label: 'Order confirmation' },
+    { id: 6, label: 'Payment & terms' },
 ];
 
 const packageTypeLabel: Record<string, string> = {
@@ -84,6 +95,13 @@ const packageTypeLabel: Record<string, string> = {
 };
 
 const isSession = computed(() => pkg.value?.type === 'session');
+const hasTimedSession = computed(() => isSession.value && !!pkg.value?.pricing_rules.some((rule) => rule.start_time && rule.end_time));
+const selectedDurationHours = computed(() => selectedSlots.value.length);
+const selectedDurationLabel = computed(() => {
+    const hours = selectedDurationHours.value;
+
+    return hours === 1 ? '1 jam' : `${hours} jam`;
+});
 
 const packagePrice = computed(() => {
     if (!pkg.value?.pricing_rules.length) {
@@ -93,13 +111,33 @@ const packagePrice = computed(() => {
     return Math.min(...pkg.value.pricing_rules.map((rule) => rule.price));
 });
 
-const displayPrice = computed(() =>
-    isSession.value ? (slot.value?.price ?? null) : packagePrice.value,
+const selectedCourt = computed(
+    () =>
+        slot.value?.courts.find((court) => court.id === courtId.value) ?? null,
 );
 
-const visibleSteps = computed(() =>
-    steps.filter((item) => isSession.value || (item.id !== 3 && item.id !== 4)),
-);
+const displayPrice = computed(() => {
+    if (!hasTimedSession.value) {
+        return packagePrice.value;
+    }
+
+    if (slot.value?.price == null) {
+        return null;
+    }
+
+    return slot.value.price + (selectedCourt.value?.price_adjustment ?? 0);
+});
+
+const visibleSteps = computed(() => {
+    // Before a package is selected, show the complete flow so the stepper
+    // does not prematurely jump from step 2 to step 5.
+    if (!pkg.value) {
+        return steps;
+    }
+
+    // Membership/entry packages skip the date and court selection steps.
+    return steps.filter((item) => hasTimedSession.value || item.id !== 3);
+});
 
 function packagePriceLabel(item: BookingPackage) {
     if (!item.pricing_rules.length) {
@@ -118,20 +156,26 @@ const canNext = computed(() => {
         case 2:
             return !!pkg.value;
         case 3:
-            return !!date.value && !!slot.value;
+            return !!date.value && (!hasTimedSession.value || (!!slot.value && selectedSlots.value.length > 0 && !!courtId.value));
         case 4:
-            return !!courtId.value;
-        default:
+            return props.currentUser !== null || (!!form.guest_name.trim() && !!form.guest_email.trim() && form.guest_email.includes('@') && form.guest_email.includes('.') && !!form.guest_phone.trim());
+        case 5:
             return true;
+        case 6:
+            return termsAccepted.value;
+        default:
+            return false;
     }
 });
 
 watch(date, () => {
     slot.value = null;
+    selectedSlots.value = [];
+    slotSelectionError.value = '';
     courtId.value = null;
     slots.value = [];
 
-    if (!pkg.value || !date.value) {
+    if (!pkg.value || !date.value || !hasTimedSession.value) {
         return;
     }
 
@@ -156,12 +200,77 @@ function chooseFacility(item: Facility) {
 
 function choosePackage(item: BookingPackage) {
     pkg.value = item;
+    date.value = '';
+    slots.value = [];
+    slot.value = null;
+    selectedSlots.value = [];
+    courtId.value = null;
     step.value = item.type === 'session' ? 3 : 5;
 }
 
 function chooseSlot(item: Slot) {
-    slot.value = item;
+    slotSelectionError.value = '';
+    const currentlySelected = new Set(selectedSlots.value);
+    const clickedIndex = slots.value.findIndex((entry) => entry.start_time === item.start_time);
+
+    if (currentlySelected.has(item.start_time)) {
+        // Keep the selection continuous when removing a checked hour.
+        const selected = [...currentlySelected]
+            .map((time) => slots.value.findIndex((entry) => entry.start_time === time))
+            .filter((index) => index >= 0)
+            .sort((a, b) => a - b);
+        const first = selected[0];
+        const last = selected[selected.length - 1];
+
+        if (clickedIndex === first) {
+            currentlySelected.delete(item.start_time);
+        } else if (clickedIndex === last) {
+            currentlySelected.delete(item.start_time);
+        } else {
+            // Removing a middle hour trims the booking at that point.
+            selected.forEach((index) => {
+                if (index >= clickedIndex) {
+currentlySelected.delete(slots.value[index].start_time);
+}
+            });
+        }
+    } else {
+        // Selecting a later/earlier hour automatically fills every hour in between.
+        const selectedIndices = [...currentlySelected]
+            .map((time) => slots.value.findIndex((entry) => entry.start_time === time))
+            .filter((index) => index >= 0);
+        const first = selectedIndices.length ? Math.min(...selectedIndices, clickedIndex) : clickedIndex;
+        const last = selectedIndices.length ? Math.max(...selectedIndices, clickedIndex) : clickedIndex;
+
+        for (let index = first; index <= last; index++) {
+            currentlySelected.add(slots.value[index].start_time);
+        }
+    }
+
+    const chosen = [...currentlySelected]
+        .map((time) => slots.value.find((entry) => entry.start_time === time))
+        .filter((entry): entry is Slot => !!entry)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    selectedSlots.value = chosen.map((entry) => entry.start_time);
     courtId.value = null;
+
+    if (!chosen.length) {
+        slot.value = null;
+
+        return;
+    }
+
+    const commonCourts = chosen[0].courts.filter((court) =>
+        chosen.every((entry) => entry.courts.some((available) => available.id === court.id)),
+    );
+
+    slot.value = {
+        start_time: chosen[0].start_time,
+        end_time: chosen[chosen.length - 1].end_time,
+        price: chosen.reduce((total, entry) => total + entry.price, 0),
+        courts: commonCourts,
+    };
 }
 
 function chooseCourt(id: number) {
@@ -170,26 +279,24 @@ function chooseCourt(id: number) {
 
 function next() {
     if (step.value === 2 && !isSession.value) {
-        step.value = 5;
+        step.value = 4;
 
         return;
     }
 
-    if (step.value === 3 && slot.value) {
+    if (step.value === 3) {
         form.package_id = pkg.value?.id ?? null;
         form.date = date.value;
-        form.start_time = slot.value.start_time;
+        form.start_time = hasTimedSession.value ? (slot.value?.start_time ?? '') : '';
+        form.duration_hours = hasTimedSession.value ? selectedSlots.value.length : 1;
+        form.court_id = hasTimedSession.value ? courtId.value : null;
     }
 
-    if (step.value === 4) {
-        form.court_id = courtId.value;
-    }
-
-    step.value = Math.min(5, step.value + 1);
+    step.value = Math.min(6, step.value + 1);
 }
 
 function back() {
-    if (step.value === 5 && !isSession.value) {
+    if (step.value === 4 && !isSession.value) {
         step.value = 2;
 
         return;
@@ -199,15 +306,18 @@ function back() {
 }
 
 function submit() {
+    form.terms_accepted = termsAccepted.value;
     form.package_id = pkg.value?.id ?? null;
 
     if (isSession.value) {
         form.date = date.value;
-        form.start_time = slot.value?.start_time ?? '';
-        form.court_id = courtId.value;
+        form.start_time = hasTimedSession.value ? (slot.value?.start_time ?? '') : '';
+        form.duration_hours = hasTimedSession.value ? (selectedSlots.value.length || 1) : 1;
+        form.court_id = hasTimedSession.value ? courtId.value : null;
     } else {
         form.date = '';
         form.start_time = '';
+        form.duration_hours = 1;
         form.court_id = null;
     }
 
@@ -236,13 +346,63 @@ function formatDuration(minutes: number) {
 <template>
     <Head title="Booking" />
     <PublicLayout>
-    <div class="min-h-screen bg-background text-foreground">
+    <div class="min-h-screen bg-slate-50 text-slate-900">
         <main class="mx-auto w-full max-w-5xl px-4 py-8">
-            <h1 class="text-2xl font-semibold tracking-tight">Booking</h1>
-            <p class="mt-1 text-sm text-muted-foreground">
-                Pilih fasilitas dan paket, lalu lengkapi data pemesanan.
-            </p>
-
+            <section v-if="props.success" class="flex min-h-[75vh] items-center justify-center py-10">
+                <div class="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_80px_rgba(15,23,42,0.12)]">
+                    <div class="relative overflow-hidden bg-[#001428] px-6 py-12 text-center text-white sm:px-12 sm:py-16">
+                        <div class="pointer-events-none absolute -right-12 -top-16 size-56 rounded-full border-[30px] border-white/5"></div>
+                        <div class="pointer-events-none absolute -bottom-24 -left-10 size-64 rounded-full border-[36px] border-white/5"></div>
+                        <div class="relative mx-auto flex size-24 items-center justify-center rounded-full bg-[#a4da01] text-[#001428] shadow-lg shadow-black/20 sm:size-28">
+                            <Check class="size-12 sm:size-14" :stroke-width="3" />
+                        </div>
+                        <p class="relative mt-7 text-sm font-semibold uppercase tracking-[0.22em] text-[#c9f36a]">Konfirmasi berhasil</p>
+                        <h1 class="relative mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Booking berhasil!</h1>
+                        <p class="relative mx-auto mt-4 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">Jadwal booking kamu sudah tersimpan. Terima kasih sudah memilih kami.</p>
+                    </div>
+                    <div class="px-6 py-8 sm:px-12 sm:py-10">
+                        <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 sm:p-6">
+                            <div class="flex items-start gap-3">
+                                <Check class="mt-0.5 size-5 shrink-0 text-emerald-700" />
+                                <div>
+                                    <p class="font-semibold text-emerald-950">Booking tercatat di sistem</p>
+                                    <p class="mt-1 text-sm leading-6 text-emerald-900">{{ props.success }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-7 grid gap-4 sm:grid-cols-3">
+                            <div class="rounded-2xl bg-slate-50 p-4">
+                                <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm"><Check class="size-5" /></div>
+                                <p class="font-semibold text-slate-900">Data tersimpan</p>
+                                <p class="mt-1 text-sm leading-5 text-slate-500">Informasi booking sudah masuk ke sistem.</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 p-4">
+                                <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm"><Clock class="size-5" /></div>
+                                <p class="font-semibold text-slate-900">Menunggu konfirmasi</p>
+                                <p class="mt-1 text-sm leading-5 text-slate-500">Status booking dapat ditindaklanjuti oleh pengelola.</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 p-4">
+                                <div class="mb-2 flex size-10 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm"><Check class="size-5" /></div>
+                                <p class="font-semibold text-slate-900">Simpan kontak</p>
+                                <p class="mt-1 text-sm leading-5 text-slate-500">Pastikan nomor HP dan email yang kamu isi aktif.</p>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                            <a href="/" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Kembali ke beranda</a>
+                            <a href="/book" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] transition hover:bg-[#b6ed19]">Booking olahraga lain <ArrowRight class="ml-2 size-4" /></a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <template v-else>
+            <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Booking olahraga</h1>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Pilih olahraga, tentukan jadwal, lalu konfirmasi dengan data kontakmu.
+                    </p>
+                </div>
+            </div>
             <!-- Stepper -->
             <div class="mt-6 flex flex-wrap items-center gap-2">
                 <div
@@ -251,23 +411,23 @@ function formatDuration(minutes: number) {
                     class="flex items-center gap-2"
                 >
                     <div
-                        class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
+                        class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
                         :class="
                             step === item.id
-                                ? 'border-primary bg-primary/10 text-primary'
+                                ? 'bg-[#a4da01] text-[#001428]'
                                 : step > item.id
-                                  ? 'border-primary/40 text-primary'
-                                  : 'text-muted-foreground'
+                                  ? 'bg-slate-200 text-slate-700'
+                                  : 'bg-white text-slate-400'
                         "
                     >
                         <span
                             class="flex size-5 items-center justify-center rounded-full text-xs"
                             :class="
                                 step > item.id
-                                    ? 'bg-primary text-primary-foreground'
+                                    ? 'bg-[#001428] text-white'
                                     : step === item.id
-                                      ? 'bg-primary/20'
-                                      : 'bg-muted'
+                                      ? 'bg-white/70'
+                                      : 'bg-slate-100'
                             "
                         >
                             <Check v-if="step > item.id" class="size-3" />
@@ -282,10 +442,10 @@ function formatDuration(minutes: number) {
                 </div>
             </div>
 
-            <div class="mt-6 rounded-2xl border bg-card p-4 shadow-sm md:p-6">
+            <div class="mt-6 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-6">
                 <!-- Step 1: Facility -->
                 <section v-if="step === 1" class="space-y-4">
-                    <h2 class="font-semibold">Pilih fasilitas</h2>
+                    <h2 class="font-semibold">Pilih olahraga</h2>
                     <div
                         v-if="props.facilities.length"
                         class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
@@ -294,10 +454,10 @@ function formatDuration(minutes: number) {
                             v-for="item in props.facilities"
                             :key="item.id"
                             type="button"
-                            class="flex items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
+                            class="flex items-center gap-3 rounded-xl bg-slate-50 p-4 text-left transition-all hover:bg-lime-50 hover:shadow-sm"
                             :class="
                                 facility?.id === item.id
-                                    ? 'border-primary bg-primary/5'
+                                    ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
                                     : ''
                             "
                             @click="chooseFacility(item)"
@@ -318,7 +478,7 @@ function formatDuration(minutes: number) {
                         </button>
                     </div>
                     <p v-else class="text-sm text-muted-foreground">
-                        Belum ada fasilitas yang bisa dibooking online.
+                        Belum ada olahraga yang bisa dibooking online.
                     </p>
                 </section>
 
@@ -335,10 +495,10 @@ function formatDuration(minutes: number) {
                             v-for="item in facility?.packages"
                             :key="item.id"
                             type="button"
-                            class="group relative flex flex-col gap-3 rounded-xl border bg-background p-4 text-left transition-all hover:border-primary hover:shadow-sm"
+                            class="group relative flex flex-col gap-3 rounded-xl bg-slate-50 p-4 text-left transition-all hover:bg-lime-50 hover:shadow-sm"
                             :class="
                                 pkg?.id === item.id
-                                    ? 'border-primary ring-2 ring-primary/30'
+                                    ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
                                     : ''
                             "
                             @click="choosePackage(item)"
@@ -375,7 +535,7 @@ function formatDuration(minutes: number) {
                             </div>
 
                             <div
-                                class="mt-auto flex items-end justify-between gap-2 border-t pt-3"
+                                class="mt-auto flex items-end justify-between gap-2 pt-3"
                             >
                                 <div>
                                     <div class="text-xs text-muted-foreground">
@@ -401,105 +561,80 @@ function formatDuration(minutes: number) {
                         </button>
                     </div>
                     <p v-else class="text-sm text-muted-foreground">
-                        Fasilitas ini belum memiliki paket.
+                        Olahraga ini belum memiliki paket.
                     </p>
                 </section>
 
-                <!-- Step 3: Date & Slot -->
-                <section v-else-if="step === 3" class="space-y-4">
-                    <h2 class="font-semibold">Pilih tanggal & jam</h2>
-                    <div class="grid max-w-xs gap-2">
-                        <Label for="booking-date">Tanggal</Label>
-                        <Input
-                            id="booking-date"
-                            v-model="date"
-                            type="date"
-                            :min="today"
-                        />
-                    </div>
-
-                    <div
-                        v-if="loadingSlots"
-                        class="flex items-center gap-2 text-sm text-muted-foreground"
-                    >
-                        <Loader2 class="size-4 animate-spin" />
-                        Memuat jadwal...
-                    </div>
-
-                    <template v-else-if="date">
-                        <div
-                            v-if="slots.length"
-                            class="grid gap-2 sm:grid-cols-3 lg:grid-cols-4"
-                        >
-                            <button
-                                v-for="item in slots"
-                                :key="item.start_time"
-                                type="button"
-                                :disabled="item.courts.length === 0"
-                                class="rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                                :class="
-                                    slot?.start_time === item.start_time
-                                        ? 'border-primary bg-primary/5'
-                                        : 'hover:border-primary hover:bg-primary/5'
-                                "
-                                @click="chooseSlot(item)"
-                            >
-                                <div class="font-medium">
-                                    {{ item.start_time }}–{{ item.end_time }}
-                                </div>
-                                <div class="text-sm text-primary">
-                                    {{ formatIDR(item.price) }}
-                                </div>
-                                <div class="text-xs text-muted-foreground">
-                                    {{ item.courts.length }} lapangan tersedia
-                                </div>
-                            </button>
+                <!-- Step 3: Date, slot, court and live summary -->
+                <section v-else-if="step === 3" class="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.9fr)]">
+                    <div class="space-y-5">
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ hasTimedSession ? 'Pilih tanggal, jam & lapangan' : 'Pilih tanggal sesi' }}</h2>
+                            <p class="mt-1 text-sm text-slate-500">{{ hasTimedSession ? 'Pilih tanggal dan jam yang tersedia, lalu pilih lapangan.' : 'Paket ini tidak memakai pilihan jam atau lapangan. Cukup tentukan tanggal sesi.' }}</p>
                         </div>
-                        <p v-else class="text-sm text-muted-foreground">
-                            Tidak ada jadwal tersedia pada tanggal ini.
-                        </p>
-                    </template>
-                </section>
-
-                <!-- Step 4: Court -->
-                <section v-else-if="step === 4" class="space-y-4">
-                    <h2 class="font-semibold">Pilih lapangan</h2>
-                    <p class="text-sm text-muted-foreground">
-                        {{ slot?.start_time }}–{{ slot?.end_time }} ·
-                        {{ slot && formatIDR(slot.price) }}
-                    </p>
-                    <div
-                        v-if="slot?.courts.length"
-                        class="grid gap-3 sm:grid-cols-3"
-                    >
-                        <button
-                            v-for="item in slot.courts"
-                            :key="item.id"
-                            type="button"
-                            class="flex items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
-                            :class="
-                                courtId === item.id
-                                    ? 'border-primary bg-primary/5'
-                                    : ''
-                            "
-                            @click="chooseCourt(item.id)"
-                        >
-                            <MapPin class="size-4 text-primary" />
-                            <span class="font-medium">{{ item.name }}</span>
-                        </button>
+                        <div class="grid max-w-sm gap-2">
+                            <Label for="booking-date" class="text-sm font-semibold text-slate-700">Tanggal booking</Label>
+                            <div class="rounded-2xl bg-slate-50 p-3">
+                                <Input id="booking-date" v-model="date" type="date" :min="today" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base font-semibold text-slate-800 shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                                <p class="mt-2 text-xs text-slate-500">{{ hasTimedSession ? 'Pilih tanggal untuk melihat jam dan lapangan yang tersedia.' : 'Pilih tanggal pelaksanaan sesi.' }}</p>
+                            </div>
+                        </div>
+                        <div v-if="hasTimedSession && loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
+                        <template v-else-if="date && hasTimedSession">
+                            <div v-if="slots.length" class="space-y-3">
+                                <p class="text-sm text-slate-600">Centang jam awal dan akhir yang diinginkan. Jam di antaranya otomatis ikut dipilih.</p>
+                                <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                                    <label v-for="item in slots" :key="item.start_time" class="flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50 p-3 transition-colors has-[:disabled]:cursor-not-allowed has-[:checked]:bg-lime-100 hover:bg-lime-50" :class="selectedSlots.includes(item.start_time) ? 'ring-2 ring-inset ring-[#a4da01]' : ''">
+                                        <input type="checkbox" :checked="selectedSlots.includes(item.start_time)" :disabled="item.courts.length === 0" class="mt-1 size-4 accent-[#8dbb00] disabled:cursor-not-allowed" @change="chooseSlot(item)" />
+                                        <span class="min-w-0">
+                                            <span class="block font-semibold text-slate-800">{{ item.start_time }}–{{ item.end_time }}</span>
+                                            <span class="block text-sm font-medium text-slate-700">{{ formatIDR(item.price) }}</span>
+                                            <span class="block text-xs text-slate-500">{{ item.courts.length }} lapangan tersedia</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <p v-else class="text-sm text-muted-foreground">Tidak ada jadwal tersedia pada tanggal ini.</p>
+                        </template>
+                        <div v-if="hasTimedSession" class="space-y-3 border-t border-slate-100 pt-5">
+                            <div>
+                                <h3 class="font-semibold">Pilih lapangan</h3>
+                                <p class="mt-1 text-sm text-slate-500">{{ slot ? slot.start_time + '–' + slot.end_time : 'Pilih jam terlebih dahulu.' }}</p>
+                            </div>
+                            <div v-if="slot?.courts.length" class="grid gap-3 sm:grid-cols-2">
+                                <button v-for="item in slot.courts" :key="item.id" type="button" class="flex items-center gap-3 rounded-xl bg-slate-50 p-4 text-left transition-colors hover:bg-lime-50" :class="courtId === item.id ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]' : ''" @click="chooseCourt(item.id)">
+                                    <MapPin class="size-4 shrink-0 text-primary" /><div class="min-w-0"><span class="block font-medium">{{ item.name }}</span><span v-if="item.amenities?.length" class="mt-0.5 block text-xs text-slate-500">{{ item.amenities.join(' · ') }}</span><span v-if="item.price_adjustment" class="mt-0.5 block text-xs font-medium text-emerald-700">+{{ formatIDR(item.price_adjustment) }}</span></div><Check v-if="courtId === item.id" class="ml-auto size-4 shrink-0 text-primary" />
+                                </button>
+                            </div>
+                            <p v-else class="text-sm text-muted-foreground">Pilih tanggal dan jam untuk melihat lapangan yang tersedia.</p>
+                        </div>
                     </div>
-                    <p v-else class="text-sm text-muted-foreground">
-                        Tidak ada lapangan tersedia.
-                    </p>
+                    <aside class="h-fit rounded-2xl border border-slate-200 bg-slate-50 p-5 lg:sticky lg:top-24">
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Booking detail</p>
+                        <h3 class="mt-2 text-lg font-bold text-slate-900">Ringkasan pesanan</h3>
+                        <div class="mt-5 space-y-4 text-sm">
+                            <div><p class="text-slate-500">Olahraga</p><p class="mt-1 font-semibold">{{ facility?.name || 'Belum dipilih' }}</p></div>
+                            <div><p class="text-slate-500">Paket</p><p class="mt-1 font-semibold">{{ pkg?.name || 'Belum dipilih' }}</p></div>
+                            <div><p class="text-slate-500">Tanggal</p><p class="mt-1 font-semibold">{{ date || 'Belum dipilih' }}</p></div>
+                            <div v-if="hasTimedSession"><p class="text-slate-500">Jam mulai – selesai</p><p class="mt-1 font-semibold">{{ slot ? slot.start_time + '–' + slot.end_time : 'Belum dipilih' }}</p></div>
+                            <div v-if="hasTimedSession"><p class="text-slate-500">Durasi sesi</p><p class="mt-1 font-semibold">{{ slot && selectedDurationHours ? selectedDurationLabel : 'Belum dipilih' }}</p></div>
+                            <div v-if="hasTimedSession && slot && selectedDurationHours > 1" class="rounded-xl border border-lime-200 bg-lime-50 p-3 text-xs leading-5 text-lime-900">
+                                Timer perangkat mengikuti keseluruhan durasi {{ selectedDurationLabel }} sampai {{ slot.end_time }}, bukan direset setiap pergantian jam.
+                            </div>
+                            <div v-if="hasTimedSession"><p class="text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || 'Belum dipilih' }}</p></div>
+                            <div class="border-t border-slate-200 pt-4"><p class="text-slate-500">Total</p><p class="mt-1 text-2xl font-bold text-slate-900">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
+                        </div>
+                    </aside>
                 </section>
 
-                <!-- Step 5: Guest data -->
-                <section v-else class="space-y-4">
-                    <h2 class="font-semibold">Data diri</h2>
+                <!-- Step 4: Personal information -->
+                <section v-else-if="step === 4" class="space-y-4">
+                    <h2 class="text-lg font-semibold">Personal information</h2>
+                    <p class="text-sm text-slate-500">Masukkan detail kontak untuk konfirmasi booking.</p>
 
-                    <div class="rounded-xl border bg-muted/40 p-4 text-sm">
+                    <div class="rounded-xl bg-slate-50 p-4 text-sm">
                         <div class="flex justify-between gap-2">
-                            <span class="text-muted-foreground">Fasilitas</span>
+                            <span class="text-muted-foreground">Olahraga</span>
                             <span class="font-medium">{{
                                 facility?.name
                             }}</span>
@@ -514,9 +649,7 @@ function formatDuration(minutes: number) {
                         >
                             <span class="text-muted-foreground">Jadwal</span>
                             <span class="font-medium">
-                                {{ date }} · {{ slot?.start_time }}–{{
-                                    slot?.end_time
-                                }}
+                                {{ date }}<template v-if="hasTimedSession"> · {{ slot?.start_time }}–{{ slot?.end_time }}</template>
                             </span>
                         </div>
                         <div
@@ -533,49 +666,40 @@ function formatDuration(minutes: number) {
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div v-if="props.currentUser" class="rounded-2xl border border-lime-200 bg-lime-50/70 p-5">
+                        <div class="mb-4 flex items-center gap-3">
+                            <div class="flex size-11 items-center justify-center rounded-xl bg-[#a4da01] text-[#001428]"><Check class="size-5" /></div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Data member terisi otomatis</p>
+                                <p class="mt-1 text-sm text-slate-600">Booking akan ditautkan ke akun yang sedang login.</p>
+                            </div>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="guest-name">Nama</Label>
+                                <Input id="guest-name" v-model="form.guest_name" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="guest-email">Email</Label>
+                                <Input id="guest-email" v-model="form.guest_email" type="email" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" />
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="grid gap-4 sm:grid-cols-2">
                         <div class="grid gap-2 sm:col-span-2">
                             <Label for="guest-name">Nama</Label>
-                            <Input
-                                id="guest-name"
-                                v-model="form.guest_name"
-                                placeholder="Nama lengkap"
-                            />
-                            <p
-                                v-if="form.errors.guest_name"
-                                class="text-xs text-destructive"
-                            >
-                                {{ form.errors.guest_name }}
-                            </p>
+                            <Input id="guest-name" v-model="form.guest_name" placeholder="Nama lengkap" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                            <p v-if="form.errors.guest_name" class="text-xs text-destructive">{{ form.errors.guest_name }}</p>
                         </div>
                         <div class="grid gap-2">
                             <Label for="guest-email">Email</Label>
-                            <Input
-                                id="guest-email"
-                                v-model="form.guest_email"
-                                type="email"
-                                placeholder="email@contoh.com"
-                            />
-                            <p
-                                v-if="form.errors.guest_email"
-                                class="text-xs text-destructive"
-                            >
-                                {{ form.errors.guest_email }}
-                            </p>
+                            <Input id="guest-email" v-model="form.guest_email" type="email" placeholder="email@contoh.com" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 py-3.5 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                            <p v-if="form.errors.guest_email" class="text-xs text-destructive">{{ form.errors.guest_email }}</p>
                         </div>
                         <div class="grid gap-2">
                             <Label for="guest-phone">No. HP</Label>
-                            <Input
-                                id="guest-phone"
-                                v-model="form.guest_phone"
-                                placeholder="08xxxxxxxxxx"
-                            />
-                            <p
-                                v-if="form.errors.guest_phone"
-                                class="text-xs text-destructive"
-                            >
-                                {{ form.errors.guest_phone }}
-                            </p>
+                            <Input id="guest-phone" v-model="form.guest_phone" placeholder="08xxxxxxxxxx" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none ring-0 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#a4da01] focus-visible:ring-offset-0" />
+                            <p v-if="form.errors.guest_phone" class="text-xs text-destructive">{{ form.errors.guest_phone }}</p>
                         </div>
                     </div>
 
@@ -587,8 +711,40 @@ function formatDuration(minutes: number) {
                     </p>
                 </section>
 
+                <!-- Step 5: Order confirmation -->
+                <section v-else-if="step === 5" class="space-y-5">
+                    <div><h2 class="text-xl font-bold">Order confirmation</h2><p class="mt-1 text-sm text-slate-500">Periksa kembali detail pesanan dan data pemesan.</p></div>
+                    <div class="rounded-2xl border border-slate-200 p-5">
+                        <div class="border-b border-slate-100 pb-4"><p class="font-semibold">{{ facility?.name }}</p><p class="mt-1 text-sm text-slate-500">{{ pkg?.name }}</p></div>
+                        <div class="grid gap-4 py-4 sm:grid-cols-2">
+                            <div><p class="text-sm text-slate-500">Nama pemesan</p><p class="mt-1 font-semibold">{{ props.currentUser?.name || form.guest_name }}</p></div>
+                            <div><p class="text-sm text-slate-500">Email</p><p class="mt-1 font-semibold break-all">{{ props.currentUser?.email || form.guest_email }}</p></div>
+                            <div><p class="text-sm text-slate-500">Nomor HP</p><p class="mt-1 font-semibold">{{ form.guest_phone }}</p></div>
+                            <div v-if="isSession"><p class="text-sm text-slate-500">{{ hasTimedSession ? 'Tanggal & waktu' : 'Tanggal sesi' }}</p><p class="mt-1 font-semibold">{{ date }}<template v-if="hasTimedSession"> · {{ slot?.start_time }}–{{ slot?.end_time }}</template></p></div>
+                            <div v-if="hasTimedSession"><p class="text-sm text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || '—' }}</p></div>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-slate-200 pt-4"><div><p class="font-semibold">Total pesanan</p><p class="mt-1 text-xs text-slate-500">Sesuai paket dan jadwal yang dipilih</p></div><p class="text-2xl font-bold">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
+                    </div>
+                </section>
+
+                <!-- Step 6: Payment and terms -->
+                <section v-else class="space-y-5">
+                    <div><h2 class="text-xl font-bold">Payment & terms</h2><p class="mt-1 text-sm text-slate-500">Konfirmasi booking dan persetujuan syarat dan ketentuan.</p></div>
+                    <div class="rounded-2xl bg-[#001428] p-6 text-white">
+                        <div class="flex items-center gap-3"><div class="flex size-12 items-center justify-center rounded-full bg-[#a4da01] text-[#001428]"><Check class="size-6" :stroke-width="3" /></div><div><p class="text-lg font-bold">Konfirmasi booking</p><p class="mt-1 text-sm text-slate-300">Total pesanan</p></div></div>
+                        <p class="mt-5 text-3xl font-bold text-[#c9f36a]">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p>
+                        <p class="mt-2 text-sm leading-6 text-slate-300">Konfirmasi ini menyimpan booking dan belum memproses pembayaran online. Detail pembayaran dapat dikonfirmasi dengan pengelola.</p>
+                    </div>
+                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:bg-slate-50" :class="termsAccepted ? 'border-[#a4da01] bg-lime-50' : ''">
+                        <input v-model="termsAccepted" type="checkbox" class="mt-1 size-4 accent-[#8dbb00]" />
+                        <span class="text-sm leading-6 text-slate-700">Saya telah memeriksa detail pesanan dan menyetujui syarat serta ketentuan booking olahraga.</span>
+                    </label>
+                    <p v-if="!termsAccepted" class="text-xs text-slate-500">Centang persetujuan untuk mengaktifkan tombol konfirmasi.</p>
+                    <p v-if="form.errors.start_time || form.errors.court_id || form.errors.package_id" class="text-sm text-destructive">{{ form.errors.start_time || form.errors.court_id || form.errors.package_id }}</p>
+                </section>
+
                 <div
-                    class="mt-6 flex items-center justify-between border-t pt-4"
+                    class="mt-6 flex items-center justify-between pt-4"
                 >
                     <Button
                         type="button"
@@ -599,28 +755,16 @@ function formatDuration(minutes: number) {
                         <ArrowLeft class="mr-2 size-4" /> Kembali
                     </Button>
 
-                    <Button
-                        v-if="step < 5"
-                        type="button"
-                        :disabled="!canNext"
-                        @click="next"
-                    >
-                        Lanjut <ArrowRight class="ml-2 size-4" />
+                    <Button v-if="step < 6" type="button" :disabled="!canNext" @click="next">
+                        {{ step === 4 ? 'Lanjut ke order confirmation' : step === 5 ? 'Lanjut ke payment' : 'Lanjut' }} <ArrowRight class="ml-2 size-4" />
                     </Button>
-                    <Button
-                        v-else
-                        type="button"
-                        :disabled="form.processing"
-                        @click="submit"
-                    >
-                        <Loader2
-                            v-if="form.processing"
-                            class="mr-2 size-4 animate-spin"
-                        />
-                        Konfirmasi booking
+                    <Button v-else type="button" :disabled="!canNext || form.processing" @click="submit">
+                        <Loader2 v-if="form.processing" class="mr-2 size-4 animate-spin" />
+                        {{ form.processing ? 'Mengonfirmasi booking...' : 'Setujui & konfirmasi booking' }} <Check v-if="!form.processing" class="ml-2 size-4" />
                     </Button>
                 </div>
             </div>
+        </template>
         </main>
     </div>
     </PublicLayout>

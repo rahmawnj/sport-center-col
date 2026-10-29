@@ -4,6 +4,7 @@ import {
     ArrowLeft,
     Building2,
     Clock,
+    Cpu,
     EllipsisVertical,
     LayoutGrid,
     Package as PackageIcon,
@@ -28,9 +29,26 @@ import { Label } from '@/components/ui/label';
 
 type FacilityStatus = 'active' | 'maintenance' | 'inactive';
 type CourtStatus = 'available' | 'maintenance' | 'inactive';
+type DeviceStatus = 'active' | 'maintenance' | 'inactive';
+type Device = {
+    id: number;
+    name: string;
+    type: string | null;
+    device_code: string | null;
+    mqtt_topic: string | null;
+    court_id: number | null;
+    court_name: string | null;
+    status: DeviceStatus;
+};
 type PackageType = 'session' | 'membership' | 'entry';
 type DayType = 'weekday' | 'weekend' | 'all';
-type Court = { id: number; name: string; status: CourtStatus };
+type Court = {
+    id: number;
+    name: string;
+    amenities: string[];
+    price_adjustment: number;
+    status: CourtStatus;
+};
 type PricingRule = {
     id: number;
     day_type: DayType;
@@ -70,6 +88,7 @@ type Props = {
         created_at: string | null;
         courts: Court[];
         packages: Package[];
+        devices: Device[];
     };
 };
 
@@ -282,6 +301,82 @@ function removeCourt(court: Court) {
     router.delete(`/courts/${court.id}`, { preserveScroll: true });
 }
 
+const showDeviceForm = ref(false);
+const editingDevice = ref<Device | null>(null);
+const deviceFormKey = ref(0);
+const deviceForm = ref({ status: 'active', court_id: 'none' });
+const deviceCourtOptions = computed(() => [
+    { value: 'none', label: 'Seluruh olahraga (tanpa lapangan)' },
+    ...props.facility.courts.map((court) => ({
+        value: String(court.id),
+        label: court.name,
+    })),
+]);
+const deviceStatusOptions = [
+    { value: 'active', label: 'Aktif' },
+    { value: 'maintenance', label: 'Perawatan' },
+    { value: 'inactive', label: 'Tidak aktif' },
+];
+const deviceStatusMeta: Record<
+    DeviceStatus,
+    { label: string; badge: string; dot: string }
+> = {
+    active: {
+        label: 'Aktif',
+        badge: 'bg-emerald-500/10 text-emerald-600',
+        dot: 'bg-emerald-500',
+    },
+    maintenance: {
+        label: 'Perawatan',
+        badge: 'bg-amber-500/10 text-amber-600',
+        dot: 'bg-amber-500',
+    },
+    inactive: {
+        label: 'Tidak aktif',
+        badge: 'bg-muted text-muted-foreground',
+        dot: 'bg-muted-foreground/60',
+    },
+};
+const deviceFormTitle = computed(() =>
+    editingDevice.value ? 'Edit perangkat' : 'Tambah perangkat',
+);
+const deviceFormAction = computed(() =>
+    editingDevice.value
+        ? `/devices/${editingDevice.value.id}`
+        : `/facilities/${props.facility.id}/devices`,
+);
+const deviceFormMethod = computed(() => (editingDevice.value ? 'put' : 'post'));
+
+function openDeviceCreate() {
+    editingDevice.value = null;
+    deviceForm.value = { status: 'active', court_id: 'none' };
+    deviceFormKey.value++;
+    showDeviceForm.value = true;
+}
+
+function openDeviceEdit(device: Device) {
+    editingDevice.value = device;
+    deviceForm.value = {
+        status: device.status,
+        court_id: device.court_id ? String(device.court_id) : 'none',
+    };
+    deviceFormKey.value++;
+    showDeviceForm.value = true;
+}
+
+function closeDeviceForm() {
+    showDeviceForm.value = false;
+    editingDevice.value = null;
+}
+
+function removeDevice(device: Device) {
+    if (!window.confirm(`Hapus perangkat ${device.name}?`)) {
+        return;
+    }
+
+    router.delete(`/devices/${device.id}`, { preserveScroll: true });
+}
+
 function formatDuration(minutes: number) {
     return minutes % 60 === 0 ? `${minutes / 60} jam` : `${minutes} menit`;
 }
@@ -325,18 +420,18 @@ function promoRange(rule: PricingRule) {
 </script>
 
 <template>
-    <Head :title="`Fasilitas · ${props.facility.name}`" />
+    <Head :title="`Olahraga · ${props.facility.name}`" />
     <div class="space-y-6 p-4 md:p-6">
         <Link
             href="/facilities"
             class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
             <ArrowLeft class="size-4" />
-            Kembali ke daftar fasilitas
+            Kembali ke daftar olahraga
         </Link>
 
         <PageHeader
-            eyebrow="Detail fasilitas"
+            eyebrow="Detail olahraga"
             :title="props.facility.name"
             :description="`/${props.facility.slug}`"
         >
@@ -395,9 +490,26 @@ function promoRange(rule: PricingRule) {
                         >
                             <Building2 class="size-4" />
                         </div>
-                        <span class="truncate font-medium">{{
-                            court.name
-                        }}</span>
+                        <div class="min-w-0">
+                            <span class="block truncate font-medium">{{
+                                court.name
+                            }}</span>
+                            <span
+                                v-if="court.amenities?.length"
+                                class="mt-0.5 block truncate text-xs text-muted-foreground"
+                                >{{ court.amenities.join(' · ') }}</span
+                            >
+                            <span
+                                v-else
+                                class="mt-0.5 block text-xs text-muted-foreground"
+                                >Tanpa fasilitas</span
+                            >
+                            <span
+                                v-if="court.price_adjustment"
+                                class="mt-0.5 block text-xs font-medium text-emerald-700"
+                                >+{{ formatIDR(court.price_adjustment) }}</span
+                            >
+                        </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
                         <span
@@ -440,7 +552,7 @@ function promoRange(rule: PricingRule) {
                 v-else
                 class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm"
             >
-                Belum ada lapangan pada fasilitas ini.
+                Belum ada lapangan pada olahraga ini.
             </div>
         </section>
 
@@ -577,7 +689,108 @@ function promoRange(rule: PricingRule) {
                 v-else
                 class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm"
             >
-                Belum ada paket pada fasilitas ini.
+                Belum ada paket pada olahraga ini.
+            </div>
+        </section>
+
+        <section class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <Cpu class="size-4 text-primary" />
+                    <h2 class="font-semibold">Perangkat</h2>
+                    <span class="text-sm text-muted-foreground"
+                        >({{ props.facility.devices.length }})</span
+                    >
+                </div>
+                <Button size="sm" @click="openDeviceCreate">
+                    <Plus class="mr-2 size-4" />
+                    Tambah perangkat
+                </Button>
+            </div>
+
+            <div
+                v-if="props.facility.devices.length"
+                class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+            >
+                <div
+                    v-for="device in props.facility.devices"
+                    :key="device.id"
+                    class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm"
+                >
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div
+                            class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                        >
+                            <Cpu class="size-4" />
+                        </div>
+                        <div class="min-w-0">
+                            <div class="truncate font-medium">
+                                {{ device.name }}
+                            </div>
+                            <div
+                                class="truncate font-mono text-xs text-muted-foreground"
+                            >
+                                {{ device.device_code || device.type || '—' }}
+                            </div>
+                            <div class="truncate text-xs text-muted-foreground">
+                                {{ device.court_name || 'Semua lapangan' }}
+                            </div>
+                            <div
+                                v-if="device.mqtt_topic"
+                                class="truncate font-mono text-xs text-sky-600"
+                            >
+                                {{ device.mqtt_topic }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <span
+                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                            :class="deviceStatusMeta[device.status].badge"
+                        >
+                            <span
+                                class="size-1.5 rounded-full"
+                                :class="deviceStatusMeta[device.status].dot"
+                            />
+                            {{ deviceStatusMeta[device.status].label }}
+                        </span>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger :as-child="true">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Aksi"
+                                    class="hover:bg-primary/10 hover:text-primary"
+                                >
+                                    <EllipsisVertical class="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="w-40">
+                                <DropdownMenuItem
+                                    @click="openDeviceEdit(device)"
+                                >
+                                    <Pencil class="size-4" />
+                                    Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    @click="removeDevice(device)"
+                                >
+                                    <Trash2 class="size-4" />
+                                    Hapus
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                v-else
+                class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm"
+            >
+                Belum ada perangkat pada olahraga ini.
             </div>
         </section>
     </div>
@@ -878,6 +1091,36 @@ function promoRange(rule: PricingRule) {
                         </p>
                     </div>
                     <div class="grid gap-2">
+                        <Label for="court-amenities">Fasilitas ruangan</Label>
+                        <Input
+                            id="court-amenities"
+                            name="amenities"
+                            :default-value="editingCourt?.amenities?.join(', ')"
+                            placeholder="AC, Free WiFi, Loker"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            Pisahkan dengan koma.
+                        </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="court-price-adjustment">Tambahan harga</Label>
+                        <Input
+                            id="court-price-adjustment"
+                            name="price_adjustment"
+                            type="number"
+                            min="0"
+                            step="1000"
+                            :default-value="
+                                Number(editingCourt?.price_adjustment ?? 0)
+                            "
+                            placeholder="0"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            Surcharge per booking untuk lapangan ini (0 jika
+                            tidak ada).
+                        </p>
+                    </div>
+                    <div class="grid gap-2">
                         <Label for="court-status">Status</Label>
                         <FormSelect
                             id="court-status"
@@ -907,6 +1150,156 @@ function promoRange(rule: PricingRule) {
                                 : editingCourt
                                   ? 'Simpan perubahan'
                                   : 'Tambah lapangan'
+                        }}
+                    </Button>
+                </div>
+            </Form>
+        </div>
+    </div>
+
+    <div
+        v-if="showDeviceForm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        @click.self="closeDeviceForm"
+    >
+        <div
+            class="w-full max-w-md overflow-hidden rounded-2xl border bg-background shadow-2xl"
+        >
+            <div class="flex items-start justify-between border-b p-5">
+                <div>
+                    <p class="text-sm font-medium text-primary">
+                        Manajemen perangkat
+                    </p>
+                    <h2 class="mt-1 text-xl font-semibold">
+                        {{ deviceFormTitle }}
+                    </h2>
+                </div>
+                <Button variant="ghost" size="icon" @click="closeDeviceForm"
+                    ><X class="size-4"
+                /></Button>
+            </div>
+            <Form
+                :key="deviceFormKey"
+                :action="deviceFormAction"
+                :method="deviceFormMethod"
+                class="space-y-5 p-5"
+                @success="closeDeviceForm"
+                v-slot="{ errors, processing }"
+            >
+                <div class="grid gap-4">
+                    <div class="grid gap-2">
+                        <Label for="device-name">Nama perangkat</Label>
+                        <Input
+                            id="device-name"
+                            name="name"
+                            :default-value="editingDevice?.name"
+                            required
+                            placeholder="e.g. Sensor Pintu"
+                        />
+                        <p v-if="errors.name" class="text-xs text-destructive">
+                            {{ errors.name }}
+                        </p>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="device-type">Tipe</Label>
+                            <Input
+                                id="device-type"
+                                name="type"
+                                :default-value="editingDevice?.type ?? ''"
+                                placeholder="e.g. RFID Reader"
+                            />
+                            <p
+                                v-if="errors.type"
+                                class="text-xs text-destructive"
+                            >
+                                {{ errors.type }}
+                            </p>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="device-status">Status</Label>
+                            <FormSelect
+                                id="device-status"
+                                v-model="deviceForm.status"
+                                name="status"
+                                :options="deviceStatusOptions"
+                            />
+                            <p
+                                v-if="errors.status"
+                                class="text-xs text-destructive"
+                            >
+                                {{ errors.status }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="device-court">Lapangan</Label>
+                        <FormSelect
+                            id="device-court"
+                            v-model="deviceForm.court_id"
+                            name="court_id"
+                            :options="deviceCourtOptions"
+                        />
+                        <p
+                            v-if="errors.court_id"
+                            class="text-xs text-destructive"
+                        >
+                            {{ errors.court_id }}
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                            Pilih lapangan untuk perangkat per-ruangan, atau
+                            biarkan kosong untuk satu perangkat per olahraga.
+                        </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="device-code">Kode perangkat</Label>
+                        <Input
+                            id="device-code"
+                            name="device_code"
+                            :default-value="editingDevice?.device_code ?? ''"
+                            placeholder="e.g. DEV-0001"
+                        />
+                        <p
+                            v-if="errors.device_code"
+                            class="text-xs text-destructive"
+                        >
+                            {{ errors.device_code }}
+                        </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="device-mqtt-topic">MQTT topic</Label>
+                        <Input
+                            id="device-mqtt-topic"
+                            name="mqtt_topic"
+                            :default-value="editingDevice?.mqtt_topic ?? ''"
+                            placeholder="sportcenter/PADEL-01/command"
+                        />
+                        <p
+                            v-if="errors.mqtt_topic"
+                            class="text-xs text-destructive"
+                        >
+                            {{ errors.mqtt_topic }}
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                            Topic yang di-subscribe controller untuk perangkat
+                            ini.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 border-t pt-4">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        @click="closeDeviceForm"
+                        >Batal</Button
+                    >
+                    <Button type="submit" :disabled="processing">
+                        {{
+                            processing
+                                ? 'Menyimpan...'
+                                : editingDevice
+                                  ? 'Simpan perubahan'
+                                  : 'Tambah perangkat'
                         }}
                     </Button>
                 </div>

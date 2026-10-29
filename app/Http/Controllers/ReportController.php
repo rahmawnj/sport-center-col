@@ -7,6 +7,7 @@ use App\Models\Package;
 use App\Models\Transaction;
 use App\Models\UserMembership;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,14 +31,14 @@ class ReportController extends Controller
         $to = $request->query('to');
 
         $base = Transaction::query()
-            ->where('transactionable_type', $class)
+            ->when(Schema::hasColumn('transactions', 'transactionable_type'), fn ($query) => $query->where('transactionable_type', $class))
             ->when($from, fn ($query) => $query->whereDate('created_at', '>=', $from))
             ->when($to, fn ($query) => $query->whereDate('created_at', '<=', $to));
 
         $summary = [
             'count' => (clone $base)->count(),
-            'paid' => (float) (clone $base)->where('payment_status', 'paid')->sum('amount'),
-            'pending' => (float) (clone $base)->where('payment_status', 'pending')->sum('amount'),
+            'paid' => (float) (clone $base)->where('payment_status', 'fully_paid')->sum('total_amount'),
+            'pending' => (float) (clone $base)->where('payment_status', 'unpaid')->sum('total_amount'),
         ];
 
         $transactions = (clone $base)
@@ -50,7 +51,12 @@ class ReportController extends Controller
                 'customer_name' => $transaction->customer_name,
                 'amount' => (float) $transaction->amount,
                 'payment_method' => $transaction->payment_method,
-                'payment_status' => $transaction->payment_status,
+                'payment_status' => match ($transaction->payment_status) {
+                    'fully_paid' => 'paid',
+                    'dp_paid' => 'partial',
+                    'unpaid' => 'pending',
+                    default => $transaction->payment_status,
+                },
                 'created_at' => $transaction->created_at?->toISOString(),
             ]);
 

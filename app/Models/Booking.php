@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Booking extends Model
 {
@@ -14,6 +13,7 @@ class Booking extends Model
         'guest_email',
         'guest_phone',
         'court_id',
+        'device_id',
         'date',
         'start_time',
         'end_time',
@@ -37,8 +37,8 @@ class Booking extends Model
         return $this->belongsTo(Court::class);
     }
 
-    public function transactions(): MorphMany
+    public function device(): BelongsTo
     {
-        return $this->morphMany(Transaction::class, 'transactionable');
+        return $this->belongsTo(Device::class);
     }
 }

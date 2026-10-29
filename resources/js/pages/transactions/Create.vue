@@ -378,7 +378,7 @@ function formatDate(value: Date) {
                     </button>
                 </div>
                 <p v-else class="text-sm text-muted-foreground">
-                    Fasilitas ini belum punya paket untuk dijual.
+                    Olahraga ini belum punya paket untuk dijual.
                 </p>
 
                 <!-- Schedule for session packages -->

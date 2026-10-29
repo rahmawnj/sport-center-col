@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\MemberProfile;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -17,7 +18,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(BookingLandingPageSeeder::class);
+        $this->call([
+            BookingLandingPageSeeder::class,
+            MembershipPackageSeeder::class,
+        ]);
 
         // This project uses its own roles table (name only) and users.role_id.
         $adminRole = Role::firstOrCreate([
@@ -31,11 +35,36 @@ class DatabaseSeeder extends Seeder
         $admin->name = 'Superadmin';
         $admin->role_id = $adminRole->id;
 
-        if (!$admin->exists) {
+        if (! $admin->exists) {
             $admin->password = Hash::make('password');
             $admin->email_verified_at = now();
         }
 
         $admin->save();
+
+        // Demo member account for testing the member experience.
+        $memberRole = Role::firstOrCreate([
+            'name' => 'Member',
+        ]);
+
+        $member = User::firstOrNew([
+            'email' => 'member@example.com',
+        ]);
+
+        $member->name = 'Demo Member';
+        $member->role_id = $memberRole->id;
+        $member->phone = '081234567890';
+
+        if (! $member->exists) {
+            $member->password = Hash::make('password');
+            $member->email_verified_at = now();
+        }
+
+        $member->save();
+
+        MemberProfile::firstOrCreate(
+            ['user_id' => $member->id],
+            ['phone' => $member->phone]
+        );
     }
 }

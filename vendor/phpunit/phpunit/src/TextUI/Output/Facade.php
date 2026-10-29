@@ -55,8 +55,6 @@ final class Facade
             return $printer;
         }
 
-        self::createUnexpectedOutputPrinter();
-
         if ($configuration->outputIsCompact()) {
             self::$compactResultPrinter = new CompactResultPrinter(
                 $printer,
@@ -66,13 +64,20 @@ final class Facade
                 $configuration->displayDetailsOnTestsThatTriggerErrors() || $configuration->displayDetailsOnAllIssues(),
                 $configuration->displayDetailsOnTestsThatTriggerNotices() || $configuration->displayDetailsOnAllIssues(),
                 $configuration->displayDetailsOnTestsThatTriggerWarnings() || $configuration->displayDetailsOnAllIssues(),
+                $configuration->displayDetailsOnPhpunitDeprecations() || $configuration->displayDetailsOnAllIssues(),
+                $configuration->displayDetailsOnPhpunitNotices() || $configuration->displayDetailsOnAllIssues(),
             );
 
-            new CompactProgressPrinter(
-                $printer,
-                EventFacade::instance(),
-            );
+            if (!$extensionCapabilities->replacesProgressOutput()) {
+                new CompactProgressPrinter(
+                    $printer,
+                    EventFacade::instance(),
+                    !$configuration->disallowTestOutput(),
+                );
+            }
         } else {
+            self::createUnexpectedOutputPrinter();
+
             if (!$extensionCapabilities->replacesProgressOutput()) {
                 self::createProgressPrinter($configuration);
             }
