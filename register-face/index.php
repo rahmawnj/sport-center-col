@@ -85,7 +85,7 @@ if ($response === false) {
       <div id="registerContent">
       <section class="stats-row">
         <article class="stat-card"><div class="stat-label">TOTAL MEMBER</div><div class="stat-number"><?= count($members) ?></div><div class="stat-foot">Diambil dari API Laravel</div></article>
-        <article class="stat-card"><div class="stat-label">PENYIMPANAN</div><div class="stat-number stat-word">Local PC</div><div class="stat-foot">Foto tidak dikirim ke API</div></article>
+        <article class="stat-card"><div class="stat-label">PENYIMPANAN</div><div class="stat-number stat-word">Local PC</div><div class="stat-foot">Pengiriman ke FaceRec dilakukan manual</div></article>
         <article class="stat-card"><div class="stat-label">STATUS KAMERA</div><div class="stat-number stat-word" id="cameraStatus">Belum aktif</div><div class="stat-foot">Aktifkan saat siap memotret</div></article>
       </section>
 
