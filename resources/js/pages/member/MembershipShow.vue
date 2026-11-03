@@ -34,24 +34,26 @@ const typeLabel = (value: string | null) =>
 
 <template>
   <Head title="Detail Membership" />
-  <div class="mx-auto max-w-3xl space-y-6">
-    <header class="space-y-3">
-      <Link href="/member/membership" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-violet-700">
-        <span aria-hidden="true">←</span> Kembali ke membership
-      </Link>
+  <div class="space-y-6">
+    <header class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[.18em] text-violet-700">Rincian keanggotaan</p>
+        <p class="text-xs font-bold uppercase tracking-[.18em] text-violet-700">Keanggotaan</p>
         <h1 class="mt-2 text-2xl font-bold text-slate-900">Detail Membership</h1>
-        <p class="mt-1 text-sm text-slate-500">Informasi paket dan masa berlaku membership milikmu.</p>
+        <p class="mt-1 text-sm text-slate-500">Informasi lengkap paket dan masa berlaku membership milikmu.</p>
       </div>
+      <Link href="/member/membership" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700">
+        <span aria-hidden="true">←</span> Kembali
+      </Link>
     </header>
 
-    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <div class="bg-[#001428] px-6 py-7 text-white">
-        <p class="text-sm text-slate-300">{{ membership.facility || 'Sport Center' }}</p>
-        <h2 class="mt-2 text-2xl font-bold">{{ membership.package }}</h2>
-        <p class="mt-2 text-sm text-slate-300">Membership #{{ membership.id }}</p>
-        <span class="mt-4 inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
+    <section class="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-wrap items-start justify-between gap-4 bg-[#001428] px-6 py-7 text-white">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-violet-200">{{ membership.facility || 'Sport Center' }}</p>
+          <h2 class="mt-2 text-2xl font-bold">{{ membership.package }}</h2>
+          <p class="mt-2 text-sm text-slate-300">Membership #{{ membership.id }}</p>
+        </div>
+        <span class="inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
           :class="{
             'bg-emerald-100 text-emerald-800': membership.status === 'active',
             'bg-amber-100 text-amber-800': membership.status === 'expired',
@@ -61,38 +63,36 @@ const typeLabel = (value: string | null) =>
         </span>
       </div>
 
-      <div class="divide-y divide-slate-100 px-6">
-        <div class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Nama paket</span>
-          <span class="text-sm font-semibold text-slate-900">{{ membership.package }}</span>
+      <div class="grid gap-4 p-6 sm:grid-cols-2">
+        <div class="rounded-xl bg-slate-50 p-4">
+          <p class="text-xs text-slate-500">Nama paket</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900">{{ membership.package }}</p>
         </div>
-        <div class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Jenis paket</span>
-          <span class="text-sm font-semibold text-slate-900">{{ typeLabel(membership.package_type) }}</span>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <p class="text-xs text-slate-500">Jenis paket</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900">{{ typeLabel(membership.package_type) }}</p>
         </div>
-        <div class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Fasilitas</span>
-          <span class="text-sm font-semibold text-slate-900">{{ membership.facility || 'Sport Center' }}</span>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <p class="text-xs text-slate-500">Fasilitas</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900">{{ membership.facility || 'Sport Center' }}</p>
         </div>
-        <div class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Tanggal mulai</span>
-          <span class="text-sm font-semibold text-slate-900">{{ dateLabel(membership.start_date) }}</span>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <p class="text-xs text-slate-500">Durasi paket</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900">
+            {{ membership.duration_days ? membership.duration_days + ' hari' : membership.duration_minutes ? membership.duration_minutes + ' menit' : '—' }}
+          </p>
         </div>
-        <div class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Tanggal berakhir</span>
-          <span class="text-sm font-semibold text-slate-900">{{ dateLabel(membership.end_date) }}</span>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <p class="text-xs text-slate-500">Tanggal mulai</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900">{{ dateLabel(membership.start_date) }}</p>
         </div>
-        <div v-if="membership.duration_days" class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Durasi paket</span>
-          <span class="text-sm font-semibold text-slate-900">{{ membership.duration_days }} hari</span>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <p class="text-xs text-slate-500">Tanggal berakhir</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900">{{ dateLabel(membership.end_date) }}</p>
         </div>
-        <div v-if="membership.duration_minutes" class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Durasi sesi</span>
-          <span class="text-sm font-semibold text-slate-900">{{ membership.duration_minutes }} menit</span>
-        </div>
-        <div class="flex flex-wrap justify-between gap-2 py-4">
-          <span class="text-sm text-slate-500">Tanggal terdaftar</span>
-          <span class="text-sm font-semibold text-slate-900">{{ dateTimeLabel(membership.registered_at) }}</span>
+        <div class="rounded-xl bg-slate-50 p-4 sm:col-span-2">
+          <p class="text-xs text-slate-500">Tanggal terdaftar</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900">{{ dateTimeLabel(membership.registered_at) }}</p>
         </div>
       </div>
     </section>
