@@ -75,6 +75,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('devices/{device}', [DeviceController::class, 'destroy'])->name('devices.destroy');
 
         Route::get('members', [MemberController::class, 'index'])->name('members.index');
+        Route::get('members/{member}', [MemberController::class, 'show'])->name('members.show');
         Route::post('members', [MemberController::class, 'store'])->name('members.store');
         Route::put('members/{member}', [MemberController::class, 'update'])->name('members.update');
         Route::delete('members/{member}', [MemberController::class, 'destroy'])->name('members.destroy');
