@@ -20,6 +20,7 @@ class Transaction extends Model
         'booking_code',
         'payment_method',
         'payment_status',
+        'booking_status',
     ];
 
     protected function casts(): array
