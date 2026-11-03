@@ -48,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('bookings', [MemberDashboardController::class, 'bookings'])->name('bookings');
         Route::get('membership', [MemberDashboardController::class, 'membership'])->name('membership');
         Route::get('payments', [MemberDashboardController::class, 'payments'])->name('payments');
+        Route::get('payments/{transaction}', [MemberDashboardController::class, 'paymentShow'])->name('payments.show');
         Route::get('profile', [MemberDashboardController::class, 'profile'])->name('profile');
         Route::redirect('settings', '/member/profile')->name('settings');
     });
