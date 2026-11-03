@@ -19,6 +19,9 @@
   const settingsPanel = document.getElementById('settingsPanel');
   const settingsForm = document.getElementById('faceRecSettingsForm');
   const faceRecIpInput = document.getElementById('faceRecIp');
+  const faceRecDeviceIdInput = document.getElementById('faceRecDeviceId');
+  const faceRecUsernameInput = document.getElementById('faceRecUsername');
+  const faceRecPasswordInput = document.getElementById('faceRecPassword');
   const settingsMessage = document.getElementById('settingsMessage');
   const FACE_REC_IP_KEY = 'sportCenter.faceRecIp';
   const FACE_REC_DEVICE_ID_KEY = 'sportCenter.faceRecDeviceId';
@@ -43,15 +46,19 @@
   navRegister?.addEventListener('click', () => showView('register'));
   navSettings?.addEventListener('click', () => showView('settings'));
   if (faceRecIpInput) faceRecIpInput.value = localStorage.getItem(FACE_REC_IP_KEY) || 'http://192.168.18.165';
+  if (faceRecDeviceIdInput) faceRecDeviceIdInput.value = localStorage.getItem(FACE_REC_DEVICE_ID_KEY) || '1310023';
   settingsForm?.addEventListener('submit', event => {
     event.preventDefault();
     const url = normalizeDeviceUrl(faceRecIpInput.value);
     try {
       const parsed = new URL(url);
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Gunakan URL HTTP atau HTTPS.');
+      const deviceId = Number(faceRecDeviceIdInput?.value || 0);
+      if (!Number.isInteger(deviceId) || deviceId <= 0) throw new Error('Device ID harus berupa angka positif.');
       localStorage.setItem(FACE_REC_IP_KEY, parsed.origin);
+      localStorage.setItem(FACE_REC_DEVICE_ID_KEY, String(deviceId));
       faceRecIpInput.value = parsed.origin;
-      settingsMessage.textContent = 'Pengaturan FaceRec tersimpan di localStorage: ' + parsed.origin;
+      settingsMessage.textContent = 'IP dan Device ID tersimpan. Username/password tidak disimpan dan diminta setiap sesi pengiriman.';
       settingsMessage.className = 'message success';
     } catch (error) {
       settingsMessage.textContent = error.message || 'Alamat IP / URL tidak valid.';
@@ -250,9 +257,18 @@
       return;
     }
     const baseUrl = normalizeDeviceUrl(localStorage.getItem(FACE_REC_IP_KEY) || 'http://192.168.18.165');
+    const username = String(faceRecUsernameInput?.value || '').trim();
+    const password = String(faceRecPasswordInput?.value || '');
+    const deviceId = Number(localStorage.getItem(FACE_REC_DEVICE_ID_KEY) || 1310023);
     if (!baseUrl) {
       notify('Atur IP FaceRec terlebih dahulu di menu Setting FaceRec.', 'error');
       showView('settings');
+      return;
+    }
+    if (!username || !password) {
+      notify('Isi username dan password Basic Auth perangkat di menu Setting FaceRec.', 'error');
+      showView('settings');
+      faceRecUsernameInput?.focus();
       return;
     }
     button.disabled = true;
@@ -288,21 +304,28 @@
     };
     const payload = {
       operator: 'AddPersons',
-      DeviceID: Number(localStorage.getItem(FACE_REC_DEVICE_ID_KEY) || 1310023),
+      DeviceID: deviceId,
       Total: 1,
       Personinfo_0: person
     };
     try {
-      const response = await fetch(baseUrl + '/action/AddPersons', {
+      const response = await fetch('send-to-facerec.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/plain, */*' },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          device_url: baseUrl,
+          username,
+          password,
+          payload
+        })
       });
-      const responseText = await response.text();
-      if (!response.ok) throw new Error('FaceRec merespons HTTP ' + response.status + (responseText ? ': ' + responseText.slice(0, 250) : ''));
-      notify('Permintaan pendaftaran wajah terkirim ke FaceRec. Respons perangkat: ' + (responseText || '(kosong)'), 'success');
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Pengiriman ke FaceRec gagal.');
+      }
+      notify('Pendaftaran wajah terkirim ke FaceRec. Respons perangkat: ' + (result.device_response || '(kosong)'), 'success');
     } catch (error) {
-      notify('Foto sudah tersimpan lokal, tetapi pengiriman ke FaceRec gagal. Periksa IP, koneksi perangkat, dan dukungan CORS browser. Detail: ' + (error.message || 'koneksi gagal'), 'error');
+      notify('Foto lokal tetap tersimpan, tetapi pengiriman ke FaceRec gagal. ' + (error.message || 'Periksa koneksi perangkat.'), 'error');
     } finally {
       button.disabled = false;
       button.textContent = 'Kirim ke FaceRec';

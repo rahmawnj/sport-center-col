@@ -36,7 +36,9 @@ PHP harus tersedia di PATH. Bisa juga menjalankan folder ini menggunakan Apache/
 ## Pengaturan dan integrasi FaceRec
 
 - Buka menu **Setting FaceRec** untuk mengatur IP perangkat. Nilai awal: `http://192.168.18.165`.
-- IP disimpan di `localStorage` browser pada komputer/browser yang digunakan, bukan ke database.
-- Setelah mengambil foto dan menyimpannya secara lokal, klik **Kirim ke FaceRec** untuk mengirim satu orang ke endpoint `{IP}/action/AddPersons` menggunakan body JSON `operator: AddPersons`, `DeviceID: 1310023`, `Total: 1`, dan `Personinfo_0.picinfo` berisi foto JPEG dalam format data URL/base64.
-- Perangkat harus dapat dijangkau dari komputer yang menjalankan browser. Jika browser memblokir permintaan karena CORS atau mixed-content, perangkat perlu mengizinkan origin aplikasi atau pengiriman perlu dilakukan melalui proxy server lokal.
+- IP dan Device ID disimpan di `localStorage` browser, bukan di database.
+- Isi username dan password Basic Auth perangkat di menu pengaturan. Kredensial tidak disimpan di `localStorage` atau kode JavaScript; keduanya hanya dikirim melalui POST ke endpoint PHP lokal `send-to-facerec.php`.
+- PHP lokal meneruskan JSON ke `{IP}/action/AddPersons` dengan header `Authorization: Basic base64(username:password)` dan `Content-Type: application/json; charset=utf-8`. cURL mengatur panjang body request.
+- Body tetap memakai `operator: AddPersons`, `DeviceID` sesuai pengaturan, `Total: 1`, dan `Personinfo_0.picinfo` berisi foto JPEG data URL/base64.
+- Browser tidak lagi menghubungi perangkat langsung, sehingga CORS browser tidak diperlukan. PHP harus memiliki ekstensi cURL aktif dan perangkat harus dapat dijangkau dari komputer yang menjalankan PHP.
 - Nilai data person seperti gender, kartu akses, tanggal lahir, alamat, dan nomor telepon saat ini menggunakan nilai default/kosong karena API member hanya menyediakan nama.

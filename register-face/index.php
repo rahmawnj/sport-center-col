@@ -77,7 +77,13 @@ if ($response === false) {
         <form id="faceRecSettingsForm" class="settings-form">
           <label for="faceRecIp">IP / URL perangkat FaceRec</label>
           <div class="settings-input-row"><input id="faceRecIp" name="faceRecIp" type="url" placeholder="http://192.168.18.165" autocomplete="url" required><button type="submit" class="button button-primary">Simpan Pengaturan</button></div>
-          <small>Endpoint yang digunakan: <code>/action/AddPersons</code></small>
+          <label for="faceRecDeviceId">Device ID</label>
+          <input id="faceRecDeviceId" name="faceRecDeviceId" type="number" min="1" value="1310023" required>
+          <label for="faceRecUsername">Username perangkat</label>
+          <input id="faceRecUsername" name="faceRecUsername" type="text" autocomplete="username" placeholder="Username Basic Auth" required>
+          <label for="faceRecPassword">Password perangkat</label>
+          <input id="faceRecPassword" name="faceRecPassword" type="password" autocomplete="current-password" placeholder="Password Basic Auth" required>
+          <small>Kredensial hanya digunakan saat pengiriman dan tidak disimpan di localStorage. Endpoint: <code>/action/AddPersons</code></small>
           <div id="settingsMessage" class="message" role="status" aria-live="polite"></div>
         </form>
       </section>
