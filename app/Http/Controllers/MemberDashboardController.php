@@ -86,6 +86,29 @@ class MemberDashboardController extends Controller
         ]);
     }
 
+
+    public function membershipShow(Request $request, UserMembership $membership): Response
+    {
+        abort_unless($membership->user_id === $request->user()->id, 404);
+
+        $membership->load(['package:id,name,type,duration_days,duration_minutes,facility_id', 'package.facility:id,name']);
+
+        return Inertia::render('member/MembershipShow', [
+            'membership' => [
+                'id' => $membership->id,
+                'package' => $membership->package?->name ?? 'Membership',
+                'package_type' => $membership->package?->type,
+                'facility' => $membership->package?->facility?->name,
+                'start_date' => $membership->start_date?->toDateString(),
+                'end_date' => $membership->end_date?->toDateString(),
+                'duration_days' => $membership->package?->duration_days,
+                'duration_minutes' => $membership->package?->duration_minutes,
+                'status' => $this->membershipRow($membership)['status'],
+                'registered_at' => $membership->created_at?->toISOString(),
+            ],
+        ]);
+    }
+
     public function payments(Request $request): Response
     {
         $payments = Transaction::query()
