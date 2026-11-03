@@ -55,6 +55,54 @@ class MemberController extends Controller
         ]);
     }
 
+    public function show(MemberProfile $member): Response
+    {
+        $member->load([
+            'user.userMemberships.package',
+        ]);
+
+        $user = $member->user;
+        abort_unless($user, 404);
+
+        $memberships = $user->userMemberships
+            ->sortByDesc('created_at')
+            ->map(function ($membership) {
+                $cancelled = $membership->status === 'cancelled';
+                $expired = ! $cancelled
+                    && $membership->end_date
+                    && $membership->end_date->lt(today());
+
+                return [
+                    'id' => $membership->id,
+                    'package_name' => $membership->package?->name ?? 'Paket tidak tersedia',
+                    'start_date' => $membership->start_date?->toDateString(),
+                    'end_date' => $membership->end_date?->toDateString(),
+                    'status' => $cancelled ? 'cancelled' : ($expired ? 'expired' : 'active'),
+                ];
+            })
+            ->values();
+
+        return Inertia::render('members/Show', [
+            'member' => [
+                'id' => $member->id,
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'member_code' => $member->member_code,
+                'qr_code' => $member->qr_code,
+                'phone' => $member->phone,
+                'date_of_birth' => $member->date_of_birth?->toDateString(),
+                'gender' => $member->gender,
+                'address' => $member->address,
+                'emergency_contact_name' => $member->emergency_contact_name,
+                'emergency_contact_phone' => $member->emergency_contact_phone,
+                'registered_at' => $user->created_at?->toISOString(),
+                'memberships_count' => $memberships->count(),
+                'memberships' => $memberships,
+            ],
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
