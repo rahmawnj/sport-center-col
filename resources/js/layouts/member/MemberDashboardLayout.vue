@@ -17,6 +17,20 @@ import { computed, ref } from 'vue';
 const page = usePage();
 const sidebarOpen = ref(false);
 const user = computed(() => (page.props.auth as { user?: { name?: string; email?: string } } | undefined)?.user);
+const memberCode = computed(() => (page.props as { memberCode?: string | null }).memberCode);
+const codeCopied = ref(false);
+
+async function copyMemberCode() {
+    if (!memberCode.value) return;
+
+    try {
+        await navigator.clipboard.writeText(memberCode.value);
+        codeCopied.value = true;
+        window.setTimeout(() => { codeCopied.value = false; }, 1800);
+    } catch {
+        codeCopied.value = false;
+    }
+}
 const currentPath = computed(() => page.url.split('?')[0]);
 
 const navigation = [
@@ -57,6 +71,16 @@ const navigation = [
                         <p class="truncate text-xs text-slate-500">{{ user?.email || 'Akun member' }}</p>
                     </div>
                     <ChevronDown class="size-4 text-slate-400" />
+                </div>
+            </div>
+
+            <div v-if="memberCode" class="mx-4 mt-4 rounded-xl border border-lime-200 bg-lime-50/80 p-3">
+                <p class="text-[10px] font-bold uppercase tracking-[.14em] text-lime-800">Kode Member</p>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                    <span class="min-w-0 break-all font-mono text-xs font-bold tracking-wide text-slate-800">{{ memberCode }}</span>
+                    <button type="button" class="shrink-0 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-semibold text-lime-800 ring-1 ring-lime-200 transition hover:bg-lime-100" @click="copyMemberCode">
+                        {{ codeCopied ? 'Tersalin' : 'Salin' }}
+                    </button>
                 </div>
             </div>
 
