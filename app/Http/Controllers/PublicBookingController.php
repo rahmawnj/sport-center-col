@@ -166,8 +166,29 @@ class PublicBookingController extends Controller
             return redirect()->route('booking.index')->with('success', 'Pesanan berhasil dibuat dan tersimpan.');
         }
 
-        $booking = $this->storeBooking($request, $package, $data);
         $total = (int) round($this->bookingPrice($package, $data));
+
+        $booking = DB::transaction(function () use ($request, $package, $data, $total) {
+            $booking = $this->storeBooking($request, $package, $data);
+            $user = $request->user();
+
+            // Keep the receipt code identical to the QR ticket code in transactions.
+            $bookingCode = 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT);
+
+            Transaction::query()->create([
+                'booking_code' => $bookingCode,
+                'user_id' => $user?->id,
+                'device_id' => $booking->device_id,
+                'customer_type' => $user ? 'member' : 'general',
+                'guest_name' => $user ? $user->name : $data['guest_name'],
+                'total_amount' => $total,
+                'payment_method' => $data['payment_method'] ?? 'bank_transfer',
+                'payment_status' => 'unpaid',
+                'booking_status' => 'pending',
+            ]);
+
+            return $booking;
+        });
 
         Cache::put('booking_receipt_'.$booking->id, [
             'package' => $package->name,
@@ -321,9 +342,6 @@ class PublicBookingController extends Controller
 
             $user = $request->user();
 
-            // Public court bookings are stored in bookings only. Do not create a
-            // payment transaction here: the current booking flow confirms the
-            // reservation separately from payment processing.
             return Booking::create([
                 'user_id' => $user?->id,
                 'guest_name' => $user ? $user->name : $data['guest_name'],
