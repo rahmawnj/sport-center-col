@@ -9,7 +9,6 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class DeviceAccessController extends Controller
@@ -109,8 +108,6 @@ class DeviceAccessController extends Controller
                 );
             }
 
-            $this->writeLog($device, $profile->user, $type, $identifier, $source, true, 'Akses diberikan.', $similarity);
-
             return response()->json([
                 'ok' => true,
                 'allowed' => true,
@@ -155,8 +152,6 @@ class DeviceAccessController extends Controller
             );
         }
 
-        $this->writeLog($device, $transaction->user, 'qrcode', $identifier, $source, true, 'Akses tiket diberikan.', null, $transaction);
-
         return response()->json([
             'ok' => true,
             'allowed' => true,
@@ -198,7 +193,6 @@ class DeviceAccessController extends Controller
         ?float $similarity = null,
         ?User $user = null
     ): JsonResponse {
-        $this->writeLog($device, $user, $type, $identifier, $source, false, $reason, $similarity);
 
         // Business-level denials return HTTP 200 so simple gate controllers can read allowed=false.
         return response()->json([
@@ -212,29 +206,5 @@ class DeviceAccessController extends Controller
         ]);
     }
 
-    private function writeLog(
-        ?Device $device,
-        ?User $user,
-        string $type,
-        string $identifier,
-        string $source,
-        bool $allowed,
-        string $reason,
-        ?float $similarity = null,
-        ?Transaction $transaction = null
-    ): void {
-        DB::table('device_access_logs')->insert([
-            'device_id' => $device?->id,
-            'user_id' => $user?->id,
-            'transaction_id' => $transaction?->id,
-            'access_type' => $type,
-            'source' => $source,
-            'identifier' => mb_substr($identifier, 0, 255),
-            'allowed' => $allowed,
-            'reason' => $reason,
-            'similarity' => $similarity,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-    }
+
 }
