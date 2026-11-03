@@ -47,6 +47,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('member')->name('member.')->middleware(EnsureUserRole::class.':Member')->group(function () {
         Route::get('bookings', [MemberDashboardController::class, 'bookings'])->name('bookings');
         Route::get('membership', [MemberDashboardController::class, 'membership'])->name('membership');
+        Route::get('membership/{membership}', [MemberDashboardController::class, 'membershipShow'])->name('membership.show');
         Route::get('payments', [MemberDashboardController::class, 'payments'])->name('payments');
         Route::get('payments/{transaction}', [MemberDashboardController::class, 'paymentShow'])->name('payments.show');
         Route::get('profile', [MemberDashboardController::class, 'profile'])->name('profile');
