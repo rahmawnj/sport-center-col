@@ -112,7 +112,7 @@ class DeviceAccessController extends Controller
             }
 
             return response()->json([
-                'ok' => true,
+                'status' => 'success',
                 'allowed' => true,
                 'message' => 'Akses diberikan.',
                 'data' => [
@@ -230,7 +230,7 @@ class DeviceAccessController extends Controller
         }
 
         return response()->json([
-            'ok' => true,
+            'status' => 'success',
             'allowed' => true,
             'message' => 'Akses tiket diberikan.',
             'data' => [
@@ -274,7 +274,7 @@ class DeviceAccessController extends Controller
 
         // Business-level denials return HTTP 200 so simple gate controllers can read allowed=false.
         return response()->json([
-            'ok' => true,
+            'status' => 'success',
             'allowed' => false,
             'message' => $reason,
             'data' => [
