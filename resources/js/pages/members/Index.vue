@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
+import { Form, Head, Link, router } from '@inertiajs/vue3';
 import {
     EllipsisVertical,
     Pencil,
@@ -220,9 +220,12 @@ function initials(value: string) {
                                         {{ initials(row.name) }}
                                     </div>
                                     <div class="min-w-0">
-                                        <div class="truncate font-medium">
+                                        <Link
+                                            :href="`/members/${row.id}`"
+                                            class="truncate font-medium text-foreground transition-colors hover:text-primary hover:underline"
+                                        >
                                             {{ row.name }}
-                                        </div>
+                                        </Link>
                                         <div
                                             class="truncate text-xs text-muted-foreground"
                                         >
