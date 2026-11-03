@@ -35,9 +35,17 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $memberCode = null;
+
+        if ($user && $user->role?->name === 'Member') {
+            $memberCode = $user->loadMissing('memberProfile')->memberProfile?->member_code;
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'memberCode' => $memberCode,
             'auth' => [
                 'user' => $request->user(),
             ],
