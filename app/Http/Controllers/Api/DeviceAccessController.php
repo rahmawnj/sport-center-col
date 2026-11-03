@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\Device;
 use App\Models\MemberProfile;
 use App\Models\Transaction;
@@ -131,15 +132,43 @@ class DeviceAccessController extends Controller
             ->where('booking_code', $identifier)
             ->first();
 
-        $validTicket = $transaction
-            && $transaction->payment_status === 'fully_paid'
-            && $transaction->booking_status === 'approved'
-            && DB::table('transaction_details')
-                ->where('transaction_id', $transaction->id)
-                ->where('start_time', '<=', now())
-                ->where('end_time', '>=', now())
-                ->exists()
-            && (! $transaction->device_id || (int) $transaction->device_id === (int) $device->id);
+        // Public booking QR uses BK-{booking_id}; its matching payment row lives in transactions.
+        $bookingId = preg_match('/^BK-(\\d{6,})$/i', $identifier, $matches)
+            ? (int) $matches[1]
+            : null;
+        $booking = $bookingId ? Booking::query()->with('user')->find($bookingId) : null;
+
+        if ($bookingId !== null) {
+            $bookingIsInSchedule = $booking
+                && $booking->date?->toDateString() === today()->toDateString()
+                && $booking->start_time !== null
+                && $booking->end_time !== null
+                && (string) $booking->start_time <= now()->format('H:i:s')
+                && (string) $booking->end_time >= now()->format('H:i:s');
+
+            $validTicket = $transaction
+                && $booking
+                && $transaction->payment_status === 'fully_paid'
+                && $booking->status === 'confirmed'
+                && $bookingIsInSchedule
+                && (! $booking->device_id || (int) $booking->device_id === (int) $device->id)
+                && (! $transaction->device_id || (int) $transaction->device_id === (int) $device->id);
+            $customerName = $booking?->user?->name ?? $booking?->guest_name ?? $transaction?->guest_name;
+            $customer = $booking?->user ?? $transaction?->user;
+        } else {
+            // Backward compatibility for legacy tickets created from transaction details.
+            $validTicket = $transaction
+                && $transaction->payment_status === 'fully_paid'
+                && $transaction->booking_status === 'approved'
+                && DB::table('transaction_details')
+                    ->where('transaction_id', $transaction->id)
+                    ->where('start_time', '<=', now())
+                    ->where('end_time', '>=', now())
+                    ->exists()
+                && (! $transaction->device_id || (int) $transaction->device_id === (int) $device->id);
+            $customerName = $transaction?->user?->name ?? $transaction?->guest_name;
+            $customer = $transaction?->user;
+        }
 
         if (! $validTicket) {
             return $this->deny(
@@ -147,9 +176,9 @@ class DeviceAccessController extends Controller
                 'qrcode',
                 $identifier,
                 $source,
-                'QR tiket tidak valid, belum lunas/disetujui, di luar jadwal, atau bukan untuk perangkat ini.',
+                'QR tiket tidak valid, pembayaran belum lunas, booking belum dikonfirmasi, di luar jadwal, atau bukan untuk perangkat ini.',
                 null,
-                $transaction?->user
+                $customer ?? $transaction?->user
             );
         }
 
@@ -161,8 +190,9 @@ class DeviceAccessController extends Controller
                 'type' => 'qrcode',
                 'device_id' => $device->id,
                 'booking_code' => $transaction->booking_code,
-                'customer_name' => $transaction->user?->name ?? $transaction->guest_name,
+                'customer_name' => $customerName,
                 'transaction_id' => $transaction->id,
+                'booking_id' => $booking?->id,
             ],
         ]);
     }
