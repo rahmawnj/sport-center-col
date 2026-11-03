@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class DeviceAccessController extends Controller
@@ -139,20 +140,66 @@ class DeviceAccessController extends Controller
         $booking = $bookingId ? Booking::query()->with('user')->find($bookingId) : null;
 
         if ($bookingId !== null) {
+            $now = now();
+            $today = today();
+            $currentTime = $now->format('H:i:s');
+            $bookingDate = $booking?->date?->toDateString();
+            $bookingStartTime = $booking?->start_time;
+            $bookingEndTime = $booking?->end_time;
+
+            $dateMatches = $bookingDate === $today->toDateString();
+            $startTimeMatches = $bookingStartTime !== null
+                && (string) $bookingStartTime <= $currentTime;
+            $endTimeMatches = $bookingEndTime !== null
+                && (string) $bookingEndTime >= $currentTime;
+            $paymentIsPaid = $transaction?->payment_status === 'fully_paid';
+            $bookingIsConfirmed = $booking?->status === 'confirmed';
+            $bookingDeviceMatches = ! $booking?->device_id
+                || (int) $booking->device_id === (int) $device->id;
+            $transactionDeviceMatches = ! $transaction?->device_id
+                || (int) $transaction->device_id === (int) $device->id;
+
             $bookingIsInSchedule = $booking
-                && $booking->date?->toDateString() === today()->toDateString()
-                && $booking->start_time !== null
-                && $booking->end_time !== null
-                && (string) $booking->start_time <= now()->format('H:i:s')
-                && (string) $booking->end_time >= now()->format('H:i:s');
+                && $dateMatches
+                && $startTimeMatches
+                && $endTimeMatches;
 
             $validTicket = $transaction
                 && $booking
-                && $transaction->payment_status === 'fully_paid'
-                && $booking->status === 'confirmed'
+                && $paymentIsPaid
+                && $bookingIsConfirmed
                 && $bookingIsInSchedule
-                && (! $booking->device_id || (int) $booking->device_id === (int) $device->id)
-                && (! $transaction->device_id || (int) $transaction->device_id === (int) $device->id);
+                && $bookingDeviceMatches
+                && $transactionDeviceMatches;
+
+            Log::info('Device QR access validation', [
+                'booking_id' => $bookingId,
+                'transaction_id' => $transaction?->id,
+                'device_id' => $device->id,
+                'app_timezone' => config('app.timezone'),
+                'now_local' => $now->toDateTimeString(),
+                'now_utc' => $now->copy()->setTimezone('UTC')->toDateTimeString(),
+                'today_local' => $today->toDateString(),
+                'booking_date' => $bookingDate,
+                'current_time' => $currentTime,
+                'booking_start_time' => $bookingStartTime,
+                'booking_end_time' => $bookingEndTime,
+                'transaction_found' => (bool) $transaction,
+                'booking_found' => (bool) $booking,
+                'payment_status' => $transaction?->payment_status,
+                'payment_is_paid' => $paymentIsPaid,
+                'booking_status' => $booking?->status,
+                'booking_is_confirmed' => $bookingIsConfirmed,
+                'date_matches_today' => $dateMatches,
+                'start_time_matches' => $startTimeMatches,
+                'end_time_matches' => $endTimeMatches,
+                'booking_device_id' => $booking?->device_id,
+                'transaction_device_id' => $transaction?->device_id,
+                'booking_device_matches' => $bookingDeviceMatches,
+                'transaction_device_matches' => $transactionDeviceMatches,
+                'allowed' => (bool) $validTicket,
+            ]);
+
             $customerName = $booking?->user?->name ?? $booking?->guest_name ?? $transaction?->guest_name;
             $customer = $booking?->user ?? $transaction?->user;
         } else {
