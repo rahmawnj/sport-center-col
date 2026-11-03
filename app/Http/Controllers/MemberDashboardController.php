@@ -106,6 +106,25 @@ class MemberDashboardController extends Controller
         return Inertia::render('member/Payments', ['payments' => $payments]);
     }
 
+    public function paymentShow(Request $request, Transaction $transaction): Response
+    {
+        abort_unless($transaction->user_id === $request->user()->id, 404);
+
+        return Inertia::render('member/PaymentShow', [
+            'payment' => [
+                'id' => $transaction->id,
+                'invoice_number' => $transaction->booking_code,
+                'customer_name' => $transaction->guest_name,
+                'customer_type' => $transaction->customer_type,
+                'amount' => (float) $transaction->total_amount,
+                'payment_method' => $transaction->payment_method,
+                'payment_status' => $transaction->payment_status,
+                'booking_status' => $transaction->booking_status,
+                'created_at' => $transaction->created_at?->toISOString(),
+            ],
+        ]);
+    }
+
     public function profile(Request $request): Response
     {
         $user = $request->user()->loadMissing('memberProfile');
