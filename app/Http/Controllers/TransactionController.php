@@ -116,6 +116,44 @@ class TransactionController extends Controller
         ]);
     }
 
+    public function edit(Transaction $transaction): Response
+    {
+        return Inertia::render('transactions/Edit', [
+            'transaction' => [
+                'id' => $transaction->id,
+                'invoice_number' => $transaction->invoice_number,
+                'customer_name' => $transaction->customer_name,
+                'amount' => (float) $transaction->amount,
+                'payment_method' => $transaction->payment_method,
+                'payment_status' => $this->normalizeStatus($transaction->payment_status),
+                'reference' => $this->reference($transaction),
+            ],
+        ]);
+    }
+
+    public function update(Request $request, Transaction $transaction): RedirectResponse
+    {
+        $data = $request->validate([
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
+            'payment_status' => ['required', Rule::in(['pending', 'paid', 'partial', 'failed', 'refunded'])],
+        ]);
+
+        $transaction->customer_name = $data['customer_name'] ?? null;
+        $transaction->amount = $data['amount'];
+        $transaction->payment_method = $data['payment_method'];
+        $transaction->payment_status = match ($data['payment_status']) {
+            'paid' => 'fully_paid',
+            'pending' => 'unpaid',
+            'partial' => 'dp_paid',
+            default => $data['payment_status'],
+        };
+        $transaction->save();
+
+        return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil diperbarui.');
+    }
+
     public function show(Transaction $transaction): Response
     {
         return Inertia::render('transactions/Show', [
