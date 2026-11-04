@@ -180,6 +180,40 @@ function formatDate(value: string | null) {
             </div>
 
             <aside class="space-y-6">
+                <section class="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                    <div class="border-b p-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 class="font-semibold">Foto Wajah Member</h3>
+                                <p class="mt-1 text-xs text-muted-foreground">Foto yang tersimpan untuk identifikasi Face Recognition.</p>
+                            </div>
+                            <span
+                                class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                :class="member.face_photo_path ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-muted text-muted-foreground'"
+                            >
+                                {{ member.face_photo_path ? 'Terdaftar' : 'Belum ada foto' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <div v-if="member.face_photo_path" class="overflow-hidden rounded-xl border bg-muted">
+                            <img
+                                :src="'/storage/' + member.face_photo_path"
+                                :alt="'Foto wajah ' + member.name"
+                                class="aspect-[4/5] w-full object-cover"
+                            />
+                        </div>
+                        <div v-else class="flex aspect-[4/5] flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 px-6 text-center">
+                            <UserRound class="size-12 text-muted-foreground/40" />
+                            <p class="mt-4 font-medium">Foto wajah belum tersedia</p>
+                            <p class="mt-1 text-xs leading-relaxed text-muted-foreground">Ambil dan simpan foto melalui halaman registrasi FaceRec untuk menampilkannya di sini.</p>
+                        </div>
+                        <p v-if="member.face_photo_path" class="mt-3 text-xs text-muted-foreground">
+                            Foto tersimpan di server dan terhubung dengan profil member ini.
+                        </p>
+                    </div>
+                </section>
+
                 <section class="rounded-2xl border bg-card p-6 text-center shadow-sm">
                     <div class="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                         <BadgeCheck class="size-6" />
