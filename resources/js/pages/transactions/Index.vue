@@ -246,14 +246,15 @@ function formatDateTime(value: string | null) {
                             <td class="px-4 py-3">
                                 <div class="flex justify-end">
                                     <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        title="Detail"
-                                        class="hover:bg-primary/10 hover:text-primary"
+                                        variant="outline"
+                                        size="sm"
+                                        title="Lihat detail transaksi"
+                                        class="gap-2"
                                         as-child
                                     >
                                         <Link :href="`/transactions/${row.id}`">
                                             <Eye class="size-4" />
+                                            Detail
                                         </Link>
                                     </Button>
                                 </div>
