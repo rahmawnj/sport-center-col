@@ -8,6 +8,7 @@ use App\Models\Device;
 use App\Models\MemberProfile;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\UserMembership;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -99,7 +100,11 @@ class DeviceAccessController extends Controller
                 ->where('member_code', $identifier)
                 ->first();
 
-            if (! $profile || ! $profile->user || ! $this->hasActiveMembership($profile->user, $device)) {
+            $membership = $profile?->user
+                ? $this->activeMembership($profile->user, $device)
+                : null;
+
+            if (! $profile || ! $profile->user || ! $membership) {
                 return $this->deny(
                     $device,
                     $type,
@@ -110,6 +115,8 @@ class DeviceAccessController extends Controller
                     $profile?->user
                 );
             }
+
+            $membership->increment('scan_count');
 
             return response()->json([
                 'status' => 'success',
@@ -229,6 +236,8 @@ class DeviceAccessController extends Controller
             );
         }
 
+        $booking?->increment('scan_count');
+
         return response()->json([
             'status' => 'success',
             'allowed' => true,
@@ -252,14 +261,15 @@ class DeviceAccessController extends Controller
             ->first();
     }
 
-    private function hasActiveMembership(User $user, Device $device): bool
+    private function activeMembership(User $user, Device $device): ?UserMembership
     {
         return $user->userMemberships()
             ->where('status', 'active')
             ->whereDate('start_date', '<=', today())
             ->whereDate('end_date', '>=', today())
             ->whereHas('package', fn ($query) => $query->where('facility_id', $device->facility_id))
-            ->exists();
+            ->latest('end_date')
+            ->first();
     }
 
     private function deny(
