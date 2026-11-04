@@ -126,7 +126,7 @@ class TransactionController extends Controller
                 'customer_name' => $transaction->customer_name,
                 'amount' => (float) $transaction->amount,
                 'payment_method' => $transaction->payment_method,
-                'payment_status' => $transaction->payment_status,
+                'payment_status' => $this->normalizeStatus($transaction->payment_status),
                 'reference' => $this->reference($transaction),
                 'created_at' => $transaction->created_at?->toISOString(),
                 'details' => [],
