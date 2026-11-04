@@ -47,7 +47,7 @@ const navigation = [
         <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" @click="sidebarOpen = false" />
 
         <aside
-            class="fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:translate-x-0"
+            class="member-sidebar fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col overflow-y-auto overscroll-contain border-r border-slate-200 bg-white transition-transform duration-200 lg:translate-x-0"
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
         >
             <div class="flex h-[76px] items-center justify-between border-b border-slate-100 px-6">
@@ -84,7 +84,7 @@ const navigation = [
                 </div>
             </div>
 
-            <nav class="flex-1 space-y-1 overflow-y-auto px-4 py-5">
+            <nav class="flex-none space-y-1 px-4 py-5">
                 <p class="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Menu utama</p>
                 <Link
                     v-for="item in navigation"
@@ -145,5 +145,12 @@ const navigation = [
 <style>
 .member-dashboard {
     font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.member-sidebar {
+    height: 100dvh;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
 }
 </style>
