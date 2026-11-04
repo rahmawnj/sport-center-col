@@ -177,6 +177,8 @@ class PublicBookingController extends Controller
 
             Transaction::query()->create([
                 'booking_code' => $bookingCode,
+                'transactionable_type' => Booking::class,
+                'transactionable_id' => $booking->id,
                 'user_id' => $user?->id,
                 'device_id' => $booking->device_id,
                 'customer_type' => $user ? 'member' : 'general',
@@ -390,6 +392,8 @@ class PublicBookingController extends Controller
                 Transaction::query()->create([
                     'user_id' => $user->id,
                     'device_id' => Device::forFacility($package->facility_id)?->id,
+                    'transactionable_type' => UserMembership::class,
+                    'transactionable_id' => $membership->id,
                     'customer_type' => 'member',
                     'total_amount' => $price,
                     'payment_method' => $data['payment_method'] ?? 'bank_transfer',
@@ -403,6 +407,8 @@ class PublicBookingController extends Controller
         Transaction::query()->create([
             'user_id' => $user?->id,
             'device_id' => Device::forFacility($package->facility_id)?->id,
+            'transactionable_type' => Package::class,
+            'transactionable_id' => $package->id,
             'customer_type' => $user ? 'member' : 'general',
             'guest_name' => $user ? $user->name : $data['guest_name'],
             'amount' => $price,
