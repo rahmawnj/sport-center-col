@@ -13,7 +13,7 @@ import { computed } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 
-type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+type PaymentStatus = 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
 type Detail = { label: string; value: string | null };
 type Props = {
     transaction: {
@@ -41,6 +41,12 @@ const statusMeta: Record<
         badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
         dot: 'bg-emerald-500',
         gradient: 'from-emerald-400 to-teal-600 shadow-emerald-500/30',
+    },
+    partial: {
+        label: 'DP / Sebagian',
+        badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        dot: 'bg-blue-500',
+        gradient: 'from-blue-400 to-indigo-600 shadow-blue-500/30',
     },
     pending: {
         label: 'Pending',
