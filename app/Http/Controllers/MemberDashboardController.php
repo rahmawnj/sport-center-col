@@ -8,6 +8,7 @@ use App\Models\UserMembership;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Storage;
 
 class MemberDashboardController extends Controller
 {
@@ -158,6 +159,7 @@ class MemberDashboardController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone ?? $user->memberProfile?->phone,
                 'member_code' => $user->memberProfile?->member_code,
+                'face_photo_url' => $user->memberProfile?->face_photo_path ? Storage::disk('public')->url($user->memberProfile->face_photo_path) : null,
             ],
         ]);
     }

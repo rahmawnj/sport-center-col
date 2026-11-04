@@ -16,6 +16,7 @@ class MemberProfile extends Model
         'date_of_birth',
         'gender',
         'address',
+        'face_photo_path',
         'emergency_contact_name',
         'emergency_contact_phone',
     ];

@@ -94,6 +94,7 @@ class MemberController extends Controller
                 'date_of_birth' => $member->date_of_birth?->toDateString(),
                 'gender' => $member->gender,
                 'address' => $member->address,
+                'face_photo_path' => $member->face_photo_path,
                 'emergency_contact_name' => $member->emergency_contact_name,
                 'emergency_contact_phone' => $member->emergency_contact_phone,
                 'registered_at' => $user->created_at?->toISOString(),

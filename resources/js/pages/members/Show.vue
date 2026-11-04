@@ -29,6 +29,7 @@ type Props = {
         date_of_birth: string | null;
         gender: 'male' | 'female' | 'other' | null;
         address: string | null;
+        face_photo_path: string | null;
         emergency_contact_name: string | null;
         emergency_contact_phone: string | null;
         registered_at: string | null;
@@ -89,7 +90,8 @@ function formatDate(value: string | null) {
             <div class="space-y-6">
                 <section class="overflow-hidden rounded-2xl border bg-card shadow-sm">
                     <div class="flex flex-col gap-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 sm:flex-row sm:items-center">
-                        <div class="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground">
+                        <div v-if="member.face_photo_path" class="size-16 shrink-0 overflow-hidden rounded-2xl bg-muted"><img :src="'/storage/' + member.face_photo_path" :alt="'Foto wajah ' + member.name" class="size-full object-cover" /></div>
+                        <div v-else class="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground">
                             {{ member.name.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase() }}
                         </div>
                         <div class="min-w-0 flex-1">

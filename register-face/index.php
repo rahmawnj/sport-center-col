@@ -4,24 +4,6 @@ declare(strict_types=1);
 $apiUrl = getenv('MEMBERS_API_URL') ?: 'http://127.0.0.1:8000/api/members';
 $members = [];
 $error = null;
-$savedNames = [];
-$savedPhotos = [];
-$metadataPath = __DIR__ . DIRECTORY_SEPARATOR . 'photos' . DIRECTORY_SEPARATOR . 'index.json';
-if (is_file($metadataPath)) {
-    $savedRecords = json_decode((string) file_get_contents($metadataPath), true);
-    if (is_array($savedRecords)) {
-        foreach ($savedRecords as $record) {
-            $savedName = trim((string) ($record['name'] ?? ''));
-            if ($savedName !== '') {
-                $key = mb_strtolower($savedName, 'UTF-8');
-                $savedNames[$key] = true;
-                $photoName = basename((string) ($record['photo'] ?? ''));
-                if ($photoName !== '') $savedPhotos[$key] = 'photos/' . $photoName;
-            }
-        }
-    }
-}
-
 $context = stream_context_create([
     'http' => [
         'timeout' => 8,
@@ -40,7 +22,7 @@ if ($response === false) {
         foreach ($payload['data'] as $item) {
             $name = trim((string) ($item['name'] ?? ''));
             if ($name !== '') {
-                $members[] = ['name' => $name];
+                $members[] = ['id' => (int) ($item['id'] ?? 0), 'name' => $name, 'face_photo_url' => (string) ($item['face_photo_url'] ?? '')];
             }
         }
     }
@@ -61,14 +43,14 @@ if ($response === false) {
       <div class="side-label">WORKSPACE</div>
       <button type="button" class="side-link active" id="navRegister"><span class="side-icon">◉</span> Register Face</button>
       <button type="button" class="side-link" id="navSettings"><span class="side-icon">⚙</span> Setting FaceRec</button>
-      <div class="sidebar-note"><span class="status-dot"></span> Standalone local app</div>
-      <div class="sidebar-bottom">Face data is stored on this PC.</div>
+      <div class="sidebar-note"><span class="status-dot"></span> Laravel connected</div>
+      <div class="sidebar-bottom">Face data is stored on the Sport Center server.</div>
     </aside>
 
     <main class="main-content">
       <header class="topbar">
         <div><div class="eyebrow">MEMBER MANAGEMENT / BIOMETRICS</div><h1>Register Face</h1><p class="page-subtitle">Daftarkan foto wajah member untuk kebutuhan pengenalan wajah.</p></div>
-        <div class="local-badge"><span class="status-dot"></span> LOCAL STORAGE</div>
+        <div class="local-badge"><span class="status-dot"></span> SERVER STORAGE</div>
       </header>
 
       <section class="settings-panel panel" id="settingsPanel" hidden>
@@ -91,7 +73,7 @@ if ($response === false) {
       <div id="registerContent">
       <section class="stats-row">
         <article class="stat-card"><div class="stat-label">TOTAL MEMBER</div><div class="stat-number"><?= count($members) ?></div><div class="stat-foot">Diambil dari API Laravel</div></article>
-        <article class="stat-card"><div class="stat-label">PENYIMPANAN</div><div class="stat-number stat-word">Local PC</div><div class="stat-foot">Pengiriman ke FaceRec dilakukan manual</div></article>
+        <article class="stat-card"><div class="stat-label">PENYIMPANAN</div><div class="stat-number stat-word">Server</div><div class="stat-foot">Foto tersimpan di storage Laravel</div></article>
         <article class="stat-card"><div class="stat-label">STATUS KAMERA</div><div class="stat-number stat-word" id="cameraStatus">Belum aktif</div><div class="stat-foot">Aktifkan saat siap memotret</div></article>
       </section>
 
@@ -105,9 +87,9 @@ if ($response === false) {
           <label class="search-box"><span>⌕</span><input type="search" id="memberSearch" placeholder="Cari nama member..." autocomplete="off"></label>
           <div class="member-list" id="memberList">
             <?php foreach ($members as $i => $member): ?>
-              <button class="member-item<?= $i === 0 ? ' selected' : '' ?>" type="button" data-name="<?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?>" data-saved="<?= isset($savedNames[mb_strtolower($member['name'], 'UTF-8')]) ? 'true' : 'false' ?>" data-photo="<?= htmlspecialchars($savedPhotos[mb_strtolower($member['name'], 'UTF-8')] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+              <button class="member-item<?= $i === 0 ? ' selected' : '' ?>" type="button" data-member-id="<?= $member['id'] ?>" data-name="<?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?>" data-saved="<?= $member['face_photo_url'] !== '' ? 'true' : 'false' ?>" data-photo="<?= htmlspecialchars($member['face_photo_url'], ENT_QUOTES, 'UTF-8') ?>">
                 <span class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($member['name'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
-                <span class="member-copy"><strong><?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?></strong><small><?= isset($savedNames[mb_strtolower($member['name'], 'UTF-8')]) ? 'Foto sudah terdaftar' : 'Member Sport Center' ?></small></span>
+                <span class="member-copy"><strong><?= htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8') ?></strong><small><?= $member['face_photo_url'] !== '' ? 'Foto sudah terdaftar di server' : 'Member Sport Center' ?></small></span>
                 <span class="member-chevron">›</span>
               </button>
             <?php endforeach; ?>
@@ -128,12 +110,12 @@ if ($response === false) {
           </div>
           <div class="camera-hint"><span class="hint-dot"></span> Posisikan wajah di tengah area kamera, dengan pencahayaan yang cukup.</div>
           <div class="action-row"><button type="button" class="button button-secondary" id="cameraButton">Aktifkan Kamera</button><button type="button" class="button button-secondary" id="retakeButton" disabled>Ulangi Foto</button><button type="button" class="button button-primary" id="captureButton" disabled>Ambil Foto</button></div>
-          <div class="save-row"><div><strong>Simpan ke komputer ini</strong><span>Foto disimpan di folder <code>photos/</code> aplikasi ini.</span></div><button type="button" class="button button-save" id="saveButton" disabled>Simpan Foto</button></div>
+          <div class="save-row"><div><strong>Simpan ke server Sport Center</strong><span>Foto disimpan di storage Laravel dan alamatnya dicatat di profil member.</span></div><button type="button" class="button button-save" id="saveButton" disabled>Simpan Foto</button></div>
           <div id="message" class="message" role="status" aria-live="polite"></div>
         </div>
       </section>
       </div>
-      <footer class="footer"><span>SPORT CENTER · REGISTER FACE</span><span>Standalone PHP · Local PC</span></footer>
+      <footer class="footer"><span>SPORT CENTER · REGISTER FACE</span><span>Standalone PHP · Laravel API</span></footer>
     </main>
   </div>
   <script src="assets/js/app.js"></script>

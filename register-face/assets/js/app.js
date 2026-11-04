@@ -188,45 +188,35 @@
 
   saveButton.addEventListener('click', async () => {
     const selectedButton = list.querySelector('.member-item.selected');
-    if (!capturedBlob || !selectedMember) return;
+    const memberId = Number(selectedButton?.dataset.memberId || 0);
+    if (!capturedBlob || !selectedMember || !memberId) return;
     saveButton.disabled = true;
-    saveButton.textContent = 'Menyimpan...';
+    saveButton.textContent = 'Mengunggah ke server...';
     try {
       const form = new FormData();
-      form.append('name', selectedMember);
-      form.append('replace', selectedButton?.dataset.saved === 'true' ? '1' : '0');
       form.append('photo', capturedBlob, 'face.jpg');
-      const response = await fetch('save-photo.php', { method: 'POST', body: form });
+      const response = await fetch('/api/members/' + memberId + '/face-photo', { method: 'POST', headers: { 'Accept': 'application/json' }, body: form });
       const result = await response.json();
-      if (response.status === 409 && selectedButton) {
-        selectedButton.dataset.saved = 'true';
-        const detail = selectedButton.querySelector('.member-copy small');
-        if (detail) detail.textContent = 'Foto sudah terdaftar';
-      }
-      if (!response.ok || !result.success) throw new Error(result.message || 'Foto gagal disimpan.');
-      if (selectedButton) {
-        selectedButton.dataset.saved = 'true';
-        selectedButton.dataset.photo = result.path;
-        const detail = selectedButton.querySelector('.member-copy small');
-        if (detail) detail.textContent = 'Foto sudah terdaftar';
-      }
-      preview.src = result.path + '?v=' + Date.now();
+      if (!response.ok || !result.success) throw new Error(result.errors?.photo?.[0] || result.message || 'Foto gagal disimpan ke server.');
+      selectedButton.dataset.saved = 'true';
+      selectedButton.dataset.photo = result.face_photo_url;
+      const detail = selectedButton.querySelector('.member-copy small');
+      if (detail) detail.textContent = 'Foto sudah terdaftar di server';
+      preview.src = result.face_photo_url + '?v=' + Date.now();
       preview.hidden = false;
       video.hidden = true;
       lastSavedDataUrl = await blobToDataUrl(capturedBlob);
-      notify(result.replaced ? 'Foto lama berhasil dihapus dan diganti: ' + result.path + '. Foto lokal siap dikirim ke FaceRec.' : 'Foto tersimpan di ' + result.path + '. Foto lokal siap dikirim ke FaceRec.', 'success');
+      notify(result.replaced ? 'Foto lama berhasil diganti di server. Sekarang foto siap dikirim ke FaceRec.' : 'Foto berhasil disimpan di server. Sekarang foto siap dikirim ke FaceRec.', 'success');
       showSendToFaceRecButton();
       retakeButton.disabled = true;
       captureButton.disabled = true;
     } catch (error) {
-      notify(error.message || 'Gagal menyimpan foto. Periksa izin tulis folder aplikasi.', 'error');
+      notify(error.message || 'Gagal mengunggah foto ke server Laravel.', 'error');
     } finally {
-      const currentButton = list.querySelector('.member-item.selected');
-      saveButton.textContent = currentButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
+      saveButton.textContent = selectedButton?.dataset.saved === 'true' ? 'Simpan Perubahan' : 'Simpan Foto';
       saveButton.disabled = !capturedBlob || !selectedMember;
     }
   });
-
   function blobToDataUrl(blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
