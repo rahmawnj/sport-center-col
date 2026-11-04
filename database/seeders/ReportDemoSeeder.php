@@ -114,7 +114,7 @@ class ReportDemoSeeder extends Seeder
                         ->first();
 
                     if (! $court) {
-                        throw new \\RuntimeException("No available court found for package {$package->name}.");
+                        throw new \RuntimeException("No available court found for package {$package->name}.");
                     }
 
                     $bookingDate = $createdAt->copy()->addDays(1);
