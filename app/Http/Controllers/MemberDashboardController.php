@@ -174,6 +174,7 @@ class MemberDashboardController extends Controller
             'court' => $booking->court?->name,
             'facility' => $booking->court?->facility?->name,
             'status' => $booking->status,
+            'scan_count' => (int) $booking->scan_count,
         ];
     }
 
@@ -190,6 +191,7 @@ class MemberDashboardController extends Controller
             'end_date' => $membership->end_date?->toDateString(),
             'duration_days' => $membership->package?->duration_days,
             'status' => $cancelled ? 'cancelled' : ($expired ? 'expired' : 'active'),
+            'scan_count' => (int) $membership->scan_count,
         ];
     }
 }
