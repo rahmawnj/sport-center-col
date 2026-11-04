@@ -21,6 +21,8 @@ class Transaction extends Model
         'payment_method',
         'payment_status',
         'booking_status',
+        'transactionable_type',
+        'transactionable_id',
     ];
 
     protected function casts(): array
