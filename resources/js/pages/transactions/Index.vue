@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { CheckCircle2, Clock, Eye, Receipt, Wallet } from '@lucide/vue';
+import { CheckCircle2, Clock, Eye, Pencil, Receipt, Wallet } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SummaryCards from '@/components/SummaryCards.vue';
@@ -245,18 +245,32 @@ function formatDateTime(value: string | null) {
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex justify-end">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        title="Lihat detail transaksi"
-                                        class="gap-2"
-                                        as-child
-                                    >
-                                        <Link :href="`/transactions/${row.id}`">
-                                            <Eye class="size-4" />
-                                            Detail
-                                        </Link>
-                                    </Button>
+                                    <div class="flex justify-end gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            title="Ubah transaksi"
+                                            class="gap-2"
+                                            as-child
+                                        >
+                                            <Link :href="`/transactions/${row.id}/edit`">
+                                                <Pencil class="size-4" />
+                                                Ubah
+                                            </Link>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            title="Lihat detail transaksi"
+                                            class="gap-2"
+                                            as-child
+                                        >
+                                            <Link :href="`/transactions/${row.id}`">
+                                                <Eye class="size-4" />
+                                                Detail
+                                            </Link>
+                                        </Button>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
