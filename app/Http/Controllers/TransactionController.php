@@ -165,6 +165,8 @@ class TransactionController extends Controller
             $this->storeMembership($package, $data);
         } else {
             Transaction::create([
+                'transactionable_type' => Package::class,
+                'transactionable_id' => $package->id,
                 'device_id' => Device::forFacility($package->facility_id)?->id,
                 'customer_name' => $data['customer_name'] ?? null,
                 'amount' => $data['amount'],
@@ -201,6 +203,8 @@ class TransactionController extends Controller
 
             Transaction::create([
                 'user_id' => $data['user_id'],
+                'transactionable_type' => UserMembership::class,
+                'transactionable_id' => $membership->id,
                 'device_id' => Device::forFacility($package->facility_id)?->id,
                 'customer_name' => $data['customer_name'] ?? null,
                 'amount' => $data['amount'],
