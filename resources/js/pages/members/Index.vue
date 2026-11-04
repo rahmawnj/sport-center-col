@@ -2,6 +2,7 @@
 import { Form, Head, Link, router } from '@inertiajs/vue3';
 import {
     EllipsisVertical,
+    Eye,
     Pencil,
     Plus,
     Search,
@@ -273,7 +274,18 @@ function initials(value: string) {
                                 <template v-else>—</template>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="flex justify-end">
+                                <div class="flex justify-end gap-2">
+                                    <Button
+                                        as-child
+                                        variant="outline"
+                                        size="sm"
+                                        class="h-8 gap-1.5"
+                                    >
+                                        <Link :href="`/members/${row.id}`">
+                                            <Eye class="size-3.5" />
+                                            Detail
+                                        </Link>
+                                    </Button>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger :as-child="true">
                                             <Button
