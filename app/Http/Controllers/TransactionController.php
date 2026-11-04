@@ -29,6 +29,7 @@ class TransactionController extends Controller
         $dbStatus = $statusMap[$status] ?? null;
 
         $transactions = Transaction::query()
+            ->with('transactionable')
             ->when($search !== '', fn ($query) => $query->where('guest_name', 'like', "%{$search}%"))
             ->when($dbStatus, fn ($query) => $query->where('payment_status', $dbStatus))
             ->latest()
@@ -42,6 +43,9 @@ class TransactionController extends Controller
                 'amount' => (float) $transaction->amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
+                'scan_count' => $transaction->transactionable && isset($transaction->transactionable->scan_count)
+                    ? (int) $transaction->transactionable->scan_count
+                    : null,
                 'created_at' => $transaction->created_at?->toISOString(),
             ]);
 
