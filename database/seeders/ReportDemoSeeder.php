@@ -1,16 +1,16 @@
 <?php
 
-namespace Database\\Seeders;
+namespace Database\Seeders;
 
-use App\\Models\\Booking;
-use App\\Models\\Court;
-use App\\Models\\Package;
-use App\\Models\\Transaction;
-use App\\Models\\User;
-use App\\Models\\UserMembership;
-use Illuminate\\Database\\Seeder;
-use Illuminate\\Support\\Carbon;
-use Illuminate\\Support\\Facades\\DB;
+use App\Models\Booking;
+use App\Models\Court;
+use App\Models\Package;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Models\UserMembership;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ReportDemoSeeder extends Seeder
 {
@@ -114,7 +114,7 @@ class ReportDemoSeeder extends Seeder
                         ->first();
 
                     if (! $court) {
-                        throw new RuntimeException("No available court found for package {$package->name}.");
+                        throw new \\RuntimeException("No available court found for package {$package->name}.");
                     }
 
                     $bookingDate = $createdAt->copy()->addDays(1);
