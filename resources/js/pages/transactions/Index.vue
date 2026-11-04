@@ -16,6 +16,7 @@ type Transaction = {
     amount: number;
     payment_method: string | null;
     payment_status: PaymentStatus;
+    scan_count: number | null;
     created_at: string | null;
 };
 type LinkItem = { url: string | null; label: string; active: boolean };
@@ -186,6 +187,7 @@ function formatDateTime(value: string | null) {
                             <th class="px-4 py-3 font-medium">Invoice</th>
                             <th class="px-4 py-3 font-medium">Pelanggan</th>
                             <th class="px-4 py-3 font-medium">Referensi</th>
+                            <th class="px-4 py-3 font-medium">Jumlah Scan</th>
                             <th class="px-4 py-3 font-medium">Metode</th>
                             <th class="px-4 py-3 font-medium">Status</th>
                             <th class="px-4 py-3 text-right font-medium">
@@ -215,6 +217,9 @@ function formatDateTime(value: string | null) {
                             </td>
                             <td class="px-4 py-3 text-muted-foreground">
                                 {{ row.reference }}
+                            </td>
+                            <td class="px-4 py-3 tabular-nums">
+                                {{ row.scan_count === null ? "—" : row.scan_count + " kali" }}
                             </td>
                             <td class="px-4 py-3">
                                 {{
@@ -276,7 +281,7 @@ function formatDateTime(value: string | null) {
                         </tr>
                         <tr v-if="!props.transactions.data.length">
                             <td
-                                colspan="8"
+                                colspan="9"
                                 class="px-4 py-12 text-center text-muted-foreground"
                             >
                                 <Receipt
