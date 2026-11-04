@@ -34,6 +34,7 @@ type Membership = {
     days_left: number;
     status: MembershipStatus;
     duration_days: number | null;
+    scan_count: number;
 };
 type LinkItem = { url: string | null; label: string; active: boolean };
 type Props = {
@@ -225,6 +226,7 @@ function formatDate(value: string | null) {
                             <th class="px-4 py-3 font-medium">Paket</th>
                             <th class="px-4 py-3 font-medium">Periode</th>
                             <th class="px-4 py-3 font-medium">Sisa</th>
+                            <th class="px-4 py-3 font-medium">Jumlah Scan</th>
                             <th class="px-4 py-3 font-medium">Status</th>
                             <th class="px-4 py-3 text-right font-medium">
                                 Aksi
@@ -268,6 +270,9 @@ function formatDate(value: string | null) {
                                 <span v-else class="text-muted-foreground"
                                     >—</span
                                 >
+                            </td>
+                            <td class="px-4 py-3 font-medium tabular-nums">
+                                {{ row.scan_count }} kali
                             </td>
                             <td class="px-4 py-3">
                                 <span
@@ -329,7 +334,7 @@ function formatDate(value: string | null) {
                         </tr>
                         <tr v-if="!props.memberships.data.length">
                             <td
-                                colspan="6"
+                                colspan="7"
                                 class="px-4 py-12 text-center text-muted-foreground"
                             >
                                 <BadgeCheck
