@@ -126,6 +126,8 @@ class MembershipController extends Controller
 
             Transaction::create([
                 'user_id' => $membership->user_id,
+                'transactionable_type' => UserMembership::class,
+                'transactionable_id' => $membership->id,
                 'device_id' => Device::forFacility($membership->package->facility_id)?->id,
                 'amount' => $price,
                 'payment_method' => $data['payment_method'],
