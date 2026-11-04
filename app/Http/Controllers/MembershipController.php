@@ -77,6 +77,7 @@ class MembershipController extends Controller
                     'name' => $membership->package?->name,
                     'type' => $membership->package?->type,
                     'duration_days' => $membership->package?->duration_days,
+            'scan_count' => (int) $membership->scan_count,
                     'price' => (float) ($membership->package?->pricingRules->min('price') ?? 0),
                 ],
             ],
