@@ -7,7 +7,6 @@ use App\Models\Package;
 use App\Models\Transaction;
 use App\Models\UserMembership;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,7 +30,7 @@ class ReportController extends Controller
         $to = $request->query('to');
 
         $base = Transaction::query()
-            ->when(Schema::hasColumn('transactions', 'transactionable_type'), fn ($query) => $query->where('transactionable_type', $class))
+            ->where('transactionable_type', $class)
             ->when($from, fn ($query) => $query->whereDate('created_at', '>=', $from))
             ->when($to, fn ($query) => $query->whereDate('created_at', '<=', $to));
 
