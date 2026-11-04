@@ -59,6 +59,15 @@ class TransactionController extends Controller
         ]);
     }
 
+    /**
+     * Return the transaction reference displayed in transaction lists and details.
+     */
+    private function reference(Transaction $transaction): string
+    {
+        return $transaction->booking_code
+            ?: 'TRX-'.str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT);
+    }
+
     private function normalizeStatus(?string $status): string
     {
         return match ($status) {
