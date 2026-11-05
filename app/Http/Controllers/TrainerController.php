@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Facility;
+use App\Models\Role;
 use App\Models\Trainer;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +42,6 @@ class TrainerController extends Controller
         return Inertia::render('trainers/Index', [
             'trainers' => $items,
             'facilities' => Facility::query()->where('status', 'active')->orderBy('name')->get(['id', 'name']),
-            'users' => User::query()->whereHas('role', fn ($query) => $query->where('name', 'Trainer'))->orderBy('name')->get(['id', 'name', 'email']),
             'filters' => ['search' => $search],
             'stats' => ['total' => Trainer::count()],
         ]);
@@ -57,18 +58,27 @@ class TrainerController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'password' => ['required', 'string', 'min:8'],
             'specialty' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'facility_ids' => ['required', 'array', 'min:1'],
             'facility_ids.*' => ['integer', 'distinct', 'exists:facilities,id'],
         ]);
 
-        $user = ! empty($data['user_id']) ? User::query()->whereHas('role', fn ($query) => $query->where('name', 'Trainer'))->findOrFail($data['user_id']) : null;
+        DB::transaction(function () use ($data) {
+            $role = Role::firstOrCreate(['name' => 'Trainer']);
 
-        DB::transaction(function () use ($data, $user) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+            ]);
+            $user->role()->associate($role);
+            $user->save();
+
             $trainer = Trainer::create([
-                'user_id' => $user?->id,
+                'user_id' => $user->id,
                 'name' => $data['name'],
                 'specialty' => $data['specialty'] ?? null,
                 'phone' => $data['phone'] ?? null,
@@ -83,18 +93,32 @@ class TrainerController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($trainer->user_id)],
+            'password' => [Rule::requiredIf(! $trainer->user_id), 'nullable', 'string', 'min:8'],
             'specialty' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'facility_ids' => ['required', 'array', 'min:1'],
             'facility_ids.*' => ['integer', 'distinct', 'exists:facilities,id'],
         ]);
 
-        $user = ! empty($data['user_id']) ? User::query()->whereHas('role', fn ($query) => $query->where('name', 'Trainer'))->findOrFail($data['user_id']) : null;
+        DB::transaction(function () use ($data, $trainer) {
+            $role = Role::firstOrCreate(['name' => 'Trainer']);
+            $user = $trainer->user;
 
-        DB::transaction(function () use ($data, $trainer, $user) {
+            if (! $user) {
+                $user = new User();
+                $user->password = $data['password'];
+            } elseif (! empty($data['password'])) {
+                $user->password = $data['password'];
+            }
+
+            $user->name = $data['name'];
+            $user->email = $data['email'];
+            $user->role()->associate($role);
+            $user->save();
+
             $trainer->update([
-                'user_id' => $user?->id,
+                'user_id' => $user->id,
                 'name' => $data['name'],
                 'specialty' => $data['specialty'] ?? null,
                 'phone' => $data['phone'] ?? null,
