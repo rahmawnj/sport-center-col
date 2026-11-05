@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('specialty');
-            $table->string('phone')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
