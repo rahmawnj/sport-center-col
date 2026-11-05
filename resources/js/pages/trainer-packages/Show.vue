@@ -38,6 +38,9 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                     <h1 class="mt-3 max-w-3xl text-3xl font-black sm:text-5xl">{{ package.name }}</h1>
                     <p class="mt-5 max-w-2xl leading-7 text-slate-300">{{ package.description || 'Program latihan personal bersama trainer untuk membantu mencapai target kebugaranmu.' }}</p>
                     <div class="mt-8 flex flex-wrap gap-3">
+                        <span class="rounded-full bg-[#a4da01] px-4 py-2 text-sm font-black text-[#001428]">
+                            <i class="fa-solid fa-volleyball mr-2"></i>{{ package.facility.name }}
+                        </span>
                         <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">{{ package.total_sessions }} sesi latihan</span>
                         <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">Berlaku {{ package.duration_days }} hari</span>
                     </div>
@@ -70,12 +73,6 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                             </div>
                         </div>
                         <p v-else class="mt-3 text-sm text-slate-500">Trainer belum ditentukan.</p>
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 bg-white p-6">
-                        <h2 class="text-xl font-black">Olahraga / fasilitas</h2>
-                        <div class="mt-4">
-                            <span class="inline-flex rounded-full bg-[#f0f7d9] px-4 py-2 text-sm font-bold text-[#617d00]">{{ package.facility.name }}</span>
-                        </div>
                     </div>
                 </div>
 
