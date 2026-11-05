@@ -51,7 +51,7 @@ class TrainerPackageController extends Controller
             }))
             ->when($status === 'active', fn ($query) => $query->where('status', 'active')->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions'))
             ->when($status === 'pending', fn ($query) => $query->where('status', 'pending'))
-            ->when($status === 'completed', fn ($query) => $query->where('status', 'completed'))
+            ->when($status === 'completed', fn ($query) => $query->where(fn ($q) => $q->where('status', 'completed')->orWhere(fn ($active) => $active->where('status', 'active')->whereColumn('used_sessions', '>=', 'total_sessions'))))
             ->when($status === 'expired', fn ($query) => $query->where(function ($q) {
                 $q->where('status', 'expired')->orWhere(fn ($active) => $active->where('status', 'active')->whereDate('expires_at', '<', today()));
             }))
@@ -76,6 +76,7 @@ class TrainerPackageController extends Controller
 
         return Inertia::render('trainer-packages/Index', [
             'packages' => $packages,
+            'packageOptions' => TrainerPackage::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'total_sessions', 'price']),
             'members' => $members,
             'trainers' => $trainers,
             'memberPackages' => $memberPackages,
