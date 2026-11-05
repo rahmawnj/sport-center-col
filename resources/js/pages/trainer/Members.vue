@@ -130,8 +130,8 @@ const currency = (value: number) =>
                             <p class="mt-1 text-sm">{{ date(item.start_date) }} – {{ date(item.expires_at) }}</p>
                             <p class="mt-1 text-xs text-slate-500">Sisa {{ item.remaining_sessions }} dari {{ item.total_sessions }} sesi</p>
                         </div>
-                        <span class="w-fit rounded-full px-3 py-1.5 text-xs font-bold capitalize" :class="{ 'bg-emerald-50 text-emerald-700': item.status === 'active', 'bg-amber-50 text-amber-700': item.status === 'pending', 'bg-slate-100 text-slate-600': !['active', 'pending'].includes(item.status) }">
-                            {{ item.status }}
+                        <span class="w-fit rounded-full px-3 py-1.5 text-xs font-bold capitalize" :class="{ 'bg-emerald-50 text-emerald-700': item.status === 'active', 'bg-sky-50 text-sky-700': item.status === 'scheduled', 'bg-amber-50 text-amber-700': item.status === 'pending', 'bg-slate-100 text-slate-600': !['active', 'scheduled', 'pending'].includes(item.status) }">
+                            {{ item.status === 'scheduled' ? 'Menunggu giliran' : item.status }}
                         </span>
                     </article>
                 </div>
