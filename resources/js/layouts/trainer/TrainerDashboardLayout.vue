@@ -7,6 +7,7 @@ import {
     LogOut,
     House,
     Menu,
+    Dumbbell,
     X,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
