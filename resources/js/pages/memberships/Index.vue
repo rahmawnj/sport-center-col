@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type MembershipStatus = 'active' | 'expired' | 'cancelled';
+type MembershipStatus = 'active' | 'scheduled' | 'expired' | 'cancelled';
 type Membership = {
     id: number;
     member_name: string | null;
@@ -56,6 +56,7 @@ const status = ref(props.filters.status ?? 'all');
 const statusOptions = [
     { value: 'all', label: 'Semua status' },
     { value: 'active', label: 'Aktif' },
+    { value: 'scheduled', label: 'Menunggu giliran' },
     { value: 'expired', label: 'Kedaluwarsa' },
     { value: 'cancelled', label: 'Dibatalkan' },
 ];
@@ -102,6 +103,11 @@ const statusMeta: Record<
         label: 'Aktif',
         badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
         dot: 'bg-emerald-500',
+    },
+    scheduled: {
+        label: 'Menunggu giliran',
+        badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+        dot: 'bg-sky-500',
     },
     expired: {
         label: 'Kedaluwarsa',
