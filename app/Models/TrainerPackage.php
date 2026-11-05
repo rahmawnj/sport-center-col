@@ -3,13 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TrainerPackage extends Model
 {
     protected $fillable = [
-        'facility_id',
         'name',
         'total_sessions',
         'duration_days',
@@ -26,11 +24,6 @@ class TrainerPackage extends Model
             'price' => 'decimal:2',
             'is_active' => 'boolean',
         ];
-    }
-
-    public function facility(): BelongsTo
-    {
-        return $this->belongsTo(Facility::class);
     }
 
     public function memberPackages(): HasMany
