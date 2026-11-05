@@ -11,6 +11,37 @@ use Inertia\Response;
 
 class PublicHomeController extends Controller
 {
+    public function showTrainer(Trainer $trainer): Response
+    {
+        $trainer->load(['facilities:id,name']);
+
+        $packages = \\App\\Models\\TrainerPackage::query()
+            ->where('is_active', true)
+            ->whereHas('trainers', fn ($query) => $query->where('trainers.id', $trainer->id))
+            ->with('facilities:id,name')
+            ->orderBy('price')
+            ->get(['id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
+            ->map(fn ($package) => [
+                'id' => $package->id,
+                'name' => $package->name,
+                'total_sessions' => $package->total_sessions,
+                'duration_days' => $package->duration_days,
+                'price' => (float) $package->price,
+                'description' => $package->description,
+                'sports' => $package->facilities->pluck('name')->values(),
+            ])->values();
+
+        return Inertia::render('PublicTrainerShow', [
+            'trainer' => [
+                'id' => $trainer->id,
+                'name' => $trainer->name,
+                'specialty' => $trainer->specialty,
+                'sports' => $trainer->facilities->pluck('name')->values(),
+            ],
+            'packages' => $packages,
+        ]);
+    }
+
     public function index(): Response
     {
         $facilities = Facility::query()
