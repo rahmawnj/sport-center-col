@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Facility;
 use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
 use App\Models\TrainerPackage;
@@ -24,14 +23,12 @@ class TrainerPackageController extends Controller
         $status = $request->input('status', 'all');
 
         $packages = TrainerPackage::query()
-            ->with('facility:id,name')
             ->latest()
             ->paginate(10, ['*'], 'packages_page')
             ->withQueryString()
             ->through(fn (TrainerPackage $package) => [
                 'id' => $package->id,
                 'name' => $package->name,
-                'facility_name' => $package->facility?->name ?? 'Belum ditentukan',
                 'total_sessions' => $package->total_sessions,
                 'duration_days' => $package->duration_days,
                 'price' => (float) $package->price,
@@ -90,56 +87,6 @@ class TrainerPackageController extends Controller
                 })->count(),
             ],
         ]);
-    }
-
-    public function storeForFacility(Request $request, Facility $facility): RedirectResponse
-    {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'total_sessions' => ['required', 'integer', 'min:1'],
-            'duration_days' => ['required', 'integer', 'min:1'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'description' => ['nullable', 'string'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
-
-        $facility->trainerPackages()->create([
-            ...$data,
-            'is_active' => $request->boolean('is_active'),
-        ]);
-
-        return back()->with('success', 'Paket personal trainer berhasil ditambahkan untuk olahraga ini.');
-    }
-
-    public function updateForFacility(Request $request, Facility $facility, TrainerPackage $trainerPackage): RedirectResponse
-    {
-        abort_unless($trainerPackage->facility_id === $facility->id, 404);
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'total_sessions' => ['required', 'integer', 'min:1'],
-            'duration_days' => ['required', 'integer', 'min:1'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'description' => ['nullable', 'string'],
-            'is_active' => ['required', 'boolean'],
-        ]);
-
-        $trainerPackage->update($data);
-
-        return back()->with('success', 'Paket personal trainer berhasil diperbarui.');
-    }
-
-    public function destroyForFacility(Facility $facility, TrainerPackage $trainerPackage): RedirectResponse
-    {
-        abort_unless($trainerPackage->facility_id === $facility->id, 404);
-
-        if ($trainerPackage->memberPackages()->exists()) {
-            return back()->with('error', 'Paket sudah pernah dibeli dan tidak dapat dihapus. Nonaktifkan paket saja.');
-        }
-
-        $trainerPackage->delete();
-
-        return back()->with('success', 'Paket personal trainer berhasil dihapus.');
     }
 
     public function store(Request $request): RedirectResponse
