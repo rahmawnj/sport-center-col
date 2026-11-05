@@ -24,12 +24,14 @@ class TrainerPackageController extends Controller
         $status = $request->input('status', 'all');
 
         $packages = TrainerPackage::query()
-            ->with('trainers:id,name')
+            ->with(['trainers:id,name', 'facilities:id,name'])
             ->latest()
             ->paginate(10, ['*'], 'packages_page')
             ->withQueryString()
             ->through(fn (TrainerPackage $package) => [
                 'id' => $package->id,
+                'facility' => $package->facilities->first() ? ['id' => $package->facilities->first()->id, 'name' => $package->facilities->first()->name] : null,
+                'facility_id' => $package->facilities->first()?->id,
                 'trainers' => $package->trainers->map(fn (Trainer $trainer) => ['id' => $trainer->id, 'name' => $trainer->name])->values(),
                 'trainer_ids' => $package->trainers->pluck('id')->map(fn ($id) => (int) $id)->all(),
                 'name' => $package->name,
@@ -79,7 +81,7 @@ class TrainerPackageController extends Controller
 
         return Inertia::render('trainer-packages/Index', [
             'packages' => $packages,
-            'packageOptions' => TrainerPackage::query()->where('is_active', true)->with('trainers:id')->orderBy('name')->get(['id', 'name', 'total_sessions', 'price'])->map(fn (TrainerPackage $package) => ['id' => $package->id, 'name' => $package->name, 'total_sessions' => $package->total_sessions, 'price' => (float) $package->price, 'trainer_ids' => $package->trainers->pluck('id')->map(fn ($id) => (int) $id)->all()]),
+            'packageOptions' => TrainerPackage::query()->where('is_active', true)->with(['trainers:id', 'facilities:id'])->orderBy('name')->get(['id', 'name', 'total_sessions', 'price'])->map(fn (TrainerPackage $package) => ['id' => $package->id, 'name' => $package->name, 'total_sessions' => $package->total_sessions, 'price' => (float) $package->price, 'facility_id' => $package->facilities->first()?->id, 'trainer_ids' => $package->trainers->pluck('id')->map(fn ($id) => (int) $id)->all()]),
             'members' => $members,
             'trainers' => $trainers,
             'facilities' => $facilities,
@@ -100,6 +102,7 @@ class TrainerPackageController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'total_sessions' => ['required', 'integer', 'min:1'],
             'duration_days' => ['required', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -109,9 +112,16 @@ class TrainerPackageController extends Controller
         ]);
 
         $trainerIds = $data['trainer_ids'];
-        unset($data['trainer_ids']);
+        $facilityId = (int) $data['facility_id'];
+        unset($data['trainer_ids'], $data['facility_id']);
+
+        $eligibleTrainerCount = Trainer::query()->whereIn('id', $trainerIds)
+            ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facilityId))
+            ->count();
+        abort_unless($eligibleTrainerCount === count($trainerIds), 422, 'Semua trainer harus terdaftar pada olahraga yang dipilih.');
 
         $package = TrainerPackage::create($data);
+        $package->facilities()->sync([$facilityId]);
         $package->trainers()->sync($trainerIds);
 
         return back()->with('success', 'Paket trainer berhasil ditambahkan.');
@@ -131,9 +141,16 @@ class TrainerPackageController extends Controller
         ]);
 
         $trainerIds = $data['trainer_ids'];
-        unset($data['trainer_ids']);
+        $facilityId = (int) $data['facility_id'];
+        unset($data['trainer_ids'], $data['facility_id']);
+
+        $eligibleTrainerCount = Trainer::query()->whereIn('id', $trainerIds)
+            ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facilityId))
+            ->count();
+        abort_unless($eligibleTrainerCount === count($trainerIds), 422, 'Semua trainer harus terdaftar pada olahraga yang dipilih.');
 
         $trainerPackage->update($data);
+        $trainerPackage->facilities()->sync([$facilityId]);
         $trainerPackage->trainers()->sync($trainerIds);
 
         return back()->with('success', 'Paket trainer berhasil diperbarui.');
@@ -185,7 +202,8 @@ class TrainerPackageController extends Controller
             'payment_status' => ['required', Rule::in(['paid', 'pending'])],
         ]);
 
-        $package = TrainerPackage::query()->where('is_active', true)->with('trainers')->findOrFail($data['trainer_package_id']);
+        $package = TrainerPackage::query()->where('is_active', true)->with(['trainers', 'facilities'])->findOrFail($data['trainer_package_id']);
+        abort_unless($package->facilities->contains('id', (int) $data['facility_id']), 422, 'Olahraga tidak sesuai dengan paket yang dipilih.');
         abort_unless($package->trainers->contains('id', (int) $data['trainer_id']), 422, 'Trainer tidak ditugaskan pada paket ini.');
         Trainer::query()->whereHas('facilities', fn ($query) => $query->where('facilities.id', $data['facility_id']))->findOrFail($data['trainer_id']);
         $start = Carbon::parse($data['start_date']);
