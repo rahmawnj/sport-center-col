@@ -31,7 +31,6 @@ import { Label } from '@/components/ui/label';
 type TrainerPackage = {
     id: number;
     name: string;
-    facility_name: string;
     total_sessions: number;
     duration_days: number;
     price: number;
@@ -81,7 +80,6 @@ const statusOptions = [
 ];
 
 const statCards = computed(() => [
-    { label: 'Master paket PT', value: props.stats.packages, icon: PackageIcon, accent: 'primary' as const },
     { label: 'Paket member aktif', value: props.stats.active, icon: BadgeCheck, accent: 'emerald' as const },
     { label: 'Segera expired', value: props.stats.expiring, icon: CalendarClock, accent: 'amber' as const },
     { label: 'Expired', value: props.stats.expired, icon: RefreshCw, accent: 'rose' as const },
@@ -205,9 +203,9 @@ function useSession(item: MemberPackage) {
     <Head title="Paket Personal Trainer" />
     <div class="space-y-6 p-4 md:p-6">
         <PageHeader
-            eyebrow="Manajemen"
+            eyebrow="Member"
             title="Paket Personal Trainer"
-            description="Kelola master paket PT, pembelian member, dan pemakaian sesi latihan."
+            description="Pantau paket latihan member, sisa sesi, dan masa berlakunya."
         />
         <SummaryCards :items="statCards" />
 
@@ -303,8 +301,7 @@ function useSession(item: MemberPackage) {
                         <thead class="border-b bg-muted/40 text-left">
                             <tr>
                                 <th class="px-4 py-3 font-medium">Nama paket</th>
-                                <th class="px-4 py-3 font-medium">Olahraga</th>
-                                <th class="px-4 py-3 font-medium">Jumlah sesi</th>
+                                                    <th class="px-4 py-3 font-medium">Jumlah sesi</th>
                                 <th class="px-4 py-3 font-medium">Masa berlaku</th>
                                 <th class="px-4 py-3 font-medium">Harga</th>
                                 <th class="px-4 py-3 font-medium">Status</th>
@@ -317,7 +314,6 @@ function useSession(item: MemberPackage) {
                                     {{ item.name }}
                                     <p v-if="item.description" class="mt-0.5 text-xs font-normal text-muted-foreground">{{ item.description }}</p>
                                 </td>
-                                <td class="px-4 py-3">{{ item.facility_name }}</td>
                                 <td class="px-4 py-3">{{ item.total_sessions }} sesi</td>
                                 <td class="px-4 py-3">{{ item.duration_days }} hari</td>
                                 <td class="px-4 py-3 font-medium">{{ rupiah(item.price) }}</td>
@@ -340,7 +336,7 @@ function useSession(item: MemberPackage) {
                                 </td>
                             </tr>
                             <tr v-if="!packages.data.length">
-                                <td colspan="7" class="px-4 py-12 text-center text-muted-foreground">Belum ada master paket trainer.</td>
+                                <td colspan="6" class="px-4 py-12 text-center text-muted-foreground">Belum ada master paket trainer.</td>
                             </tr>
                         </tbody>
                     </table>
