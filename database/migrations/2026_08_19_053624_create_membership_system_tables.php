@@ -17,18 +17,22 @@ return new class extends Migration
             $table->string('name');
             $table->decimal('price', 15, 2);
             $table->integer('duration_days');
+            $table->integer('session_quota')->nullable()
+                ->comment('Batas kedatangan/sesi. Isi NULL jika Unlimited');
             $table->text('description')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
 
-        // User Subscriptions
+        // User Subscriptions (legacy table)
         Schema::create('user_subscriptions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('membership_package_id')->constrained('membership_packages')->onDelete('cascade');
             $table->date('start_date');
             $table->date('end_date');
+            $table->integer('used_sessions')->default(0)
+                ->comment('Jumlah sesi yang sudah dipakai');
             $table->enum('status', ['active', 'expired', 'cancelled'])->default('active');
             $table->timestamps();
         });
