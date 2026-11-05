@@ -112,7 +112,7 @@ class MembershipPackageController extends Controller
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'facility_id' => ['required', 'integer', Rule::exists('facilities', 'id')->where('has_membership', true)],
+            'facility_id' => ['required', 'integer', Rule::exists('facilities', 'id')->where(fn ($query) => $query->where('has_membership', true)->where('status', 'active'))],
             'duration_days' => ['required', 'integer', 'min:1'],
             'pricing_rules' => ['required', 'array', 'min:1'],
             'pricing_rules.*.day_type' => ['required', Rule::in(['weekday', 'weekend', 'all'])],
