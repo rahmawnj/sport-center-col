@@ -186,7 +186,7 @@ const trainerFormTitle = computed(() =>
 );
 const trainerFormAction = computed(() =>
     editingTrainerPackage.value
-        ? `/trainer-packages/${editingTrainerPackage.value.id}`
+        ? `/facilities/${props.facility.id}/trainer-packages/${editingTrainerPackage.value.id}`
         : `/facilities/${props.facility.id}/trainer-packages`,
 );
 const trainerFormMethod = computed(() => editingTrainerPackage.value ? 'put' : 'post');
@@ -215,7 +215,7 @@ function closeTrainerForm() {
 }
 function removeTrainerPackage(pkg: TrainerPackage) {
     if (!window.confirm(`Hapus paket personal trainer ${pkg.name}?`)) return;
-    router.delete(`/trainer-packages/${pkg.id}`, { preserveScroll: true });
+    router.delete(`/facilities/${props.facility.id}/trainer-packages/${pkg.id}`, { preserveScroll: true });
 }
 
 const showForm = ref(false);
