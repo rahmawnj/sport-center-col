@@ -7,6 +7,7 @@ use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberDashboardController;
 use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\MembershipPackageController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\PublicHomeController;
