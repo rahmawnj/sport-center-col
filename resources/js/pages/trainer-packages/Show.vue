@@ -92,7 +92,7 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                             </select>
                             <p v-if="form.errors.trainer_id" class="mt-1 text-sm text-red-600">{{ form.errors.trainer_id }}</p>
                         </div>
-                        <div v-if="package.facilities.length">
+                        <div>
                             <p class="mb-2 block text-sm font-bold">Olahraga paket</p>
                             <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold">{{ package.facility.name }}</div>
                         </div>
