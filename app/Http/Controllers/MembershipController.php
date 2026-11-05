@@ -182,7 +182,8 @@ class MembershipController extends Controller
     private function toRow(UserMembership $membership): array
     {
         $cancelled = $membership->status === 'cancelled';
-        $expired = ! $cancelled && $membership->end_date->lt(Carbon::today());
+        $scheduled = ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
+        $expired = ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
 
         return [
             'id' => $membership->id,
@@ -191,7 +192,7 @@ class MembershipController extends Controller
             'start_date' => $membership->start_date?->toDateString(),
             'end_date' => $membership->end_date?->toDateString(),
             'days_left' => (int) Carbon::today()->diffInDays($membership->end_date, false),
-            'status' => $cancelled ? 'cancelled' : ($expired ? 'expired' : 'active'),
+            'status' => $cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active')),
             'duration_days' => $membership->package?->duration_days,
         ];
     }
