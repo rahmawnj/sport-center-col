@@ -84,7 +84,7 @@ class PublicHomeController extends Controller
             ->where('is_active', true)
             ->with([
                 'trainers:id,name,specialty',
-                'facilities:id,name',
+                'facility:id,name',
             ])
             ->orderBy('price')
             ->limit(6)
