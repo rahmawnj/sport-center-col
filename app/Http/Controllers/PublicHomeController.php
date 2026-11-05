@@ -105,7 +105,8 @@ class PublicHomeController extends Controller
             ->whereNotNull('duration_days')
             ->whereHas('facility', fn ($query) => $query
                 ->where('status', 'active')
-                ->where('is_bookable_online', true))
+                ->where('is_bookable_online', true)
+                ->where('has_membership', true))
             ->with([
                 'facility:id,name,slug',
                 'pricingRules' => fn ($query) => $query
@@ -140,7 +141,7 @@ class PublicHomeController extends Controller
                 'membershipPackages' => Package::query()
                     ->where('type', 'membership')
                     ->whereNotNull('duration_days')
-                    ->whereHas('facility', fn ($query) => $query->where('status', 'active')->where('is_bookable_online', true))
+                    ->whereHas('facility', fn ($query) => $query->where('status', 'active')->where('is_bookable_online', true)->where('has_membership', true))
                     ->count(),
             ],
         ]);
