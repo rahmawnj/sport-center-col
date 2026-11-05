@@ -61,6 +61,7 @@ type Paginated<T> = {
 };
 const props = defineProps<{
     packages: Paginated<TrainerPackage>;
+    packageOptions: { id: number; name: string; total_sessions: number; price: number }[];
     members: Option[];
     trainers: Option[];
     memberPackages: Paginated<MemberPackage>;
@@ -214,7 +215,7 @@ function useSession(item: MemberPackage) {
             <Button variant="outline" @click="openCreatePackage">
                 <Plus class="mr-2 size-4" /> Tambah paket
             </Button>
-            <Button @click="openPurchase" :disabled="!members.length || !trainers.length || !packages.data.some(p => p.is_active)">
+            <Button @click="openPurchase" :disabled="!members.length || !trainers.length || !packageOptions.length">
                 <ShoppingCart class="mr-2 size-4" /> Catat pembelian
             </Button>
         </div>
@@ -386,7 +387,7 @@ function useSession(item: MemberPackage) {
             <form class="space-y-4 p-5" @submit.prevent="purchase">
                 <div class="grid gap-2"><Label>Member</Label><select v-model="purchaseForm.user_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih member</option><option v-for="member in members" :key="member.id" :value="String(member.id)">{{ member.name }}</option></select><p v-if="purchaseForm.errors.user_id" class="text-xs text-destructive">{{ purchaseForm.errors.user_id }}</p></div>
                 <div class="grid gap-2"><Label>Trainer</Label><select v-model="purchaseForm.trainer_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih trainer</option><option v-for="trainer in trainers" :key="trainer.id" :value="String(trainer.id)">{{ trainer.name }}{{ trainer.specialty ? ' · ' + trainer.specialty : '' }}</option></select><p v-if="purchaseForm.errors.trainer_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_id }}</p></div>
-                <div class="grid gap-2"><Label>Paket</Label><select v-model="purchaseForm.trainer_package_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih paket</option><option v-for="item in packages.data.filter(p => p.is_active)" :key="item.id" :value="String(item.id)">{{ item.name }} · {{ item.total_sessions }} sesi · {{ rupiah(item.price) }}</option></select><p v-if="purchaseForm.errors.trainer_package_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_package_id }}</p></div>
+                <div class="grid gap-2"><Label>Paket</Label><select v-model="purchaseForm.trainer_package_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih paket</option><option v-for="item in packageOptions" :key="item.id" :value="String(item.id)">{{ item.name }} · {{ item.total_sessions }} sesi · {{ rupiah(item.price) }}</option></select><p v-if="purchaseForm.errors.trainer_package_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_package_id }}</p></div>
                 <div class="grid gap-2"><Label>Tanggal mulai</Label><Input v-model="purchaseForm.start_date" type="date" required /><p v-if="purchaseForm.errors.start_date" class="text-xs text-destructive">{{ purchaseForm.errors.start_date }}</p></div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="grid gap-2"><Label>Metode bayar</Label><select v-model="purchaseForm.payment_method" class="h-10 rounded-md border bg-background px-3 text-sm"><option value="cash">Tunai</option><option value="bank_transfer">Transfer bank</option><option value="qris">QRIS</option></select></div>
