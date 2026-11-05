@@ -37,10 +37,11 @@ class TrainerPackageController extends Controller
             ]);
 
         $members = User::query()->whereHas('memberProfile')->orderBy('name')->get(['id', 'name']);
-        $trainers = Trainer::query()->orderBy('name')->get(['id', 'name', 'specialty']);
+        $trainers = Trainer::query()->with('facilities:id,name')->orderBy('name')->get(['id', 'name', 'specialty'])->map(fn (Trainer $trainer) => ['id' => $trainer->id, 'name' => $trainer->name, 'specialty' => $trainer->specialty, 'facility_ids' => $trainer->facilities->pluck('id')->map(fn ($id) => (int) $id)->all()]);
+        $facilities = \\App\\Models\\Facility::query()->where('status', 'active')->orderBy('name')->get(['id', 'name']);
 
         $memberPackages = MemberTrainerPackage::query()
-            ->with(['user:id,name', 'trainer:id,name', 'trainerPackage:id,name'])
+            ->with(['user:id,name', 'trainer:id,name', 'trainerPackage:id,name', 'facility:id,name'])
             ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
                 $q->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%"))
                     ->orWhereHas('trainerPackage', fn ($package) => $package->where('name', 'like', "%{$search}%"))
@@ -60,6 +61,7 @@ class TrainerPackageController extends Controller
                 'id' => $item->id,
                 'member_name' => $item->user?->name,
                 'trainer_name' => $item->trainer?->name,
+                'facility_name' => $item->facility?->name,
                 'package_name' => $item->trainerPackage?->name,
                 'start_date' => $item->start_date?->toDateString(),
                 'expires_at' => $item->expires_at?->toDateString(),
@@ -76,6 +78,7 @@ class TrainerPackageController extends Controller
             'packageOptions' => TrainerPackage::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'total_sessions', 'price']),
             'members' => $members,
             'trainers' => $trainers,
+            'facilities' => $facilities,
             'memberPackages' => $memberPackages,
             'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
@@ -158,6 +161,7 @@ class TrainerPackageController extends Controller
     {
         $data = $request->validate([
             'user_id' => ['required', 'integer', Rule::exists('member_profiles', 'user_id')],
+            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'trainer_id' => ['required', 'integer', 'exists:trainers,id'],
             'trainer_package_id' => ['required', 'integer', 'exists:trainer_packages,id'],
             'start_date' => ['required', 'date', 'after_or_equal:today'],
@@ -165,6 +169,7 @@ class TrainerPackageController extends Controller
             'payment_status' => ['required', Rule::in(['paid', 'pending'])],
         ]);
 
+        $trainer = Trainer::query()->whereHas('facilities', fn ($query) => $query->where('facilities.id', $data['facility_id']))->findOrFail($data['trainer_id']);
         $package = TrainerPackage::query()->where('is_active', true)->findOrFail($data['trainer_package_id']);
         $start = Carbon::parse($data['start_date']);
         $expires = $start->copy()->addDays($package->duration_days - 1);
@@ -175,6 +180,7 @@ class TrainerPackageController extends Controller
                 'user_id' => $data['user_id'],
                 'trainer_package_id' => $package->id,
                 'trainer_id' => $data['trainer_id'],
+                'facility_id' => $data['facility_id'],
                 'start_date' => $start->toDateString(),
                 'expires_at' => $expires->toDateString(),
                 'total_sessions' => $package->total_sessions,
