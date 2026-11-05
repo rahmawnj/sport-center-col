@@ -6,7 +6,8 @@ import {
     FileChartColumn,
     LayoutGrid,
     MapPin,
-    Package as PackageIcon,\n    Dumbbell,
+    Package as PackageIcon,
+    Dumbbell,
     Receipt,
     Users,
 } from '@lucide/vue';
@@ -29,7 +30,8 @@ const items: (NavItem | NavGroup)[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Olahraga', href: '/facilities', icon: Building2 },
     { title: 'Member', href: '/members', icon: Users },
-    { title: 'Membership', href: '/memberships', icon: BadgeCheck },\n    { title: 'Paket Trainer', href: '/trainer-packages', icon: Dumbbell },
+    { title: 'Membership', href: '/memberships', icon: BadgeCheck },
+    { title: 'Paket Trainer', href: '/trainer-packages', icon: Dumbbell },
     { title: 'Transaksi', href: '/transactions', icon: Receipt },
     {
         title: 'Laporan',
