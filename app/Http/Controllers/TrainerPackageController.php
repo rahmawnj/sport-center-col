@@ -93,7 +93,7 @@ class TrainerPackageController extends Controller
             'stats' => [
                 'packages' => TrainerPackage::count(),
                 'active' => MemberTrainerPackage::where('status', 'active')->whereDate('start_date', '<=', today())->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions')->count(),
-                'expiring' => MemberTrainerPackage::where('status', 'active')->whereBetween('expires_at', [today(), today()->addDays(7)])->count(),
+                'expiring' => MemberTrainerPackage::where('status', 'active')->whereDate('start_date', '<=', today())->whereBetween('expires_at', [today(), today()->addDays(7)])->count(),
                 'expired' => MemberTrainerPackage::where(function ($query) {
                     $query->where('status', 'expired')->orWhere(fn ($q) => $q->where('status', 'active')->whereDate('expires_at', '<', today()));
                 })->count(),
