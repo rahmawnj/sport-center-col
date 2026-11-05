@@ -85,6 +85,7 @@ class TrainerController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'specialty' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'facility_ids' => ['required', 'array', 'min:1'],
             'facility_ids.*' => ['integer', 'distinct', 'exists:facilities,id'],
         ]);
