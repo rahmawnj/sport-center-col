@@ -3,7 +3,6 @@ import { Form, Head, Link, router } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     Building2,
-    Dumbbell,
     Clock,
     Cpu,
     EllipsisVertical,
