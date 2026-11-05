@@ -41,6 +41,7 @@ type MemberPackage = {
     id: number;
     member_name: string | null;
     trainer_name: string | null;
+    facility_name: string | null;
     package_name: string | null;
     start_date: string;
     expires_at: string;
@@ -49,7 +50,7 @@ type MemberPackage = {
     remaining_sessions: number;
     status: 'active' | 'pending' | 'completed' | 'expired' | 'cancelled';
 };
-type Option = { id: number; name: string; specialty?: string | null };
+type Option = { id: number; name: string; specialty?: string | null; facility_ids?: number[] };
 type LinkItem = { url: string | null; label: string; active: boolean };
 type Paginated<T> = {
     data: T[];
@@ -63,6 +64,7 @@ const props = defineProps<{
     packageOptions: { id: number; name: string; total_sessions: number; price: number }[];
     members: Option[];
     trainers: Option[];
+    facilities: { id: number; name: string }[];
     memberPackages: Paginated<MemberPackage>;
     filters: { search: string; status: string };
     stats: { packages: number; active: number; expiring: number; expired: number };
@@ -142,16 +144,21 @@ function removePackage(item: TrainerPackage) {
 const showPurchaseForm = ref(false);
 const purchaseForm = useForm({
     user_id: '',
+    facility_id: '',
     trainer_id: '',
     trainer_package_id: '',
     start_date: new Date().toLocaleDateString('en-CA'),
     payment_method: 'cash',
     payment_status: 'paid',
 });
+const availableTrainers = computed(() => props.trainers.filter((trainer) => trainer.facility_ids?.includes(Number(purchaseForm.facility_id))));
+
 function openPurchase() {
     purchaseForm.reset();
     purchaseForm.clearErrors();
     purchaseForm.start_date = new Date().toLocaleDateString('en-CA');
+    purchaseForm.facility_id = '';
+    purchaseForm.trainer_id = '';
     showPurchaseForm.value = true;
 }
 function closePurchase() {
@@ -251,7 +258,7 @@ function useSession(item: MemberPackage) {
                                 <td class="px-4 py-3 font-medium">{{ item.member_name || '—' }}</td>
                                 <td class="px-4 py-3">
                                     <div>{{ item.package_name || '—' }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ item.trainer_name || 'Belum ditentukan' }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ item.facility_name || 'Olahraga belum dicatat' }} · {{ item.trainer_name || 'Belum ditentukan' }}</div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="font-semibold tabular-nums">{{ item.remaining_sessions }} / {{ item.total_sessions }}</div>
@@ -382,7 +389,8 @@ function useSession(item: MemberPackage) {
             </div>
             <form class="space-y-4 p-5" @submit.prevent="purchase">
                 <div class="grid gap-2"><Label>Member</Label><select v-model="purchaseForm.user_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih member</option><option v-for="member in members" :key="member.id" :value="String(member.id)">{{ member.name }}</option></select><p v-if="purchaseForm.errors.user_id" class="text-xs text-destructive">{{ purchaseForm.errors.user_id }}</p></div>
-                <div class="grid gap-2"><Label>Trainer</Label><select v-model="purchaseForm.trainer_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih trainer</option><option v-for="trainer in trainers" :key="trainer.id" :value="String(trainer.id)">{{ trainer.name }}{{ trainer.specialty ? ' · ' + trainer.specialty : '' }}</option></select><p v-if="purchaseForm.errors.trainer_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_id }}</p></div>
+                <div class="grid gap-2"><Label>Olahraga</Label><select v-model="purchaseForm.facility_id" required class="h-10 rounded-md border bg-background px-3 text-sm" @change="purchaseForm.trainer_id = ''"><option value="">Pilih olahraga</option><option v-for="facility in facilities" :key="facility.id" :value="String(facility.id)">{{ facility.name }}</option></select><p v-if="purchaseForm.errors.facility_id" class="text-xs text-destructive">{{ purchaseForm.errors.facility_id }}</p></div>
+                <div class="grid gap-2"><Label>Trainer</Label><select v-model="purchaseForm.trainer_id" :disabled="!purchaseForm.facility_id || !availableTrainers.length" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih trainer</option><option v-for="trainer in availableTrainers" :key="trainer.id" :value="String(trainer.id)">{{ trainer.name }}{{ trainer.specialty ? ' · ' + trainer.specialty : '' }}</option></select><p v-if="purchaseForm.errors.trainer_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_id }}</p></div>
                 <div class="grid gap-2"><Label>Paket</Label><select v-model="purchaseForm.trainer_package_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih paket</option><option v-for="item in packageOptions" :key="item.id" :value="String(item.id)">{{ item.name }} · {{ item.total_sessions }} sesi · {{ rupiah(item.price) }}</option></select><p v-if="purchaseForm.errors.trainer_package_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_package_id }}</p></div>
                 <div class="grid gap-2"><Label>Tanggal mulai</Label><Input v-model="purchaseForm.start_date" type="date" required /><p v-if="purchaseForm.errors.start_date" class="text-xs text-destructive">{{ purchaseForm.errors.start_date }}</p></div>
                 <div class="grid gap-4 sm:grid-cols-2">
