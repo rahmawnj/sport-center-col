@@ -20,7 +20,6 @@ const props = defineProps<{
 
 const showForm = ref(false);
 const editing = ref<MembershipPackage | null>(null);
-const ruleKey = ref(0);
 const form = useForm({
     name: '',
     facility_id: '',
@@ -58,7 +57,6 @@ function editPackage(item: MembershipPackage) {
         priority: rule.priority ?? 0,
     }));
     if (!form.pricing_rules.length) form.pricing_rules = [{ day_type: 'all', date_start: '', date_end: '', start_time: '', end_time: '', price: '', priority: 0 }];
-    ruleKey.value++;
     showForm.value = true;
 }
 function addRule() {
