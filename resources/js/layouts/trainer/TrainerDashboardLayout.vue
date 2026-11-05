@@ -56,8 +56,6 @@ const navigation = [
                 </div>
             </div>
 
-            </div>
-
             <nav class="flex-none space-y-1 px-4 py-5">
                 <p class="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Menu Trainer</p>
                 <Link
