@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TrainerPackage extends Model
 {
@@ -24,6 +25,11 @@ class TrainerPackage extends Model
             'price' => 'decimal:2',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function trainers(): BelongsToMany
+    {
+        return $this->belongsToMany(Trainer::class)->withTimestamps();
     }
 
     public function memberPackages(): HasMany
