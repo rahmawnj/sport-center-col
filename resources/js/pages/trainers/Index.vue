@@ -282,7 +282,7 @@ function initials(value: string) {
                     </div>
                     <div class="grid gap-2">
                         <Label for="trainer-facilities">Olahraga yang diajarkan</Label>
-                        <select id="trainer-facilities" name="facility_ids[]" multiple required :default-value="editing?.facility_ids ?? []" class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm">
+                        <select id="trainer-facilities" name="facility_ids[]" multiple required :value="editing?.facility_ids ?? []" class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm">
                             <option v-for="facility in props.facilities" :key="facility.id" :value="facility.id">{{ facility.name }}</option>
                         </select>
                         <p class="text-xs text-muted-foreground">Pilih satu atau lebih olahraga yang dapat diajarkan trainer ini.</p>
