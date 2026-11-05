@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BookingLandingPageSeeder::class,
             MembershipPackageSeeder::class,
+            TrainerSeeder::class,
+            TrainerPackageSeeder::class,
         ]);
 
         // This project uses its own roles table (name only) and users.role_id.
