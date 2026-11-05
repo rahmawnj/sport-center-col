@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
+use App\Models\TrainerPackage;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,8 +20,9 @@ class TrainerDashboardController extends Controller
  }
  public function members(Request $request): Response {
   $trainer=$this->trainerFor($request);
+  $assignedPackages=TrainerPackage::with('facilities:id,name')->whereHas('trainers',fn($query)=>$query->where('trainers.id',$trainer->id))->orderBy('name')->get()->map(fn($package)=>['id'=>$package->id,'name'=>$package->name,'sports'=>$package->facilities->pluck('name')->all(),'total_sessions'=>$package->total_sessions,'duration_days'=>$package->duration_days,'price'=>(float)$package->price,'is_active'=>$package->is_active]);
   $members=MemberTrainerPackage::with(['user:id,name,email','trainerPackage:id,name','facility:id,name'])->where('trainer_id',$trainer->id)->latest()->paginate(10)->withQueryString()->through(fn($p)=>['id'=>$p->id,'member'=>$p->user?->name??'Member','email'=>$p->user?->email,'package'=>$p->trainerPackage?->name??'Paket Trainer','facility'=>$p->facility?->name,'start_date'=>$p->start_date?->toDateString(),'expires_at'=>$p->expires_at?->toDateString(),'used_sessions'=>$p->used_sessions,'total_sessions'=>$p->total_sessions,'remaining_sessions'=>max(0,$p->total_sessions-$p->used_sessions),'status'=>$p->status]);
-  return Inertia::render('trainer/Members',['members'=>$members]);
+  return Inertia::render('trainer/Members',['members'=>$members,'assignedPackages'=>$assignedPackages]);
  }
  public function profile(Request $request): Response {
   $trainer=$this->trainerFor($request)->load(['user:id,name,email','facilities:id,name']);
