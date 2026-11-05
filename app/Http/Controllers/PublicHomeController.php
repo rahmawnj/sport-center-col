@@ -29,7 +29,7 @@ class PublicHomeController extends Controller
                 'duration_days' => $package->duration_days,
                 'price' => (float) $package->price,
                 'description' => $package->description,
-                'sports' => $package->facilities->pluck('name')->values(),
+                'sports' => ($package->facility ? collect([$package->facility->name]) : collect()),
             ])->values();
 
         return Inertia::render('PublicTrainerShow', [
@@ -97,7 +97,7 @@ class PublicHomeController extends Controller
                 'price' => (float) $package->price,
                 'description' => $package->description,
                 'trainers' => $package->trainers->pluck('name')->values(),
-                'sports' => $package->facilities->pluck('name')->values(),
+                'sports' => ($package->facility ? collect([$package->facility->name]) : collect()),
             ])->values();
 
         $membershipPackages = Package::query()
