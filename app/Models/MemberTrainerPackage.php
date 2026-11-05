@@ -54,9 +54,23 @@ class MemberTrainerPackage extends Model
         return max(0, $this->total_sessions - $this->used_sessions);
     }
 
+    public function isActive(): bool
+    {
+        return $this->status === 'active'
+            && $this->start_date !== null
+            && $this->start_date->lte(today())
+            && $this->expires_at !== null
+            && $this->expires_at->gte(today())
+            && $this->used_sessions < $this->total_sessions;
+    }
+
     public function refreshStatus(): void
     {
         if (in_array($this->status, ['cancelled', 'pending'], true)) {
+            return;
+        }
+
+        if ($this->start_date->gt(today())) {
             return;
         }
 
