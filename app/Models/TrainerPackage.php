@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class TrainerPackage extends Model
 {
     protected $fillable = [
+        'facility_id',
         'name',
         'total_sessions',
         'duration_days',
