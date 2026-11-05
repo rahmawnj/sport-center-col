@@ -97,10 +97,33 @@ class TrainerPackageController extends Controller
         return back()->with('success', 'Paket trainer berhasil dihapus.');
     }
 
+    public function useSession(MemberTrainerPackage $memberTrainerPackage): RedirectResponse
+    {
+        DB::transaction(function () use ($memberTrainerPackage) {
+            $item = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($memberTrainerPackage->id);
+
+            if ($item->status !== 'active' || $item->expires_at->lt(today())) {
+                abort(422, 'Paket tidak aktif atau sudah expired.');
+            }
+
+            if ($item->used_sessions >= $item->total_sessions) {
+                abort(422, 'Semua sesi paket sudah digunakan.');
+            }
+
+            $item->used_sessions++;
+            if ($item->used_sessions >= $item->total_sessions) {
+                $item->status = 'completed';
+            }
+            $item->save();
+        });
+
+        return back()->with('success', 'Satu sesi personal trainer berhasil digunakan.');
+    }
+
     public function purchase(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'user_id' => ['required', 'integer', Rule::exists('member_profiles', 'user_id')],
             'trainer_id' => ['required', 'integer', 'exists:trainers,id'],
             'trainer_package_id' => ['required', 'integer', 'exists:trainer_packages,id'],
             'start_date' => ['required', 'date', 'after_or_equal:today'],
@@ -127,6 +150,7 @@ class TrainerPackageController extends Controller
 
             Transaction::create([
                 'user_id' => $data['user_id'],
+                'customer_type' => 'member',
                 'transactionable_type' => MemberTrainerPackage::class,
                 'transactionable_id' => $memberPackage->id,
                 'customer_name' => User::find($data['user_id'])?->name,
