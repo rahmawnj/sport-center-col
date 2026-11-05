@@ -42,6 +42,11 @@ class DatabaseSeeder extends Seeder
 
         $admin->save();
 
+        // Role for trainer login accounts.
+        Role::firstOrCreate([
+            'name' => 'Trainer',
+        ]);
+
         // Demo member accounts for testing member pages and Register Face.
         $memberRole = Role::firstOrCreate([
             'name' => 'Member',
