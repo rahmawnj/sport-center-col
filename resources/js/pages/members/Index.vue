@@ -440,15 +440,16 @@ function initials(value: string) {
                             {{ errors.phone }}
                         </p>
                     </div>
-                    <div v-if="!editing" class="grid gap-2 sm:col-span-2">
+                    <div class="grid gap-2 sm:col-span-2">
                         <Label for="member-password">Password</Label>
                         <Input
                             id="member-password"
                             name="password"
                             type="password"
-                            required
-                            placeholder="Minimal 8 karakter"
+                            :required="!editing"
+                            :placeholder="editing ? 'Kosongkan jika tidak ingin mengubah password' : 'Minimal 8 karakter'"
                         />
+                        <p v-if="editing" class="text-xs text-muted-foreground">Isi hanya jika ingin mengganti password member.</p>
                         <p
                             v-if="errors.password"
                             class="text-xs text-destructive"
