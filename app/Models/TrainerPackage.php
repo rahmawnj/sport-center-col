@@ -32,6 +32,11 @@ class TrainerPackage extends Model
         return $this->belongsToMany(Trainer::class)->withTimestamps();
     }
 
+    public function facilities(): BelongsToMany
+    {
+        return $this->belongsToMany(Facility::class, 'trainer_package_facility')->withTimestamps();
+    }
+
     public function memberPackages(): HasMany
     {
         return $this->hasMany(MemberTrainerPackage::class);
