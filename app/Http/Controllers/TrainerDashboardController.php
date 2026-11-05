@@ -70,14 +70,14 @@ class TrainerDashboardController extends Controller
     {
         $trainer = $this->trainerFor($request);
 
-        $assignedPackages = TrainerPackage::with('facilities:id,name')
+        $assignedPackages = TrainerPackage::with('facility:id,name')
             ->whereHas('trainers', fn ($query) => $query->where('trainers.id', $trainer->id))
             ->orderBy('name')
             ->get()
             ->map(fn ($package) => [
                 'id' => $package->id,
                 'name' => $package->name,
-                'sports' => $package->facilities->pluck('name')->all(),
+                'sports' => $package->facility ? [$package->facility->name] : [],
                 'total_sessions' => $package->total_sessions,
                 'duration_days' => $package->duration_days,
                 'price' => (float) $package->price,
