@@ -7,7 +7,6 @@ import {
     LayoutGrid,
     MapPin,
     Package as PackageIcon,
-    Dumbbell,
     Receipt,
     Users,
 } from '@lucide/vue';
@@ -31,7 +30,6 @@ const items: (NavItem | NavGroup)[] = [
     { title: 'Olahraga', href: '/facilities', icon: Building2 },
     { title: 'Member', href: '/members', icon: Users },
     { title: 'Membership', href: '/memberships', icon: BadgeCheck },
-    { title: 'Paket Trainer', href: '/trainer-packages', icon: Dumbbell },
     { title: 'Transaksi', href: '/transactions', icon: Receipt },
     {
         title: 'Laporan',
