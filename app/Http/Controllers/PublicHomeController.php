@@ -15,7 +15,7 @@ class PublicHomeController extends Controller
     {
         $trainer->load(['facilities:id,name']);
 
-        $packages = \\App\\Models\\TrainerPackage::query()
+        $packages = \App\Models\TrainerPackage::query()
             ->where('is_active', true)
             ->whereHas('trainers', fn ($query) => $query->where('trainers.id', $trainer->id))
             ->with('facilities:id,name')
