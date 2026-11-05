@@ -99,6 +99,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'update'])->name('trainer-packages.update');
         Route::delete('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'destroy'])->name('trainer-packages.destroy');
         Route::post('trainer-packages/purchase', [TrainerPackageController::class, 'purchase'])->name('trainer-packages.purchase');
+        Route::post('trainer-packages/{memberTrainerPackage}/use-session', [TrainerPackageController::class, 'useSession'])->name('trainer-packages.use-session');
 
         Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
         Route::get('transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
