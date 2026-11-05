@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TrainerPackage extends Model
 {
     protected $fillable = [
         'name',
+        'facility_id',
         'total_sessions',
         'duration_days',
         'price',
@@ -37,9 +39,9 @@ class TrainerPackage extends Model
         )->withTimestamps();
     }
 
-    public function facilities(): BelongsToMany
+    public function facility(): BelongsTo
     {
-        return $this->belongsToMany(Facility::class, 'trainer_package_facility')->withTimestamps();
+        return $this->belongsTo(Facility::class);
     }
 
     public function memberPackages(): HasMany
