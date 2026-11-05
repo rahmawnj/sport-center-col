@@ -24,10 +24,10 @@ class TrainerPackageController extends Controller
         $status = $request->input('status', 'all');
 
         $packages = TrainerPackage::query()
+            ->with('trainers:id,name')
             ->latest()
             ->paginate(10, ['*'], 'packages_page')
             ->withQueryString()
-            ->with('trainers:id,name')
             ->through(fn (TrainerPackage $package) => [
                 'id' => $package->id,
                 'trainers' => $package->trainers->map(fn (Trainer $trainer) => ['id' => $trainer->id, 'name' => $trainer->name])->values(),
@@ -79,7 +79,7 @@ class TrainerPackageController extends Controller
 
         return Inertia::render('trainer-packages/Index', [
             'packages' => $packages,
-            'packageOptions' => TrainerPackage::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'total_sessions', 'price']),
+            'packageOptions' => TrainerPackage::query()->where('is_active', true)->with('trainers:id')->orderBy('name')->get(['id', 'name', 'total_sessions', 'price'])->map(fn (TrainerPackage $package) => ['id' => $package->id, 'name' => $package->name, 'total_sessions' => $package->total_sessions, 'price' => (float) $package->price, 'trainer_ids' => $package->trainers->pluck('id')->map(fn ($id) => (int) $id)->all()]),
             'members' => $members,
             'trainers' => $trainers,
             'facilities' => $facilities,
