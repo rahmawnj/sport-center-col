@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Device;
 use App\Models\Facility;
+use App\Models\MemberTrainerPackage;
 use App\Models\Package;
 use App\Models\Transaction;
 use App\Models\User;
@@ -154,6 +155,16 @@ class TransactionController extends Controller
             default => $data['payment_status'],
         };
         $transaction->save();
+
+        if ($transaction->transactionable instanceof MemberTrainerPackage) {
+            $memberPackage = $transaction->transactionable;
+            $memberPackage->status = match ($transaction->payment_status) {
+                'fully_paid' => 'active',
+                'failed', 'refunded' => 'cancelled',
+                default => 'pending',
+            };
+            $memberPackage->save();
+        }
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil diperbarui.');
     }
