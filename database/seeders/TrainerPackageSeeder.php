@@ -55,6 +55,7 @@ class TrainerPackageSeeder extends Seeder
                 $package = TrainerPackage::updateOrCreate(
                     ['name' => $name],
                     [
+                        'facility_id' => $facility->id,
                         'total_sessions' => $definition['sessions'],
                         'duration_days' => $definition['days'],
                         'price' => $definition['price'],
@@ -65,7 +66,6 @@ class TrainerPackageSeeder extends Seeder
 
                 // Setiap paket wajib memiliki tepat satu olahraga. Beberapa trainer
                 // boleh ditugaskan, tetapi semuanya harus menguasai olahraga tersebut.
-                $package->facilities()->sync([$facility->id]);
                 $package->trainers()->sync(
                     $eligibleTrainers->take(2)->pluck('id')->all()
                 );
