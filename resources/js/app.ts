@@ -16,7 +16,7 @@ createInertiaApp({
                 return null;
             case name.startsWith('membership/'):
                 return null;
-            case name.startsWith('trainer-packages/'):
+            case name === 'trainer-packages/Show':
                 return null;
             case name.startsWith('book/'):
                 return null;
