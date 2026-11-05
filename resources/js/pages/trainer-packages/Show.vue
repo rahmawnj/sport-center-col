@@ -73,8 +73,8 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                     </div>
                     <div class="rounded-2xl border border-slate-200 bg-white p-6">
                         <h2 class="text-xl font-black">Olahraga / fasilitas</h2>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <span v-for="facility in package.facilities" :key="facility.id" class="rounded-full bg-[#f0f7d9] px-4 py-2 text-sm font-bold text-[#617d00]">{{ facility.name }}</span>
+                        <div class="mt-4">
+                            <span class="inline-flex rounded-full bg-[#f0f7d9] px-4 py-2 text-sm font-bold text-[#617d00]">{{ package.facility.name }}</span>
                         </div>
                     </div>
                 </div>
