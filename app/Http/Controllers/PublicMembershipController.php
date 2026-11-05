@@ -41,7 +41,7 @@ class PublicMembershipController extends Controller
     {
         return Package::query()
             ->with([
-                'facility:id,name,slug,status,is_bookable_online',
+                'facility:id,name,slug,status,is_bookable_online,has_membership',
                 'pricingRules' => fn ($query) => $query
                     ->where(fn ($rules) => $rules->whereNull('date_start')->orWhereDate('date_start', '<=', today()))
                     ->where(fn ($rules) => $rules->whereNull('date_end')->orWhereDate('date_end', '>=', today()))
@@ -51,7 +51,8 @@ class PublicMembershipController extends Controller
             ->whereNotNull('duration_days')
             ->whereHas('facility', fn ($query) => $query
                 ->where('status', 'active')
-                ->where('is_bookable_online', true));
+                ->where('is_bookable_online', true)
+                ->where('has_membership', true));
     }
 
     private function packageData(Package $package): array
