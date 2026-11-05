@@ -204,7 +204,7 @@ class TrainerPackageController extends Controller
             'payment_status' => ['required', Rule::in(['paid', 'pending'])],
         ]);
 
-        $package = TrainerPackage::query()->where('is_active', true)->with('trainers')->findOrFail($data['trainer_package_id']);
+        $package = TrainerPackage::query()->where('is_active', true)->whereHas('facility', fn ($query) => $query->where('has_membership', true))->with('trainers')->findOrFail($data['trainer_package_id']);
         abort_unless((int) $package->facility_id === (int) $data['facility_id'], 422, 'Olahraga tidak sesuai dengan paket yang dipilih.');
         abort_unless($package->trainers->contains('id', (int) $data['trainer_id']), 422, 'Trainer tidak ditugaskan pada paket ini.');
         Trainer::query()->whereHas('facilities', fn ($query) => $query->where('facilities.id', $data['facility_id']))->findOrFail($data['trainer_id']);
