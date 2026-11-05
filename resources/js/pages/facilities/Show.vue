@@ -78,15 +78,6 @@ type Package = {
     duration_days: number | null;
     pricing_rules: PricingRule[];
 };
-type TrainerPackage = {
-    id: number;
-    name: string;
-    total_sessions: number;
-    duration_days: number;
-    price: number;
-    description: string | null;
-    is_active: boolean;
-};
 type Props = {
     facility: {
         id: number;
@@ -98,7 +89,6 @@ type Props = {
         created_at: string | null;
         courts: Court[];
         packages: Package[];
-        trainer_packages: TrainerPackage[];
         devices: Device[];
     };
 };
@@ -168,54 +158,6 @@ function emptyRule(): PricingRuleInput {
         price: '',
         priority: '0',
     };
-}
-
-const showTrainerForm = ref(false);
-const editingTrainerPackage = ref<TrainerPackage | null>(null);
-const trainerFormKey = ref(0);
-const trainerForm = ref({
-    name: '',
-    total_sessions: '4',
-    duration_days: '30',
-    price: '',
-    description: '',
-    is_active: true,
-});
-const trainerFormTitle = computed(() =>
-    editingTrainerPackage.value ? 'Edit paket personal trainer' : 'Tambah paket personal trainer',
-);
-const trainerFormAction = computed(() =>
-    editingTrainerPackage.value
-        ? `/facilities/${props.facility.id}/trainer-packages/${editingTrainerPackage.value.id}`
-        : `/facilities/${props.facility.id}/trainer-packages`,
-);
-const trainerFormMethod = computed(() => editingTrainerPackage.value ? 'put' : 'post');
-function openTrainerCreate() {
-    editingTrainerPackage.value = null;
-    trainerForm.value = { name: '', total_sessions: '4', duration_days: '30', price: '', description: '', is_active: true };
-    trainerFormKey.value++;
-    showTrainerForm.value = true;
-}
-function openTrainerEdit(pkg: TrainerPackage) {
-    editingTrainerPackage.value = pkg;
-    trainerForm.value = {
-        name: pkg.name,
-        total_sessions: String(pkg.total_sessions),
-        duration_days: String(pkg.duration_days),
-        price: String(pkg.price),
-        description: pkg.description ?? '',
-        is_active: pkg.is_active,
-    };
-    trainerFormKey.value++;
-    showTrainerForm.value = true;
-}
-function closeTrainerForm() {
-    showTrainerForm.value = false;
-    editingTrainerPackage.value = null;
-}
-function removeTrainerPackage(pkg: TrainerPackage) {
-    if (!window.confirm(`Hapus paket personal trainer ${pkg.name}?`)) return;
-    router.delete(`/facilities/${props.facility.id}/trainer-packages/${pkg.id}`, { preserveScroll: true });
 }
 
 const showForm = ref(false);
@@ -751,67 +693,6 @@ function promoRange(rule: PricingRule) {
                 Belum ada paket pada olahraga ini.
             </div>
         </section>
-
-        <section class="space-y-3">
-            <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                    <Dumbbell class="size-4 text-primary" />
-                    <h2 class="font-semibold">Paket Personal Trainer</h2>
-                    <span class="text-sm text-muted-foreground">({{ props.facility.trainer_packages.length }})</span>
-                </div>
-                <Button size="sm" @click="openTrainerCreate">
-                    <Plus class="mr-2 size-4" /> Tambah paket PT
-                </Button>
-            </div>
-            <div v-if="props.facility.trainer_packages.length" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <div v-for="pkg in props.facility.trainer_packages" :key="pkg.id" class="rounded-2xl border bg-card p-4 shadow-sm">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="min-w-0">
-                            <h3 class="font-semibold">{{ pkg.name }}</h3>
-                            <p class="mt-1 text-xs text-muted-foreground">{{ pkg.total_sessions }} sesi · berlaku {{ pkg.duration_days }} hari</p>
-                        </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger :as-child="true">
-                                <Button variant="ghost" size="icon"><EllipsisVertical class="size-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" class="w-36">
-                                <DropdownMenuItem @click="openTrainerEdit(pkg)"><Pencil class="size-4" /> Edit</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive" @click="removeTrainerPackage(pkg)"><Trash2 class="size-4" /> Hapus</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                    <div class="mt-4 flex items-center justify-between gap-3">
-                        <span class="text-lg font-semibold">{{ formatIDR(pkg.price) }}</span>
-                        <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="pkg.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">{{ pkg.is_active ? 'Aktif' : 'Nonaktif' }}</span>
-                    </div>
-                    <p v-if="pkg.description" class="mt-2 text-sm text-muted-foreground">{{ pkg.description }}</p>
-                </div>
-            </div>
-            <div v-else class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm">
-                Belum ada paket personal trainer untuk olahraga ini.
-            </div>
-        </section>
-
-        <div v-if="showTrainerForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="closeTrainerForm">
-            <div class="w-full max-w-lg overflow-hidden rounded-2xl border bg-background shadow-2xl">
-                <div class="flex items-start justify-between border-b p-5">
-                    <div><p class="text-sm font-medium text-primary">Paket {{ props.facility.name }}</p><h2 class="mt-1 text-xl font-semibold">{{ trainerFormTitle }}</h2></div>
-                    <Button variant="ghost" size="icon" @click="closeTrainerForm"><X class="size-4" /></Button>
-                </div>
-                <Form :key="trainerFormKey" :action="trainerFormAction" :method="trainerFormMethod" class="space-y-4 p-5" @success="closeTrainerForm" v-slot="{ errors, processing }">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="grid gap-2 sm:col-span-2"><Label for="trainer-package-name">Nama paket</Label><Input id="trainer-package-name" name="name" :default-value="trainerForm.name" required placeholder="Contoh: PT 8 Sesi" /><p v-if="errors.name" class="text-xs text-destructive">{{ errors.name }}</p></div>
-                        <div class="grid gap-2"><Label for="trainer-package-sessions">Jumlah sesi</Label><Input id="trainer-package-sessions" name="total_sessions" type="number" min="1" :default-value="trainerForm.total_sessions" required /><p v-if="errors.total_sessions" class="text-xs text-destructive">{{ errors.total_sessions }}</p></div>
-                        <div class="grid gap-2"><Label for="trainer-package-duration">Masa berlaku (hari)</Label><Input id="trainer-package-duration" name="duration_days" type="number" min="1" :default-value="trainerForm.duration_days" required /><p v-if="errors.duration_days" class="text-xs text-destructive">{{ errors.duration_days }}</p></div>
-                        <div class="grid gap-2 sm:col-span-2"><Label for="trainer-package-price">Harga (Rp)</Label><Input id="trainer-package-price" name="price" type="number" min="0" step="1000" :default-value="trainerForm.price" required /><p v-if="errors.price" class="text-xs text-destructive">{{ errors.price }}</p></div>
-                        <div class="grid gap-2 sm:col-span-2"><Label for="trainer-package-description">Deskripsi</Label><textarea id="trainer-package-description" name="description" class="min-h-20 rounded-md border bg-background px-3 py-2 text-sm" :value="trainerForm.description" placeholder="Deskripsi paket (opsional)" /></div>
-                        <label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="hidden" name="is_active" value="0" /><input type="checkbox" name="is_active" value="1" :checked="trainerForm.is_active" class="size-4 rounded border" /> Paket aktif dan bisa dijual</label>
-                    </div>
-                    <div class="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="ghost" @click="closeTrainerForm">Batal</Button><Button type="submit" :disabled="processing">{{ processing ? 'Menyimpan...' : 'Simpan paket' }}</Button></div>
-                </Form>
-            </div>
-        </div>
 
         <section class="space-y-3">
             <div class="flex items-center justify-between gap-2">
