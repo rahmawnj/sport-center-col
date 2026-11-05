@@ -28,7 +28,11 @@ class MembershipController extends Controller
             ))
             ->when($status === 'active', fn ($query) => $query
                 ->where('status', '!=', 'cancelled')
+                ->whereDate('start_date', '<=', today())
                 ->whereDate('end_date', '>=', today()))
+            ->when($status === 'scheduled', fn ($query) => $query
+                ->where('status', '!=', 'cancelled')
+                ->whereDate('start_date', '>', today()))
             ->when($status === 'expired', fn ($query) => $query
                 ->where('status', '!=', 'cancelled')
                 ->whereDate('end_date', '<', today()))
@@ -43,8 +47,10 @@ class MembershipController extends Controller
             'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
                 'active' => UserMembership::where('status', '!=', 'cancelled')
+                    ->whereDate('start_date', '<=', today())
                     ->whereDate('end_date', '>=', today())->count(),
                 'expiring' => UserMembership::where('status', '!=', 'cancelled')
+                    ->whereDate('start_date', '<=', today())
                     ->whereDate('end_date', '>=', today())
                     ->whereDate('end_date', '<=', today()->addDays(7))->count(),
                 'expired' => UserMembership::where('status', '!=', 'cancelled')
@@ -58,12 +64,13 @@ class MembershipController extends Controller
         $membership->load(['user.memberProfile', 'package.pricingRules']);
 
         $cancelled = $membership->status === 'cancelled';
-        $expired = ! $cancelled && $membership->end_date->lt(Carbon::today());
+        $scheduled = ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
+        $expired = ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
 
         return Inertia::render('memberships/Show', [
             'membership' => [
                 'id' => $membership->id,
-                'status' => $cancelled ? 'cancelled' : ($expired ? 'expired' : 'active'),
+                'status' => $cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active')),
                 'start_date' => $membership->start_date?->toDateString(),
                 'end_date' => $membership->end_date?->toDateString(),
                 'days_left' => (int) Carbon::today()->diffInDays($membership->end_date, false),
@@ -91,9 +98,10 @@ class MembershipController extends Controller
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
         ]);
 
+        $newStart = Carbon::parse($data['start_date']);
         $status = $membership->status === 'cancelled'
             ? 'cancelled'
-            : (Carbon::parse($data['end_date'])->lt(Carbon::today()) ? 'expired' : 'active');
+            : ($newStart->gt(Carbon::today()) ? 'active' : (Carbon::parse($data['end_date'])->lt(Carbon::today()) ? 'expired' : 'active'));
 
         $membership->update([
             'start_date' => $data['start_date'],
@@ -110,33 +118,62 @@ class MembershipController extends Controller
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
         ]);
 
-        $membership->load('package');
+        DB::transaction(function () use ($membership, $data) {
+            $lockedMembership = UserMembership::query()->lockForUpdate()->findOrFail($membership->id);
+            $lockedMembership->load('package');
 
-        $duration = max(1, (int) ($membership->package->duration_days ?? 30));
-        $base = $membership->end_date && $membership->end_date->gt(Carbon::today())
-            ? $membership->end_date->copy()
-            : Carbon::today();
-        $newEnd = $base->copy()->addDays($duration);
-        $price = (float) ($membership->package->pricingRules()->min('price') ?? 0);
+            $duration = max(1, (int) ($lockedMembership->package->duration_days ?? 30));
+            $today = Carbon::today();
+            $oldEnd = $lockedMembership->end_date?->copy();
+            $isStillValid = $oldEnd && $oldEnd->gte($today);
+            $price = (float) ($lockedMembership->package?->pricingRules()->min('price') ?? 0);
 
-        DB::transaction(function () use ($membership, $data, $newEnd, $price) {
-            $membership->update([
-                'end_date' => $newEnd->toDateString(),
-                'status' => 'active',
-            ]);
+            if ($isStillValid) {
+                $newEnd = $oldEnd->copy()->addDays($duration);
+
+                // Move queued memberships for the same sport forward so they
+                // remain consecutive and never overlap this renewal.
+                $queuedMemberships = UserMembership::query()
+                    ->where('user_id', $lockedMembership->user_id)
+                    ->where('id', '!=', $lockedMembership->id)
+                    ->where('status', '!=', 'cancelled')
+                    ->whereHas('package', fn ($query) => $query->where('facility_id', $lockedMembership->package->facility_id))
+                    ->whereDate('start_date', '>', $oldEnd->toDateString())
+                    ->orderBy('start_date')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($queuedMemberships as $queued) {
+                    $queued->start_date = $queued->start_date->copy()->addDays($duration);
+                    $queued->end_date = $queued->end_date->copy()->addDays($duration);
+                    $queued->save();
+                }
+
+                $lockedMembership->end_date = $newEnd->toDateString();
+            } else {
+                $newStart = $today;
+                $newEnd = $newStart->copy()->addDays($duration - 1);
+                $lockedMembership->start_date = $newStart->toDateString();
+                $lockedMembership->end_date = $newEnd->toDateString();
+            }
+
+            $lockedMembership->status = 'active';
+            $lockedMembership->save();
 
             Transaction::create([
-                'user_id' => $membership->user_id,
+                'user_id' => $lockedMembership->user_id,
                 'transactionable_type' => UserMembership::class,
-                'transactionable_id' => $membership->id,
-                'device_id' => Device::forFacility($membership->package->facility_id)?->id,
+                'transactionable_id' => $lockedMembership->id,
+                'device_id' => Device::forFacility($lockedMembership->package->facility_id)?->id,
                 'amount' => $price,
                 'payment_method' => $data['payment_method'],
-                'payment_status' => 'paid',
+                'payment_status' => 'fully_paid',
             ]);
         });
 
-        return back()->with('success', 'Membership diperpanjang sampai '.$newEnd->translatedFormat('d M Y').'.');
+        $membership->refresh();
+
+        return back()->with('success', 'Membership berhasil diperpanjang. Masa aktif baru sampai '.$membership->end_date->translatedFormat('d M Y').'.');
     }
 
     /**
