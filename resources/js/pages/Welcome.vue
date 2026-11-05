@@ -297,14 +297,15 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         </div>
                     </div>
                     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        <article v-for="(trainer, index) in trainers" :key="trainer.id" class="trainer-card rounded-2xl bg-white p-5">
+                        <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" class="trainer-card group block rounded-2xl bg-white p-5 focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
                             <div class="trainer-avatar" :class="'trainer-avatar-' + (index % 4)">
-                                <i class="fa-solid fa-user-tie"></i>
+                                <i class="fa-solid fa-user-tie transition-transform duration-300 group-hover:scale-110"></i>
                             </div>
                             <p class="mt-5 text-xs font-extrabold uppercase tracking-[.15em] text-[#7a9d00]">Pelatih</p>
                             <h3 class="mt-2 text-lg font-extrabold">{{ trainer.name }}</h3>
                             <p class="mt-1 text-sm text-slate-500">{{ trainer.specialty || 'Pelatih olahraga' }}</p>
-                        </article>
+                            <span class="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#001428] transition group-hover:text-[#729700]">Lihat detail <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                        </Link>
                     </div>
                 </div>
             </section>
