@@ -20,7 +20,7 @@ class TrainerController extends Controller
         $search = trim((string) $request->input('search', ''));
 
         $items = Trainer::query()
-            ->with(['facilities:id,name', 'user:id,name,email'])
+            ->with(['facilities' => fn ($query) => $query->where('has_membership', true)->select('facilities.id', 'facilities.name'), 'user:id,name,email'])
             ->when($search !== '', fn ($query) => $query
                 ->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
                     ->orWhere('specialty', 'like', "%{$search}%")))
@@ -41,7 +41,7 @@ class TrainerController extends Controller
 
         return Inertia::render('trainers/Index', [
             'trainers' => $items,
-            'facilities' => Facility::query()->where('status', 'active')->orderBy('name')->get(['id', 'name']),
+            'facilities' => Facility::query()->where('status', 'active')->where('has_membership', true)->orderBy('name')->get(['id', 'name']),
             'filters' => ['search' => $search],
             'stats' => ['total' => Trainer::count()],
         ]);
@@ -63,7 +63,7 @@ class TrainerController extends Controller
             'specialty' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'facility_ids' => ['required', 'array', 'min:1'],
-            'facility_ids.*' => ['integer', 'distinct', 'exists:facilities,id'],
+            'facility_ids.*' => ['integer', 'distinct', Rule::exists('facilities', 'id')->where('has_membership', true)],
         ]);
 
         DB::transaction(function () use ($data) {
