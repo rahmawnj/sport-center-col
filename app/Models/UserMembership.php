@@ -36,7 +36,9 @@ class UserMembership extends Model
     public function isActive(): bool
     {
         return $this->status !== 'cancelled'
+            && $this->start_date !== null
+            && $this->start_date->toDateString() <= today()->toDateString()
             && $this->end_date !== null
-            && $this->end_date->toDateString() >= now()->toDateString();
+            && $this->end_date->toDateString() >= today()->toDateString();
     }
 }
