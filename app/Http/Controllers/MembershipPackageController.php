@@ -80,6 +80,11 @@ class MembershipPackageController extends Controller
         abort_unless($package->type === 'membership', 404);
 
         $data = $request->validate($this->membershipRules());
+
+        if ($package->userMemberships()->exists() && (int) $data['facility_id'] !== (int) $package->facility_id) {
+            return back()->with('error', 'Olahraga tidak dapat diubah karena paket ini sudah dimiliki member.');
+        }
+
         $pricingRules = $data['pricing_rules'];
         unset($data['pricing_rules']);
         $data['type'] = 'membership';
