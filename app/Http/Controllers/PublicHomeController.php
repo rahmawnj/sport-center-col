@@ -19,9 +19,9 @@ class PublicHomeController extends Controller
         $packages = \App\Models\TrainerPackage::query()
             ->where('is_active', true)
             ->whereHas('trainers', fn ($query) => $query->where('trainers.id', $trainer->id))
-            ->with('facilities:id,name')
+            ->with('facility:id,name')
             ->orderBy('price')
-            ->get(['id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
+            ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
             ->map(fn ($package) => [
                 'id' => $package->id,
                 'name' => $package->name,
@@ -88,7 +88,7 @@ class PublicHomeController extends Controller
             ])
             ->orderBy('price')
             ->limit(6)
-            ->get(['id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
+            ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
             ->map(fn (TrainerPackage $package) => [
                 'id' => $package->id,
                 'name' => $package->name,
