@@ -9,6 +9,7 @@ import {
     Package as PackageIcon,
     Receipt,
     Users,
+    Dumbbell,
 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -30,6 +31,8 @@ const items: (NavItem | NavGroup)[] = [
     { title: 'Olahraga', href: '/facilities', icon: Building2 },
     { title: 'Member', href: '/members', icon: Users },
     { title: 'Membership', href: '/memberships', icon: BadgeCheck },
+    { title: 'Trainer', href: '/trainers', icon: Dumbbell },
+    { title: 'Paket Trainer', href: '/trainer-packages', icon: PackageIcon },
     { title: 'Transaksi', href: '/transactions', icon: Receipt },
     {
         title: 'Laporan',
