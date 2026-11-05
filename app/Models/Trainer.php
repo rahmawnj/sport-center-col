@@ -12,7 +12,7 @@ class Trainer extends Model
 
     protected $fillable = ['name', 'specialty', 'phone'];
 
-    public function memberPackages(): HasMany
+    public function facilities(): BelongsToMany\n    {\n        return $this->belongsToMany(Facility::class)->withTimestamps();\n    }\n\n    public function memberPackages(): HasMany
     {
         return $this->hasMany(MemberTrainerPackage::class);
     }
