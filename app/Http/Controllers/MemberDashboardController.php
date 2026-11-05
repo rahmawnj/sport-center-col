@@ -49,6 +49,7 @@ class MemberDashboardController extends Controller
                     ->where('status', 'completed')->count(),
                 'active_memberships' => UserMembership::where('user_id', $user->id)
                     ->where('status', '!=', 'cancelled')
+                    ->whereDate('start_date', '<=', $today)
                     ->whereDate('end_date', '>=', $today)->count(),
                 'payments_count' => $transactions->count(),
                 'payments_total' => (float) $transactions->where('payment_status', 'fully_paid')->sum('total_amount'),
@@ -181,7 +182,8 @@ class MemberDashboardController extends Controller
     private function membershipRow(UserMembership $membership): array
     {
         $cancelled = $membership->status === 'cancelled';
-        $expired = ! $cancelled && $membership->end_date && $membership->end_date->lt(today());
+        $scheduled = ! $cancelled && $membership->start_date && $membership->start_date->gt(today());
+        $expired = ! $cancelled && ! $scheduled && $membership->end_date && $membership->end_date->lt(today());
 
         return [
             'id' => $membership->id,
@@ -190,7 +192,7 @@ class MemberDashboardController extends Controller
             'start_date' => $membership->start_date?->toDateString(),
             'end_date' => $membership->end_date?->toDateString(),
             'duration_days' => $membership->package?->duration_days,
-            'status' => $cancelled ? 'cancelled' : ($expired ? 'expired' : 'active'),
+            'status' => $cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active')),
             'scan_count' => (int) $membership->scan_count,
         ];
     }
