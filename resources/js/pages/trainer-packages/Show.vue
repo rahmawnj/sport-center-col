@@ -37,12 +37,10 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                     <p class="mt-10 text-xs font-black uppercase tracking-[.2em] text-[#a4da01]">Detail paket personal trainer</p>
                     <h1 class="mt-3 max-w-3xl text-3xl font-black sm:text-5xl">{{ package.name }}</h1>
                     <p class="mt-5 max-w-2xl leading-7 text-slate-300">{{ package.description || 'Program latihan personal bersama trainer untuk membantu mencapai target kebugaranmu.' }}</p>
-                    <div class="mt-8 flex flex-wrap gap-3">
-                        <span class="rounded-full bg-[#a4da01] px-4 py-2 text-sm font-black text-[#001428]">
-                            <i class="fa-solid fa-volleyball mr-2"></i>{{ package.facility.name }}
-                        </span>
-                        <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">{{ package.total_sessions }} sesi latihan</span>
-                        <span class="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">Berlaku {{ package.duration_days }} hari</span>
+                    <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-bold text-slate-200">
+                        <span class="text-[#a4da01]"><i class="fa-solid fa-volleyball mr-2"></i>{{ package.facility.name }}</span>
+                        <span>{{ package.total_sessions }} sesi latihan</span>
+                        <span>Berlaku {{ package.duration_days }} hari</span>
                     </div>
                 </div>
             </section>
@@ -89,10 +87,6 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                             </select>
                             <p v-if="form.errors.trainer_id" class="mt-1 text-sm text-red-600">{{ form.errors.trainer_id }}</p>
                         </div>
-                        <div>
-                            <p class="mb-2 block text-sm font-bold">Olahraga paket</p>
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold">{{ package.facility.name }}</div>
-                        </div>
                         <button type="submit" :disabled="form.processing || !package.trainers.length" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-6 py-4 font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-50">
                             {{ form.processing ? 'Memproses...' : 'Beli Paket Trainer' }} <i class="fa-solid fa-arrow-right"></i>
                         </button>
@@ -102,7 +96,6 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                         <p class="text-sm font-bold">Masuk sebagai member untuk membeli paket ini.</p>
                         <Link href="/login" class="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#a4da01] px-5 py-3 font-black text-[#001428]">Login Member</Link>
                     </div>
-                    <p v-if="form.errors" class="mt-3 text-sm text-red-600">{{ form.errors }}</p>
                 </aside>
             </section>
         </main>
