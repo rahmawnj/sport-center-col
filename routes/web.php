@@ -91,7 +91,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('trainers/{trainer}', [TrainerController::class, 'show'])->name('trainers.show');
         Route::post('trainers', [TrainerController::class, 'store'])->name('trainers.store');
         Route::put('trainers/{trainer}', [TrainerController::class, 'update'])->name('trainers.update');
-        Route::delete('trainers/{trainer}', [TrainerController::class, 'destroy'])->name('trainers.destroy');
+        Route::delete('trainers/{trainer}', [TrainerController::class, 'destroy'])->name('trainers.destroy');\n\n        Route::get('trainer-packages', [TrainerPackageController::class, 'index'])->name('trainer-packages.index');\n        Route::post('trainer-packages', [TrainerPackageController::class, 'store'])->name('trainer-packages.store');\n        Route::put('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'update'])->name('trainer-packages.update');\n        Route::delete('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'destroy'])->name('trainer-packages.destroy');\n        Route::post('trainer-packages/purchase', [TrainerPackageController::class, 'purchase'])->name('trainer-packages.purchase');
 
         Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
         Route::get('transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
