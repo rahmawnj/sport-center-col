@@ -333,7 +333,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     <Link href="#pelatih" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] hover:text-[#729700] sm:self-auto">Kenali pelatih <i class="fa-solid fa-arrow-right"></i></Link>
                 </div>
                 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                    <article v-for="(item, index) in trainerPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <Link v-for="(item, index) in trainerPackages" :key="item.id" :href="`/trainer-packages/${item.id}`" class="group block overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                         <div class="flex items-start justify-between gap-3">
                             <span class="rounded-full bg-[#f2f7df] px-3 py-1.5 text-xs font-extrabold text-[#6e9000]">{{ item.sports.length ? item.sports.join(' · ') : 'Personal training' }}</span>
                             <span class="text-xs font-bold text-slate-400">0{{ index + 1 }}</span>
@@ -349,7 +349,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price) }}</p>
                             <p class="mt-2 text-xs text-slate-500">{{ item.trainers.length ? 'Trainer: ' + item.trainers.join(', ') : 'Trainer akan ditentukan' }}</p>
                         </div>
-                    </article>
+                    </Link>
                 </div>
             </section>
 

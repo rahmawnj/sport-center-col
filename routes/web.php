@@ -11,6 +11,7 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\PublicMembershipController;
+use App\Http\Controllers\PublicTrainerPackageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\TrainerDashboardController;
@@ -25,6 +26,7 @@ Route::get('/', [PublicHomeController::class, 'index'])->name('home');
 Route::get('pelatih/{trainer}', [PublicHomeController::class, 'showTrainer'])->name('public.trainers.show');
 Route::get('membership', [PublicMembershipController::class, 'index'])->name('membership.index');
 Route::get('membership/{package}', [PublicMembershipController::class, 'show'])->whereNumber('package')->name('membership.show');
+Route::get('trainer-packages/{trainerPackage}', [PublicTrainerPackageController::class, 'show'])->whereNumber('trainerPackage')->name('public.trainer-packages.show');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
 Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
@@ -32,6 +34,11 @@ Route::post('book', [PublicBookingController::class, 'store'])->name('booking.st
 Route::get('booking/receipt/{booking}', [PublicBookingController::class, 'receipt'])->name('booking.receipt');
 
 Route::get('verify', [VerifyController::class, 'show'])->name('verify');
+
+Route::post('trainer-packages/{trainerPackage}/purchase', [PublicTrainerPackageController::class, 'purchase'])
+    ->middleware(['auth', EnsureUserRole::class.':Member'])
+    ->whereNumber('trainerPackage')
+    ->name('public.trainer-packages.purchase');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', function (Request $request) {
