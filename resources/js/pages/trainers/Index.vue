@@ -31,7 +31,6 @@ type Props = {
         links: LinkItem[];
     };
     facilities: { id: number; name: string }[];
-    users: { id: number; name: string; email: string }[];
     filters: { search: string };
     stats: { total: number };
 };
@@ -277,13 +276,28 @@ function initials(value: string) {
                         </p>
                     </div>
                     <div class="grid gap-2">
-                        <Label for="trainer-user">Akun User Trainer (opsional)</Label>
-                        <select id="trainer-user" name="user_id" :value="editing?.user_id ?? ''" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                            <option value="">Tidak dihubungkan</option>
-                            <option v-for="user in props.users" :key="user.id" :value="user.id">{{ user.name }} · {{ user.email }}</option>
-                        </select>
-                        <p class="text-xs text-muted-foreground">Pilih akun dengan role Trainer agar profil ini terhubung ke akun login trainer.</p>
-                        <p v-if="errors.user_id" class="text-xs text-destructive">{{ errors.user_id }}</p>
+                        <Label for="trainer-email">Email login</Label>
+                        <Input
+                            id="trainer-email"
+                            name="email"
+                            type="email"
+                            :default-value="editing?.user_email ?? ''"
+                            required
+                            placeholder="trainer@email.com"
+                        />
+                        <p v-if="errors.email" class="text-xs text-destructive">{{ errors.email }}</p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="trainer-password">Password login</Label>
+                        <Input
+                            id="trainer-password"
+                            name="password"
+                            type="password"
+                            :required="!editing || !editing.user_id"
+                            :placeholder="editing?.user_id ? 'Kosongkan jika tidak ingin mengganti password' : 'Minimal 8 karakter'"
+                        />
+                        <p v-if="editing?.user_id" class="text-xs text-muted-foreground">Password akun saat ini tidak ditampilkan. Isi hanya jika ingin menggantinya.</p>
+                        <p v-if="errors.password" class="text-xs text-destructive">{{ errors.password }}</p>
                     </div>
                     <div class="grid gap-2">
                         <Label for="trainer-specialty"
