@@ -64,6 +64,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('facilities/{facility}', [FacilityController::class, 'destroy'])->name('facilities.destroy');
 
         Route::post('facilities/{facility}/packages', [PackageController::class, 'store'])->name('packages.store');
+        Route::post('facilities/{facility}/trainer-packages', [TrainerPackageController::class, 'storeForFacility'])->name('facilities.trainer-packages.store');
         Route::put('packages/{package}', [PackageController::class, 'update'])->name('packages.update');
         Route::delete('packages/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
 
