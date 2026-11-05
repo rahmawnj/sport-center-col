@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicHomeController::class, 'index'])->name('home');
+Route::get('pelatih/{trainer}', [PublicHomeController::class, 'showTrainer'])->name('public.trainers.show');
 Route::get('membership', [PublicMembershipController::class, 'index'])->name('membership.index');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
