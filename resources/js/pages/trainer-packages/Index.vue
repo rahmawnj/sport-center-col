@@ -301,7 +301,7 @@ function useSession(item: MemberPackage) {
                         <thead class="border-b bg-muted/40 text-left">
                             <tr>
                                 <th class="px-4 py-3 font-medium">Nama paket</th>
-                                                    <th class="px-4 py-3 font-medium">Jumlah sesi</th>
+                                <th class="px-4 py-3 font-medium">Jumlah sesi</th>
                                 <th class="px-4 py-3 font-medium">Masa berlaku</th>
                                 <th class="px-4 py-3 font-medium">Harga</th>
                                 <th class="px-4 py-3 font-medium">Status</th>
