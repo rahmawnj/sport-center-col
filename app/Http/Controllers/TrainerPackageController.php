@@ -27,8 +27,11 @@ class TrainerPackageController extends Controller
             ->latest()
             ->paginate(10, ['*'], 'packages_page')
             ->withQueryString()
+            ->with('trainers:id,name')
             ->through(fn (TrainerPackage $package) => [
                 'id' => $package->id,
+                'trainers' => $package->trainers->map(fn (Trainer $trainer) => ['id' => $trainer->id, 'name' => $trainer->name])->values(),
+                'trainer_ids' => $package->trainers->pluck('id')->map(fn ($id) => (int) $id)->all(),
                 'name' => $package->name,
                 'total_sessions' => $package->total_sessions,
                 'duration_days' => $package->duration_days,
@@ -101,9 +104,15 @@ class TrainerPackageController extends Controller
             'duration_days' => ['required', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
+            'trainer_ids' => ['required', 'array', 'min:1'],
+            'trainer_ids.*' => ['required', 'integer', 'distinct', 'exists:trainers,id'],
         ]);
 
-        TrainerPackage::create($data);
+        $trainerIds = $data['trainer_ids'];
+        unset($data['trainer_ids']);
+
+        $package = TrainerPackage::create($data);
+        $package->trainers()->sync($trainerIds);
 
         return back()->with('success', 'Paket trainer berhasil ditambahkan.');
     }
@@ -117,9 +126,15 @@ class TrainerPackageController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
+            'trainer_ids' => ['required', 'array', 'min:1'],
+            'trainer_ids.*' => ['required', 'integer', 'distinct', 'exists:trainers,id'],
         ]);
 
+        $trainerIds = $data['trainer_ids'];
+        unset($data['trainer_ids']);
+
         $trainerPackage->update($data);
+        $trainerPackage->trainers()->sync($trainerIds);
 
         return back()->with('success', 'Paket trainer berhasil diperbarui.');
     }
@@ -170,8 +185,9 @@ class TrainerPackageController extends Controller
             'payment_status' => ['required', Rule::in(['paid', 'pending'])],
         ]);
 
-        $trainer = Trainer::query()->whereHas('facilities', fn ($query) => $query->where('facilities.id', $data['facility_id']))->findOrFail($data['trainer_id']);
-        $package = TrainerPackage::query()->where('is_active', true)->findOrFail($data['trainer_package_id']);
+        $package = TrainerPackage::query()->where('is_active', true)->with('trainers')->findOrFail($data['trainer_package_id']);
+        abort_unless($package->trainers->contains('id', (int) $data['trainer_id']), 422, 'Trainer tidak ditugaskan pada paket ini.');
+        Trainer::query()->whereHas('facilities', fn ($query) => $query->where('facilities.id', $data['facility_id']))->findOrFail($data['trainer_id']);
         $start = Carbon::parse($data['start_date']);
         $expires = $start->copy()->addDays($package->duration_days - 1);
         $paid = $data['payment_status'] === 'paid';
