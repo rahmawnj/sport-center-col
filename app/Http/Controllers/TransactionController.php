@@ -231,12 +231,29 @@ class TransactionController extends Controller
             ]);
         }
 
-        $start = Carbon::today();
-        $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)));
+        DB::transaction(function () use ($package, $data) {
+            // Lock member row to prevent two simultaneous purchases from receiving
+            // the same start date.
+            $member = User::query()->lockForUpdate()->findOrFail($data['user_id']);
 
-        DB::transaction(function () use ($package, $data, $start, $end) {
+            $latestMembership = UserMembership::query()
+                ->where('user_id', $member->id)
+                ->where('status', '!=', 'cancelled')
+                ->whereDate('end_date', '>=', today())
+                ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
+                ->orderByDesc('end_date')
+                ->lockForUpdate()
+                ->first();
+
+            $start = $latestMembership
+                ? $latestMembership->end_date->copy()->addDay()
+                : today();
+
+            $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)) - 1);
+            $paid = $data['payment_status'] === 'paid';
+
             $membership = UserMembership::create([
-                'user_id' => $data['user_id'],
+                'user_id' => $member->id,
                 'package_id' => $package->id,
                 'start_date' => $start->toDateString(),
                 'end_date' => $end->toDateString(),
@@ -244,14 +261,14 @@ class TransactionController extends Controller
             ]);
 
             Transaction::create([
-                'user_id' => $data['user_id'],
+                'user_id' => $member->id,
                 'transactionable_type' => UserMembership::class,
                 'transactionable_id' => $membership->id,
                 'device_id' => Device::forFacility($package->facility_id)?->id,
                 'customer_name' => $data['customer_name'] ?? null,
                 'amount' => $data['amount'],
                 'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_status'],
+                'payment_status' => $paid ? 'fully_paid' : 'unpaid',
             ]);
         });
     }
