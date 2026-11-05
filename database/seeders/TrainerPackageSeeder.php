@@ -19,7 +19,7 @@ class TrainerPackageSeeder extends Seeder
         foreach ($facilities as $facility) {
             $eligibleTrainers = Trainer::query()
                 ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facility->id))
-                ->inRandomOrder()
+                ->orderBy('name')
                 ->get();
 
             if ($eligibleTrainers->isEmpty()) {
@@ -63,10 +63,11 @@ class TrainerPackageSeeder extends Seeder
                     ]
                 );
 
-                // Paket hanya terhubung ke satu olahraga dan trainer yang menguasai olahraga itu.
+                // Setiap paket wajib memiliki tepat satu olahraga. Beberapa trainer
+                // boleh ditugaskan, tetapi semuanya harus menguasai olahraga tersebut.
                 $package->facilities()->sync([$facility->id]);
                 $package->trainers()->sync(
-                    $eligibleTrainers->take(min(2, $eligibleTrainers->count()))->pluck('id')->all()
+                    $eligibleTrainers->take(2)->pluck('id')->all()
                 );
             }
         }
