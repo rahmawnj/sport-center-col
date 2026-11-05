@@ -53,7 +53,8 @@ class TrainerPackageController extends Controller
                     ->orWhereHas('trainerPackage', fn ($package) => $package->where('name', 'like', "%{$search}%"))
                     ->orWhereHas('trainer', fn ($trainer) => $trainer->where('name', 'like', "%{$search}%"));
             }))
-            ->when($status === 'active', fn ($query) => $query->where('status', 'active')->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions'))
+            ->when($status === 'active', fn ($query) => $query->where('status', 'active')->whereDate('start_date', '<=', today())->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions'))
+            ->when($status === 'scheduled', fn ($query) => $query->where('status', 'active')->whereDate('start_date', '>', today()))
             ->when($status === 'pending', fn ($query) => $query->where('status', 'pending'))
             ->when($status === 'completed', fn ($query) => $query->where(fn ($q) => $q->where('status', 'completed')->orWhere(fn ($active) => $active->where('status', 'active')->whereColumn('used_sessions', '>=', 'total_sessions'))))
             ->when($status === 'expired', fn ($query) => $query->where(function ($q) {
@@ -74,9 +75,11 @@ class TrainerPackageController extends Controller
                 'total_sessions' => $item->total_sessions,
                 'used_sessions' => $item->used_sessions,
                 'remaining_sessions' => $item->remaining_sessions,
-                'status' => $item->expires_at->lt(today()) && $item->status === 'active'
-                    ? 'expired'
-                    : ($item->used_sessions >= $item->total_sessions && $item->status === 'active' ? 'completed' : $item->status),
+                'status' => $item->status === 'active' && $item->start_date->gt(today())
+                    ? 'scheduled'
+                    : ($item->expires_at->lt(today()) && $item->status === 'active'
+                        ? 'expired'
+                        : ($item->used_sessions >= $item->total_sessions && $item->status === 'active' ? 'completed' : $item->status)),
             ]);
 
         return Inertia::render('trainer-packages/Index', [
@@ -89,7 +92,7 @@ class TrainerPackageController extends Controller
             'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
                 'packages' => TrainerPackage::count(),
-                'active' => MemberTrainerPackage::where('status', 'active')->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions')->count(),
+                'active' => MemberTrainerPackage::where('status', 'active')->whereDate('start_date', '<=', today())->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions')->count(),
                 'expiring' => MemberTrainerPackage::where('status', 'active')->whereBetween('expires_at', [today(), today()->addDays(7)])->count(),
                 'expired' => MemberTrainerPackage::where(function ($query) {
                     $query->where('status', 'expired')->orWhere(fn ($q) => $q->where('status', 'active')->whereDate('expires_at', '<', today()));
@@ -173,7 +176,7 @@ class TrainerPackageController extends Controller
         DB::transaction(function () use ($memberTrainerPackage) {
             $item = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($memberTrainerPackage->id);
 
-            if ($item->status !== 'active' || $item->expires_at->lt(today())) {
+            if ($item->status !== 'active' || $item->start_date->gt(today()) || $item->expires_at->lt(today())) {
                 abort(422, 'Paket tidak aktif atau sudah expired.');
             }
 
@@ -198,7 +201,6 @@ class TrainerPackageController extends Controller
             'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'trainer_id' => ['required', 'integer', 'exists:trainers,id'],
             'trainer_package_id' => ['required', 'integer', 'exists:trainer_packages,id'],
-            'start_date' => ['required', 'date', 'after_or_equal:today'],
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
             'payment_status' => ['required', Rule::in(['paid', 'pending'])],
         ]);
@@ -207,13 +209,28 @@ class TrainerPackageController extends Controller
         abort_unless($package->facilities->contains('id', (int) $data['facility_id']), 422, 'Olahraga tidak sesuai dengan paket yang dipilih.');
         abort_unless($package->trainers->contains('id', (int) $data['trainer_id']), 422, 'Trainer tidak ditugaskan pada paket ini.');
         Trainer::query()->whereHas('facilities', fn ($query) => $query->where('facilities.id', $data['facility_id']))->findOrFail($data['trainer_id']);
-        $start = Carbon::parse($data['start_date']);
-        $expires = $start->copy()->addDays($package->duration_days - 1);
         $paid = $data['payment_status'] === 'paid';
 
-        DB::transaction(function () use ($data, $package, $start, $expires, $paid) {
+        DB::transaction(function () use ($data, $package, $paid) {
+            $member = User::query()->lockForUpdate()->findOrFail($data['user_id']);
+
+            $latestPackage = MemberTrainerPackage::query()
+                ->where('user_id', $member->id)
+                ->where('facility_id', $data['facility_id'])
+                ->where('status', 'active')
+                ->whereColumn('used_sessions', '<', 'total_sessions')
+                ->whereDate('expires_at', '>=', today())
+                ->orderByDesc('expires_at')
+                ->lockForUpdate()
+                ->first();
+
+            $start = $latestPackage
+                ? $latestPackage->expires_at->copy()->addDay()
+                : today();
+            $expires = $start->copy()->addDays(max(1, (int) $package->duration_days) - 1);
+
             $memberPackage = MemberTrainerPackage::create([
-                'user_id' => $data['user_id'],
+                'user_id' => $member->id,
                 'trainer_package_id' => $package->id,
                 'trainer_id' => $data['trainer_id'],
                 'facility_id' => $data['facility_id'],
@@ -225,11 +242,11 @@ class TrainerPackageController extends Controller
             ]);
 
             Transaction::create([
-                'user_id' => $data['user_id'],
+                'user_id' => $member->id,
                 'customer_type' => 'member',
                 'transactionable_type' => MemberTrainerPackage::class,
                 'transactionable_id' => $memberPackage->id,
-                'customer_name' => User::find($data['user_id'])?->name,
+                'customer_name' => $member->name,
                 'amount' => $package->price,
                 'payment_method' => $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
