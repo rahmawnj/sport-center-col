@@ -18,16 +18,46 @@ use Inertia\Response;
 
 class TrainerPackageController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $packages = TrainerPackage::query()->latest()->get();
+        $search = trim((string) $request->input('search', ''));
+        $status = $request->input('status', 'all');
+
+        $packages = TrainerPackage::query()
+            ->with('facility:id,name')
+            ->latest()
+            ->paginate(10, ['*'], 'packages_page')
+            ->withQueryString()
+            ->through(fn (TrainerPackage $package) => [
+                'id' => $package->id,
+                'name' => $package->name,
+                'facility_name' => $package->facility?->name ?? 'Belum ditentukan',
+                'total_sessions' => $package->total_sessions,
+                'duration_days' => $package->duration_days,
+                'price' => (float) $package->price,
+                'description' => $package->description,
+                'is_active' => (bool) $package->is_active,
+            ]);
+
         $members = User::query()->whereHas('memberProfile')->orderBy('name')->get(['id', 'name']);
         $trainers = Trainer::query()->orderBy('name')->get(['id', 'name', 'specialty']);
 
         $memberPackages = MemberTrainerPackage::query()
             ->with(['user:id,name', 'trainer:id,name', 'trainerPackage:id,name'])
+            ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
+                $q->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('trainerPackage', fn ($package) => $package->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('trainer', fn ($trainer) => $trainer->where('name', 'like', "%{$search}%"));
+            }))
+            ->when($status === 'active', fn ($query) => $query->where('status', 'active')->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions'))
+            ->when($status === 'pending', fn ($query) => $query->where('status', 'pending'))
+            ->when($status === 'completed', fn ($query) => $query->where('status', 'completed'))
+            ->when($status === 'expired', fn ($query) => $query->where(function ($q) {
+                $q->where('status', 'expired')->orWhere(fn ($active) => $active->where('status', 'active')->whereDate('expires_at', '<', today()));
+            }))
+            ->when($status === 'cancelled', fn ($query) => $query->where('status', 'cancelled'))
             ->latest()
-            ->paginate(10)
+            ->paginate(10, ['*'], 'memberships_page')
             ->withQueryString()
             ->through(fn (MemberTrainerPackage $item) => [
                 'id' => $item->id,
@@ -40,7 +70,8 @@ class TrainerPackageController extends Controller
                 'used_sessions' => $item->used_sessions,
                 'remaining_sessions' => $item->remaining_sessions,
                 'status' => $item->expires_at->lt(today()) && $item->status === 'active'
-                    ? 'expired' : $item->status,
+                    ? 'expired'
+                    : ($item->used_sessions >= $item->total_sessions && $item->status === 'active' ? 'completed' : $item->status),
             ]);
 
         return Inertia::render('trainer-packages/Index', [
@@ -48,10 +79,14 @@ class TrainerPackageController extends Controller
             'members' => $members,
             'trainers' => $trainers,
             'memberPackages' => $memberPackages,
+            'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
                 'packages' => TrainerPackage::count(),
-                'active' => MemberTrainerPackage::where('status', 'active')->whereDate('expires_at', '>=', today())->count(),
+                'active' => MemberTrainerPackage::where('status', 'active')->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions')->count(),
                 'expiring' => MemberTrainerPackage::where('status', 'active')->whereBetween('expires_at', [today(), today()->addDays(7)])->count(),
+                'expired' => MemberTrainerPackage::where(function ($query) {
+                    $query->where('status', 'expired')->orWhere(fn ($q) => $q->where('status', 'active')->whereDate('expires_at', '<', today()));
+                })->count(),
             ],
         ]);
     }
