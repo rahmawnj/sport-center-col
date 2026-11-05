@@ -27,6 +27,10 @@ class TrainerSeeder extends Seeder
             return;
         }
 
+        // Acak urutan olahraga, tetapi pastikan setiap olahraga mendapat trainer
+        // selama jumlah trainer mencukupi.
+        shuffle($facilities);
+
         $trainers = [
             ['name' => 'Alex Wijaya', 'email' => 'alex.wijaya@trainer.test', 'phone' => '081200000101'],
             ['name' => 'Bima Saputra', 'email' => 'bima.saputra@trainer.test', 'phone' => '081200000102'],
@@ -42,12 +46,8 @@ class TrainerSeeder extends Seeder
             $user = User::firstOrNew(['email' => $data['email']]);
             $user->name = $data['name'];
             $user->role_id = $trainerRole->id;
-
-            if (! $user->exists) {
-                $user->password = Hash::make('password');
-                $user->email_verified_at = now();
-            }
-
+            $user->password = Hash::make('password');
+            $user->email_verified_at ??= now();
             $user->save();
 
             $trainer = Trainer::updateOrCreate(
@@ -59,8 +59,8 @@ class TrainerSeeder extends Seeder
                 ]
             );
 
-            // Setiap trainer mendapat tepat satu olahraga secara acak.
-            $facilityId = $facilities[array_rand($facilities)];
+            // Satu trainer mendapat tepat satu olahraga secara acak.
+            $facilityId = $facilities[$index % count($facilities)];
             $trainer->facilities()->sync([$facilityId]);
         }
     }
