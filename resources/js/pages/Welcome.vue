@@ -36,9 +36,10 @@ type TrainerItem = {
 type MembershipPackage = {
     id: number;
     name: string;
-    price: number | string;
-    duration_days: number | null;
-    description: string | null;
+    facility: string | null;
+    price: number | null;
+    duration_days: number;
+    description: string;
 };
 
 const props = defineProps<{
@@ -321,15 +322,15 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <Link href="/membership" class="btn-lime mt-7 inline-flex items-center gap-3 rounded-full px-6 py-3.5 font-extrabold">Lihat pilihan paket <i class="fa-solid fa-arrow-right"></i></Link>
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <article v-for="(membership, index) in membershipPackages" :key="membership.id" class="membership-card rounded-2xl p-5" :class="index === 0 ? 'membership-card-featured' : ''">
+                            <Link v-for="(membership, index) in membershipPackages" :key="membership.id" :href="`/membership/${membership.id}`" class="membership-card group rounded-2xl p-5 transition hover:-translate-y-1 hover:border-[#a4da01]" :class="index === 0 ? 'membership-card-featured' : ''">
                                 <div class="flex items-start justify-between gap-3">
-                                    <h3 class="font-extrabold">{{ membership.name }}</h3>
+                                    <div><p class="text-xs font-bold text-[#b7e934]">{{ membership.facility || 'DreamSports' }}</p><h3 class="mt-1 font-extrabold">{{ membership.name }}</h3></div>
                                     <span v-if="index === 0" class="rounded-full bg-[#a4da01] px-2.5 py-1 text-[10px] font-black uppercase text-[#001428]">Pilihan</span>
                                 </div>
-                                <p class="mt-5 text-2xl font-black">{{ formatCurrency(membership.price) }}</p>
+                                <p class="mt-5 text-2xl font-black">{{ membership.price !== null ? formatCurrency(membership.price) : 'Harga belum tersedia' }}</p>
                                 <p class="mt-1 text-xs text-slate-400">{{ membership.duration_days ? membership.duration_days + ' hari' : 'Durasi sesuai ketentuan' }}</p>
-                                <p v-if="membership.description" class="mt-4 text-sm leading-6 text-slate-300">{{ membership.description }}</p>
-                            </article>
+                                <p v-if="membership.description" class="mt-4 text-sm leading-6 text-slate-300">{{ membership.description }}</p><span class="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#b7e934]">Detail paket <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                            </Link>
                         </div>
                     </div>
                 </div>
