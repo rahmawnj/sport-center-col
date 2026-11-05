@@ -52,7 +52,7 @@ type MemberPackage = {
     total_sessions: number;
     used_sessions: number;
     remaining_sessions: number;
-    status: 'active' | 'pending' | 'completed' | 'expired' | 'cancelled';
+    status: 'active' | 'scheduled' | 'pending' | 'completed' | 'expired' | 'cancelled';
 };
 type Option = { id: number; name: string; specialty?: string | null; facility_ids?: number[] };
 type LinkItem = { url: string | null; label: string; active: boolean };
@@ -79,6 +79,7 @@ const status = ref(props.filters.status ?? 'all');
 const statusOptions = [
     { value: 'all', label: 'Semua status' },
     { value: 'active', label: 'Aktif' },
+    { value: 'scheduled', label: 'Menunggu giliran' },
     { value: 'pending', label: 'Menunggu pembayaran' },
     { value: 'completed', label: 'Sesi habis' },
     { value: 'expired', label: 'Expired' },
@@ -158,7 +159,6 @@ const purchaseForm = useForm({
     facility_id: '',
     trainer_id: '',
     trainer_package_id: '',
-    start_date: new Date().toLocaleDateString('en-CA'),
     payment_method: 'cash',
     payment_status: 'paid',
 });
@@ -169,7 +169,6 @@ const availableTrainers = computed(() => props.trainers.filter((trainer) => trai
 function openPurchase() {
     purchaseForm.reset();
     purchaseForm.clearErrors();
-    purchaseForm.start_date = new Date().toLocaleDateString('en-CA');
     purchaseForm.facility_id = '';
     purchaseForm.trainer_package_id = '';
     purchaseForm.trainer_id = '';
@@ -209,12 +208,14 @@ function date(value: string | null) {
 }
 const statusMeta: Record<MemberPackage['status'], { label: string; badge: string; dot: string }> = {
     active: { label: 'Aktif', badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+    scheduled: { label: 'Menunggu giliran', badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400', dot: 'bg-sky-500' },
     pending: { label: 'Menunggu pembayaran', badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
     completed: { label: 'Sesi habis', badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400', dot: 'bg-sky-500' },
     expired: { label: 'Expired', badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400', dot: 'bg-rose-500' },
     cancelled: { label: 'Dibatalkan', badge: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground/60' },
 };
 function useSession(item: MemberPackage) {
+    if (item.status !== 'active') return;
     if (!window.confirm('Gunakan 1 sesi untuk ' + (item.member_name ?? 'member ini') + '?')) return;
     router.post('/trainer-packages/' + item.id + '/use-session', {}, { preserveScroll: true });
 }
@@ -412,11 +413,11 @@ function useSession(item: MemberPackage) {
                 <div class="grid gap-2"><Label>Olahraga</Label><select v-model="purchaseForm.facility_id" required class="h-10 rounded-md border bg-background px-3 text-sm" @change="purchaseForm.trainer_package_id = ''; purchaseForm.trainer_id = ''"><option value="">Pilih olahraga</option><option v-for="facility in facilities" :key="facility.id" :value="String(facility.id)">{{ facility.name }}</option></select><p v-if="purchaseForm.errors.facility_id" class="text-xs text-destructive">{{ purchaseForm.errors.facility_id }}</p></div>
                 <div class="grid gap-2"><Label>Paket</Label><select v-model="purchaseForm.trainer_package_id" required class="h-10 rounded-md border bg-background px-3 text-sm" @change="purchaseForm.trainer_id = ''"><option value="">Pilih paket</option><option v-for="item in packagesForSport" :key="item.id" :value="String(item.id)">{{ item.name }} · {{ item.total_sessions }} sesi · {{ rupiah(item.price) }}</option></select><p v-if="purchaseForm.facility_id && !packagesForSport.length" class="text-xs text-muted-foreground">Belum ada paket untuk olahraga ini.</p><p v-if="purchaseForm.errors.trainer_package_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_package_id }}</p></div>
                 <div class="grid gap-2"><Label>Trainer</Label><select v-model="purchaseForm.trainer_id" :disabled="!purchaseForm.facility_id || !availableTrainers.length" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih trainer</option><option v-for="trainer in availableTrainers" :key="trainer.id" :value="String(trainer.id)">{{ trainer.name }}{{ trainer.specialty ? ' · ' + trainer.specialty : '' }}</option></select><p v-if="purchaseForm.errors.trainer_id" class="text-xs text-destructive">{{ purchaseForm.errors.trainer_id }}</p></div>
-                <div class="grid gap-2"><Label>Tanggal mulai</Label><Input v-model="purchaseForm.start_date" type="date" required /><p v-if="purchaseForm.errors.start_date" class="text-xs text-destructive">{{ purchaseForm.errors.start_date }}</p></div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="grid gap-2"><Label>Metode bayar</Label><select v-model="purchaseForm.payment_method" class="h-10 rounded-md border bg-background px-3 text-sm"><option value="cash">Tunai</option><option value="bank_transfer">Transfer bank</option><option value="qris">QRIS</option></select></div>
                     <div class="grid gap-2"><Label>Status bayar</Label><select v-model="purchaseForm.payment_status" class="h-10 rounded-md border bg-background px-3 text-sm"><option value="paid">Lunas</option><option value="pending">Belum bayar</option></select></div>
                 </div>
+                <p class="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">Tanggal mulai ditentukan otomatis. Jika member masih punya paket aktif pada olahraga ini, paket baru mulai sehari setelah paket tersebut berakhir. Paket yang menunggu giliran tidak bisa dipakai lebih awal.</p>
                 <p class="text-xs text-muted-foreground">Paket aktif setelah pembayaran lunas. Pembelian yang belum dibayar berstatus menunggu pembayaran.</p>
                 <div class="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="ghost" @click="closePurchase">Batal</Button><Button type="submit" :disabled="purchaseForm.processing">{{ purchaseForm.processing ? 'Menyimpan...' : 'Simpan pembelian' }}</Button></div>
             </form>
