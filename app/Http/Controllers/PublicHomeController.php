@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use App\Models\Package;
 use App\Models\Trainer;
+use App\Models\TrainerPackage;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -79,6 +80,26 @@ class PublicHomeController extends Controller
             ->limit(4)
             ->get(['id', 'name', 'specialty']);
 
+        $trainerPackages = TrainerPackage::query()
+            ->where('is_active', true)
+            ->with([
+                'trainers:id,name,specialty',
+                'facilities:id,name',
+            ])
+            ->orderBy('price')
+            ->limit(6)
+            ->get(['id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
+            ->map(fn (TrainerPackage $package) => [
+                'id' => $package->id,
+                'name' => $package->name,
+                'total_sessions' => $package->total_sessions,
+                'duration_days' => $package->duration_days,
+                'price' => (float) $package->price,
+                'description' => $package->description,
+                'trainers' => $package->trainers->pluck('name')->values(),
+                'sports' => $package->facilities->pluck('name')->values(),
+            ])->values();
+
         $membershipPackages = Package::query()
             ->where('type', 'membership')
             ->whereNotNull('duration_days')
@@ -108,6 +129,7 @@ class PublicHomeController extends Controller
             'facilities' => $facilities,
             'trainers' => $trainers,
             'membershipPackages' => $membershipPackages,
+            'trainerPackages' => $trainerPackages,
             'stats' => [
                 'facilities' => $facilities->count(),
                 'courts' => DB::table('courts')
