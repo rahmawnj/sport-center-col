@@ -15,6 +15,9 @@ type Trainer = {
     name: string;
     specialty: string | null;
     phone: string | null;
+    user_id: number | null;
+    user_name: string | null;
+    user_email: string | null;
     facility_ids: number[];
     facilities: string[];
 };
@@ -28,6 +31,7 @@ type Props = {
         links: LinkItem[];
     };
     facilities: { id: number; name: string }[];
+    users: { id: number; name: string; email: string }[];
     filters: { search: string };
     stats: { total: number };
 };
@@ -35,6 +39,7 @@ type Props = {
 const props = defineProps<Props>();
 const columns: TableColumn[] = [
     { key: 'name', label: 'Trainer', class: 'min-w-48' },
+    { key: 'user', label: 'Akun User' },
     { key: 'specialty', label: 'Spesialisasi' },
     { key: 'facilities', label: 'Olahraga' },
     { key: 'phone', label: 'Telepon' },
@@ -167,6 +172,14 @@ function initials(value: string) {
                 </div>
             </template>
 
+            <template #user="{ row }">
+                <div v-if="row.user_id">
+                    <div class="font-medium">{{ row.user_name }}</div>
+                    <div class="text-xs text-muted-foreground">{{ row.user_email }}</div>
+                </div>
+                <span v-else class="text-xs text-muted-foreground">Belum terhubung</span>
+            </template>
+
             <template #specialty="{ row }">
                 <span
                     v-if="row.specialty"
@@ -262,6 +275,15 @@ function initials(value: string) {
                         <p v-if="errors.name" class="text-xs text-destructive">
                             {{ errors.name }}
                         </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="trainer-user">Akun User Trainer (opsional)</Label>
+                        <select id="trainer-user" name="user_id" :value="editing?.user_id ?? ''" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                            <option value="">Tidak dihubungkan</option>
+                            <option v-for="user in props.users" :key="user.id" :value="user.id">{{ user.name }} · {{ user.email }}</option>
+                        </select>
+                        <p class="text-xs text-muted-foreground">Pilih akun dengan role Trainer agar profil ini terhubung ke akun login trainer.</p>
+                        <p v-if="errors.user_id" class="text-xs text-destructive">{{ errors.user_id }}</p>
                     </div>
                     <div class="grid gap-2">
                         <Label for="trainer-specialty"
