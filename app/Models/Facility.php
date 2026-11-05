@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Facility extends Model
 {
@@ -33,7 +34,12 @@ class Facility extends Model
         return $this->hasMany(Package::class);
     }
 
-    public function trainers(): BelongsToMany\n    {\n        return $this->belongsToMany(Trainer::class)->withTimestamps();\n    }\n\n    public function devices(): HasMany
+    public function trainers(): BelongsToMany
+    {
+        return $this->belongsToMany(Trainer::class)->withTimestamps();
+    }
+
+    public function devices(): HasMany
     {
         return $this->hasMany(Device::class);
     }
