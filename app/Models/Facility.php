@@ -33,6 +33,11 @@ class Facility extends Model
         return $this->hasMany(Package::class);
     }
 
+    public function trainerPackages(): HasMany
+    {
+        return $this->hasMany(TrainerPackage::class);
+    }
+
     public function devices(): HasMany
     {
         return $this->hasMany(Device::class);
