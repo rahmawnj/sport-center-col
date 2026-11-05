@@ -67,14 +67,13 @@ class TrainerController extends Controller
         ]);
 
         DB::transaction(function () use ($data) {
-            $role = Role::firstOrCreate(['name' => 'Trainer']);
+            $role = Role::where('name', 'Trainer')->firstOrFail();
 
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-            ]);
-            $user->role()->associate($role);
+            $user = new User();
+            $user->name = $data['name'];
+            $user->email = $data['email'];
+            $user->password = $data['password'];
+            $user->role_id = $role->id;
             $user->save();
 
             $trainer = Trainer::create([
@@ -102,7 +101,7 @@ class TrainerController extends Controller
         ]);
 
         DB::transaction(function () use ($data, $trainer) {
-            $role = Role::firstOrCreate(['name' => 'Trainer']);
+            $role = Role::where('name', 'Trainer')->firstOrFail();
             $user = $trainer->user;
 
             if (! $user) {
@@ -114,7 +113,7 @@ class TrainerController extends Controller
 
             $user->name = $data['name'];
             $user->email = $data['email'];
-            $user->role()->associate($role);
+            $user->role_id = $role->id;
             $user->save();
 
             $trainer->update([
