@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('member_trainer_packages', function (Blueprint $table) {
-            $table->foreignId('facility_id')->after('trainer_id')->constrained()->restrictOnDelete();
+            $table->foreignId('facility_id')->nullable()->after('trainer_id')->constrained()->nullOnDelete();
             $table->index(['facility_id', 'status']);
         });
 
