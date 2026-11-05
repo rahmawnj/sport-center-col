@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PublicHomeController::class, 'index'])->name('home');
 Route::get('pelatih/{trainer}', [PublicHomeController::class, 'showTrainer'])->name('public.trainers.show');
 Route::get('membership', [PublicMembershipController::class, 'index'])->name('membership.index');
+Route::get('membership/{package}', [PublicMembershipController::class, 'show'])->whereNumber('package')->name('membership.show');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
 Route::get('book/availability', [PublicBookingController::class, 'availability'])->name('booking.availability');
