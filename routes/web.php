@@ -13,6 +13,7 @@ use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\PublicMembershipController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TrainerController;
+use App\Http\Controllers\TrainerDashboardController;
 use App\Http\Controllers\TrainerPackageController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VerifyController;
@@ -36,7 +37,11 @@ Route::middleware(['auth'])->group(function () {
             return redirect()->route('member.dashboard');
         }
 
-        // abort_unless($request->user()->role?->name === 'Superadmin', 403);
+        if ($request->user()->role?->name === 'Trainer') {
+            return redirect()->route('trainer.dashboard');
+        }
+
+        abort_unless($request->user()->role?->name === 'Superadmin', 403);
 
         return app(DashboardController::class)->index($request);
     })->name('dashboard');
@@ -53,6 +58,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('payments/{transaction}', [MemberDashboardController::class, 'paymentShow'])->name('payments.show');
         Route::get('profile', [MemberDashboardController::class, 'profile'])->name('profile');
         Route::redirect('settings', '/member/profile')->name('settings');
+    });
+
+    Route::prefix('trainer')->name('trainer.')->middleware(EnsureUserRole::class.':Trainer')->group(function () {
+        Route::get('dashboard', [TrainerDashboardController::class, 'index'])->name('dashboard');
+        Route::get('members', [TrainerDashboardController::class, 'members'])->name('members');
+        Route::get('profile', [TrainerDashboardController::class, 'profile'])->name('profile');
     });
 
     Route::middleware([EnsureUserRole::class.':Superadmin'])->group(function () {
