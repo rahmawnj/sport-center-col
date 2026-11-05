@@ -11,41 +11,9 @@ class PublicMembershipController extends Controller
 {
     public function index(Request $request): Response
     {
-        $packages = Package::query()
-            ->with([
-                'facility:id,name,slug,status,is_bookable_online',
-                'pricingRules' => fn ($query) => $query
-                    ->where(function ($rules) {
-                        $rules->whereNull('date_start')->orWhereDate('date_start', '<=', today());
-                    })
-                    ->where(function ($rules) {
-                        $rules->whereNull('date_end')->orWhereDate('date_end', '>=', today());
-                    })
-                    ->orderBy('price'),
-            ])
-            ->where('type', 'membership')
-            ->whereNotNull('duration_days')
-            ->whereHas('facility', fn ($query) => $query
-                ->where('status', 'active')
-                ->where('is_bookable_online', true))
-            ->orderBy('duration_days')
-            ->orderBy('name')
+        $packages = $this->availablePackages()
             ->get()
-            ->map(fn (Package $package) => [
-                'id' => $package->id,
-                'name' => $package->name,
-                'duration_days' => $package->duration_days,
-                'facility' => $package->facility?->name,
-                'facility_slug' => $package->facility?->slug,
-                'prices' => $package->pricingRules
-                    ->pluck('price')
-                    ->map(fn ($price) => (float) $price)
-                    ->values(),
-                'price' => $package->pricingRules->isEmpty()
-                    ? null
-                    : (float) $package->pricingRules->min('price'),
-                'description' => $this->descriptionFor($package),
-            ]);
+            ->map(fn (Package $package) => $this->packageData($package));
 
         return Inertia::render('membership/Index', [
             'packages' => $packages,
@@ -58,12 +26,47 @@ class PublicMembershipController extends Controller
         ]);
     }
 
-    private function descriptionFor(Package $package): string
+    public function show(int $package): Response
     {
-        if (preg_match('/(\d+)\s*sesi/i', $package->name, $matches)) {
-            return 'Paket '.$matches[1].' sesi untuk menjaga rutinitas latihanmu tetap konsisten.';
-        }
+        $item = $this->availablePackages()
+            ->whereKey($package)
+            ->firstOrFail();
 
-        return 'Akses membership selama '.$package->duration_days.' hari untuk rutinitas olahraga yang lebih teratur.';
+        return Inertia::render('membership/Show', [
+            'package' => $this->packageData($item),
+        ]);
+    }
+
+    private function availablePackages()
+    {
+        return Package::query()
+            ->with([
+                'facility:id,name,slug,status,is_bookable_online',
+                'pricingRules' => fn ($query) => $query
+                    ->where(fn ($rules) => $rules->whereNull('date_start')->orWhereDate('date_start', '<=', today()))
+                    ->where(fn ($rules) => $rules->whereNull('date_end')->orWhereDate('date_end', '>=', today()))
+                    ->orderBy('price'),
+            ])
+            ->where('type', 'membership')
+            ->whereNotNull('duration_days')
+            ->whereHas('facility', fn ($query) => $query
+                ->where('status', 'active')
+                ->where('is_bookable_online', true));
+    }
+
+    private function packageData(Package $package): array
+    {
+        $prices = $package->pricingRules->pluck('price')->map(fn ($price) => (float) $price)->values();
+
+        return [
+            'id' => $package->id,
+            'name' => $package->name,
+            'duration_days' => $package->duration_days,
+            'facility' => $package->facility?->name,
+            'facility_slug' => $package->facility?->slug,
+            'prices' => $prices,
+            'price' => $prices->isEmpty() ? null : $prices->min(),
+            'description' => 'Membership '.$package->facility?->name.' selama '.$package->duration_days.' hari untuk mendukung rutinitas olahragamu.',
+        ];
     }
 }
