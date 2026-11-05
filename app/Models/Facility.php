@@ -33,7 +33,7 @@ class Facility extends Model
         return $this->hasMany(Package::class);
     }
 
-    public function devices(): HasMany
+    public function trainers(): BelongsToMany\n    {\n        return $this->belongsToMany(Trainer::class)->withTimestamps();\n    }\n\n    public function devices(): HasMany
     {
         return $this->hasMany(Device::class);
     }
