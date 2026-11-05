@@ -12,13 +12,12 @@ type TrainerPackage = {
     duration_days: number;
     price: number;
     trainers: Trainer[];
-    facilities: Facility[];
+    facility: Facility;
 };
 
 const props = defineProps<{ package: TrainerPackage; canPurchase: boolean }>();
 const form = useForm({
     trainer_id: props.package.trainers[0]?.id ?? '',
-    facility_id: props.package.facilities[0]?.id ?? '',
 });
 const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', {
     style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
@@ -94,13 +93,10 @@ const submit = () => form.post(`/trainer-packages/${props.package.id}/purchase`)
                             <p v-if="form.errors.trainer_id" class="mt-1 text-sm text-red-600">{{ form.errors.trainer_id }}</p>
                         </div>
                         <div v-if="package.facilities.length">
-                            <label for="facility_id" class="mb-2 block text-sm font-bold">Pilih olahraga</label>
-                            <select id="facility_id" v-model="form.facility_id" required class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-[#8eb900] focus:outline-none">
-                                <option v-for="facility in package.facilities" :key="facility.id" :value="facility.id">{{ facility.name }}</option>
-                            </select>
-                            <p v-if="form.errors.facility_id" class="mt-1 text-sm text-red-600">{{ form.errors.facility_id }}</p>
+                            <p class="mb-2 block text-sm font-bold">Olahraga paket</p>
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold">{{ package.facility.name }}</div>
                         </div>
-                        <button type="submit" :disabled="form.processing || !package.trainers.length || !package.facilities.length" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-6 py-4 font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-50">
+                        <button type="submit" :disabled="form.processing || !package.trainers.length" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-6 py-4 font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-50">
                             {{ form.processing ? 'Memproses...' : 'Beli Paket Trainer' }} <i class="fa-solid fa-arrow-right"></i>
                         </button>
                         <p class="text-xs leading-5 text-slate-500">Setelah dipesan, status paket menunggu pembayaran. Tanggal aktif dihitung otomatis setelah paket sebelumnya selesai.</p>
