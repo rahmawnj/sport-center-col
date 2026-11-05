@@ -33,6 +33,17 @@ type TrainerItem = {
     specialty: string | null;
 };
 
+type TrainerPackageItem = {
+    id: number;
+    name: string;
+    total_sessions: number;
+    duration_days: number;
+    price: number;
+    description: string | null;
+    trainers: string[];
+    sports: string[];
+};
+
 type MembershipPackage = {
     id: number;
     name: string;
@@ -46,6 +57,7 @@ const props = defineProps<{
     facilities: FacilityItem[];
     trainers: TrainerItem[];
     membershipPackages: MembershipPackage[];
+    trainerPackages: TrainerPackageItem[];
     stats: {
         facilities: number;
         courts: number;
@@ -308,6 +320,36 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <span class="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#001428] transition group-hover:text-[#729700]">Lihat detail <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
                         </Link>
                     </div>
+                </div>
+            </section>
+
+            <section v-if="trainerPackages.length" id="paket-trainer" class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
+                <div class="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="section-kicker">Latihan lebih terarah</p>
+                        <h2 class="section-title">Pilih <span>paket trainer</span></h2>
+                        <p class="mt-3 max-w-xl text-slate-500">Paket sesi latihan bersama pelatih profesional untuk membantu mencapai target kebugaranmu.</p>
+                    </div>
+                    <Link href="#pelatih" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] hover:text-[#729700] sm:self-auto">Kenali pelatih <i class="fa-solid fa-arrow-right"></i></Link>
+                </div>
+                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    <article v-for="(item, index) in trainerPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="rounded-full bg-[#f2f7df] px-3 py-1.5 text-xs font-extrabold text-[#6e9000]">{{ item.sports.length ? item.sports.join(' · ') : 'Personal training' }}</span>
+                            <span class="text-xs font-bold text-slate-400">0{{ index + 1 }}</span>
+                        </div>
+                        <h3 class="mt-5 text-xl font-extrabold text-[#001428]">{{ item.name }}</h3>
+                        <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ item.description || 'Program latihan bersama trainer untuk mendukung target kebugaranmu.' }}</p>
+                        <div class="mt-5 grid grid-cols-2 gap-3">
+                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Total sesi</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.total_sessions }} sesi</p></div>
+                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa berlaku</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.duration_days }} hari</p></div>
+                        </div>
+                        <div class="mt-5 border-t border-slate-100 pt-5">
+                            <p class="text-xs font-semibold text-slate-500">Harga paket</p>
+                            <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price) }}</p>
+                            <p class="mt-2 text-xs text-slate-500">{{ item.trainers.length ? 'Trainer: ' + item.trainers.join(', ') : 'Trainer akan ditentukan' }}</p>
+                        </div>
+                    </article>
                 </div>
             </section>
 
