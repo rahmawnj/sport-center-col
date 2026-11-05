@@ -75,7 +75,7 @@ const formatCurrency = (amount: number) =>
                                 <p class="text-xs font-semibold text-slate-400">Durasi {{ item.duration_days }} hari</p>
                                 <p class="mt-1 text-2xl font-black">{{ formatCurrency(item.price) }}</p>
                             </div>
-                            <Link :href="`/trainer-packages/${item.id}`" class="inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]">Detail paket <i class="fa-solid fa-arrow-right"></i></Link>
+                            <a :href="'/trainer-packages/' + item.id" class="inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]">Detail & Booking <i class="fa-solid fa-arrow-right"></i></a>
                         </div>
                     </article>
                 </div>
