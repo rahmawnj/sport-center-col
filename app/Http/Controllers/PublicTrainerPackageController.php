@@ -47,7 +47,7 @@ class PublicTrainerPackageController extends Controller
         abort_unless($trainerPackage->is_active, 404);
         $data = $request->validate([
             'trainer_id' => ['required', 'integer', 'exists:trainers,id'],
-            ]);
+        ]);
 
         $trainerPackage->load(['trainers:id', 'facilities:id']);
         abort_unless($trainerPackage->facilities->count() === 1, 422, 'Paket trainer harus terhubung ke tepat satu olahraga.');
