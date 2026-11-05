@@ -12,6 +12,7 @@ class Facility extends Model
         'name',
         'slug',
         'is_bookable_online',
+        'has_membership',
         'turnaround_minutes',
         'status',
     ];
