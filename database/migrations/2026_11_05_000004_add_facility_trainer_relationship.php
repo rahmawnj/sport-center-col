@@ -27,8 +27,10 @@ return new class extends Migration
         Schema::dropIfExists('facility_trainer');
 
         Schema::table('member_trainer_packages', function (Blueprint $table) {
-            $table->dropIndex(['facility_id', 'status']);
-            $table->dropConstrainedForeignId('facility_id');
+            // Drop the foreign key before its supporting composite index.
+            $table->dropForeign(['facility_id']);
+            $table->dropIndex('member_trainer_packages_facility_id_status_index');
+            $table->dropColumn('facility_id');
         });
     }
 };
