@@ -135,6 +135,7 @@ class MemberController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($member->user_id)],
+            'password' => ['nullable', 'string', 'min:8'],
             'member_code' => ['nullable', 'string', 'max:100', Rule::unique('member_profiles', 'member_code')->ignore($member->id)],
             'phone' => ['required', 'string', 'max:25'],
             'date_of_birth' => ['nullable', 'date'],
@@ -144,10 +145,16 @@ class MemberController extends Controller
             'emergency_contact_phone' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $member->user->update([
+        $userData = [
             'name' => $data['name'],
             'email' => $data['email'],
-        ]);
+        ];
+
+        if (! empty($data['password'])) {
+            $userData['password'] = $data['password'];
+        }
+
+        $member->user->update($userData);
 
         $member->update($this->profileAttributes($data));
 
