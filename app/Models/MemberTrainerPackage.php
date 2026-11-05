@@ -10,7 +10,7 @@ class MemberTrainerPackage extends Model
     protected $fillable = [
         'user_id',
         'trainer_package_id',
-        'trainer_id',
+        'trainer_id',\n        'facility_id',
         'start_date',
         'expires_at',
         'total_sessions',
@@ -38,7 +38,7 @@ class MemberTrainerPackage extends Model
         return $this->belongsTo(TrainerPackage::class);
     }
 
-    public function trainer(): BelongsTo
+    public function facility(): BelongsTo\n    {\n        return $this->belongsTo(Facility::class);\n    }\n\n    public function trainer(): BelongsTo
     {
         return $this->belongsTo(Trainer::class);
     }
