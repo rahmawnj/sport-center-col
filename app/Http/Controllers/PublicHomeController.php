@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Facility;
-use App\Models\MembershipPackage;
+use App\Models\Package;
 use App\Models\Trainer;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -79,11 +79,30 @@ class PublicHomeController extends Controller
             ->limit(4)
             ->get(['id', 'name', 'specialty']);
 
-        $membershipPackages = MembershipPackage::query()
-            ->whereNull('deleted_at')
-            ->orderBy('price')
+        $membershipPackages = Package::query()
+            ->where('type', 'membership')
+            ->whereNotNull('duration_days')
+            ->whereHas('facility', fn ($query) => $query
+                ->where('status', 'active')
+                ->where('is_bookable_online', true))
+            ->with([
+                'facility:id,name,slug',
+                'pricingRules' => fn ($query) => $query
+                    ->where(fn ($rules) => $rules->whereNull('date_start')->orWhereDate('date_start', '<=', today()))
+                    ->where(fn ($rules) => $rules->whereNull('date_end')->orWhereDate('date_end', '>=', today()))
+                    ->orderBy('price'),
+            ])
+            ->orderBy('duration_days')
             ->limit(3)
-            ->get(['id', 'name', 'price', 'duration_days', 'description']);
+            ->get()
+            ->map(fn (Package $package) => [
+                'id' => $package->id,
+                'name' => $package->name,
+                'facility' => $package->facility?->name,
+                'duration_days' => $package->duration_days,
+                'price' => $package->pricingRules->isEmpty() ? null : (float) $package->pricingRules->min('price'),
+                'description' => 'Membership '.$package->facility?->name.' selama '.$package->duration_days.' hari.',
+            ])->values();
 
         return Inertia::render('Welcome', [
             'facilities' => $facilities,
@@ -96,7 +115,11 @@ class PublicHomeController extends Controller
                     ->whereIn('facility_id', $facilities->pluck('id'))
                     ->count(),
                 'trainers' => Trainer::query()->whereNull('deleted_at')->count(),
-                'membershipPackages' => MembershipPackage::query()->whereNull('deleted_at')->count(),
+                'membershipPackages' => Package::query()
+                    ->where('type', 'membership')
+                    ->whereNotNull('duration_days')
+                    ->whereHas('facility', fn ($query) => $query->where('status', 'active')->where('is_bookable_online', true))
+                    ->count(),
             ],
         ]);
     }
