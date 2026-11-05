@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Facility;
 use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
 use App\Models\TrainerPackage;
@@ -38,7 +39,7 @@ class TrainerPackageController extends Controller
 
         $members = User::query()->whereHas('memberProfile')->orderBy('name')->get(['id', 'name']);
         $trainers = Trainer::query()->with('facilities:id,name')->orderBy('name')->get(['id', 'name', 'specialty'])->map(fn (Trainer $trainer) => ['id' => $trainer->id, 'name' => $trainer->name, 'specialty' => $trainer->specialty, 'facility_ids' => $trainer->facilities->pluck('id')->map(fn ($id) => (int) $id)->all()]);
-        $facilities = \\App\\Models\\Facility::query()->where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        $facilities = Facility::query()->where('status', 'active')->orderBy('name')->get(['id', 'name']);
 
         $memberPackages = MemberTrainerPackage::query()
             ->with(['user:id,name', 'trainer:id,name', 'trainerPackage:id,name', 'facility:id,name'])
