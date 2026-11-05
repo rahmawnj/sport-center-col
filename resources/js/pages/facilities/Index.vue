@@ -36,6 +36,7 @@ type Facility = {
     name: string;
     slug: string;
     is_bookable_online: boolean;
+    has_membership: boolean;
     turnaround_minutes: number;
     status: FacilityStatus;
     courts_count: number;
@@ -75,6 +76,10 @@ const statusOptions = [
     { value: 'inactive', label: 'Tidak aktif' },
 ];
 const facilityStatusOptions = statusOptions.filter((o) => o.value !== 'all');
+const membershipOptions = [
+    { value: '1', label: 'Ya — membership dibuka' },
+    { value: '0', label: 'Tidak — membership ditutup' },
+];
 const bookableOptions = [
     { value: '1', label: 'Ya — bisa dibooking online' },
     { value: '0', label: 'Tidak' },
@@ -82,6 +87,7 @@ const bookableOptions = [
 const form = ref({
     status: 'active',
     is_bookable_online: '1',
+    has_membership: '1',
     turnaround_minutes: '5',
 });
 const statCards = computed(() => [
@@ -137,6 +143,7 @@ function openCreate() {
     form.value = {
         status: 'active',
         is_bookable_online: '1',
+        has_membership: '1',
         turnaround_minutes: '5',
     };
     formKey.value++;
@@ -148,6 +155,7 @@ function openEdit(facility: Facility) {
     form.value = {
         status: facility.status,
         is_bookable_online: facility.is_bookable_online ? '1' : '0',
+        has_membership: facility.has_membership ? '1' : '0',
         turnaround_minutes: String(facility.turnaround_minutes ?? 5),
     };
     formKey.value++;
@@ -296,6 +304,18 @@ function initials(value: string) {
                             >
                                 <PackageIcon class="size-3.5" />
                                 {{ row.packages_count }} paket
+                            </span>
+                            <span
+                                v-if="row.has_membership"
+                                class="inline-flex items-center gap-1.5 rounded-lg bg-violet-500/10 px-2 py-1 text-xs font-medium text-violet-700 dark:text-violet-400"
+                            >
+                                Membership dibuka
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center gap-1.5 rounded-lg bg-slate-500/10 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400"
+                            >
+                                Membership ditutup
                             </span>
                             <span
                                 v-if="row.is_bookable_online"
@@ -482,6 +502,18 @@ function initials(value: string) {
                                 class="text-xs text-destructive"
                             >
                                 {{ errors.is_bookable_online }}
+                            </p>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="facility-membership">Membership</Label>
+                            <FormSelect
+                                id="facility-membership"
+                                v-model="form.has_membership"
+                                name="has_membership"
+                                :options="membershipOptions"
+                            />
+                            <p v-if="errors.has_membership" class="text-xs text-destructive">
+                                {{ errors.has_membership }}
                             </p>
                         </div>
                         <div class="grid gap-2">
