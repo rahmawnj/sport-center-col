@@ -15,6 +15,8 @@ type Trainer = {
     name: string;
     specialty: string | null;
     phone: string | null;
+    facility_ids: number[];
+    facilities: string[];
 };
 type LinkItem = { url: string | null; label: string; active: boolean };
 type Props = {
@@ -25,6 +27,7 @@ type Props = {
         total: number;
         links: LinkItem[];
     };
+    facilities: { id: number; name: string }[];
     filters: { search: string };
     stats: { total: number };
 };
@@ -33,6 +36,7 @@ const props = defineProps<Props>();
 const columns: TableColumn[] = [
     { key: 'name', label: 'Trainer', class: 'min-w-48' },
     { key: 'specialty', label: 'Spesialisasi' },
+    { key: 'facilities', label: 'Olahraga' },
     { key: 'phone', label: 'Telepon' },
     {
         key: 'actions',
@@ -173,6 +177,10 @@ function initials(value: string) {
                 <span v-else class="text-xs text-muted-foreground">—</span>
             </template>
 
+            <template #facilities="{ row }">
+                <span class="text-muted-foreground">{{ row.facilities?.join(', ') || '—' }}</span>
+            </template>
+
             <template #phone="{ row }">
                 <span class="text-muted-foreground tabular-nums">
                     {{ row.phone || '—' }}
@@ -271,6 +279,14 @@ function initials(value: string) {
                         >
                             {{ errors.specialty }}
                         </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="trainer-facilities">Olahraga yang diajarkan</Label>
+                        <select id="trainer-facilities" name="facility_ids[]" multiple required :default-value="editing?.facility_ids ?? []" class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm">
+                            <option v-for="facility in props.facilities" :key="facility.id" :value="facility.id">{{ facility.name }}</option>
+                        </select>
+                        <p class="text-xs text-muted-foreground">Pilih satu atau lebih olahraga yang dapat diajarkan trainer ini.</p>
+                        <p v-if="errors.facility_ids" class="text-xs text-destructive">{{ errors.facility_ids }}</p>
                     </div>
                     <div class="grid gap-2">
                         <Label for="trainer-phone">Telepon (opsional)</Label>
