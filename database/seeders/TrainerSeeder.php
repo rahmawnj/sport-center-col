@@ -27,9 +27,6 @@ class TrainerSeeder extends Seeder
             return;
         }
 
-        // Acak urutan olahraga, tetapi pastikan setiap olahraga mendapat trainer
-        // selama jumlah trainer mencukupi.
-        shuffle($facilities);
 
         $trainers = [
             ['name' => 'Alex Wijaya', 'email' => 'alex.wijaya@trainer.test', 'phone' => '081200000101'],
@@ -59,7 +56,7 @@ class TrainerSeeder extends Seeder
                 ]
             );
 
-            // Satu trainer mendapat tepat satu olahraga secara acak.
+            // Satu trainer mendapat tepat satu olahraga secara konsisten.
             $facilityId = $facilities[$index % count($facilities)];
             $trainer->facilities()->sync([$facilityId]);
         }
