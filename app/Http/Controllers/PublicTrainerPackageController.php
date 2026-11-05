@@ -18,6 +18,7 @@ class PublicTrainerPackageController extends Controller
     {
         abort_unless($trainerPackage->is_active, 404);
         $trainerPackage->load(['trainers:id,name,specialty', 'facilities:id,name']);
+        abort_unless($trainerPackage->facilities->count() === 1, 404, 'Paket trainer harus terhubung ke tepat satu olahraga.');
 
         return Inertia::render('trainer-packages/Show', [
             'package' => [
@@ -32,10 +33,10 @@ class PublicTrainerPackageController extends Controller
                     'name' => $trainer->name,
                     'specialty' => $trainer->specialty,
                 ])->values(),
-                'facilities' => $trainerPackage->facilities->map(fn ($facility) => [
-                    'id' => $facility->id,
-                    'name' => $facility->name,
-                ])->values(),
+                'facility' => [
+                    'id' => $trainerPackage->facilities->first()->id,
+                    'name' => $trainerPackage->facilities->first()->name,
+                ],
             ],
             'canPurchase' => $request->user()?->role?->name === 'Member',
         ]);
@@ -46,18 +47,19 @@ class PublicTrainerPackageController extends Controller
         abort_unless($trainerPackage->is_active, 404);
         $data = $request->validate([
             'trainer_id' => ['required', 'integer', 'exists:trainers,id'],
-            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
-        ]);
+            ]);
 
         $trainerPackage->load(['trainers:id', 'facilities:id']);
+        abort_unless($trainerPackage->facilities->count() === 1, 422, 'Paket trainer harus terhubung ke tepat satu olahraga.');
         abort_unless($trainerPackage->trainers->contains('id', (int) $data['trainer_id']), 422, 'Trainer tidak tersedia untuk paket ini.');
-        abort_unless($trainerPackage->facilities->contains('id', (int) $data['facility_id']), 422, 'Olahraga tidak sesuai dengan paket ini.');
+        $facilityId = (int) $trainerPackage->facilities->first()->id;
+        abort_unless(\App\Models\Trainer::query()->whereKey($data['trainer_id'])->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facilityId))->exists(), 422, 'Trainer tidak terdaftar pada olahraga paket ini.');
 
-        DB::transaction(function () use ($request, $trainerPackage, $data) {
+        DB::transaction(function () use ($request, $trainerPackage, $data, $facilityId) {
             $member = User::query()->lockForUpdate()->findOrFail($request->user()->id);
             $latestPackage = MemberTrainerPackage::query()
                 ->where('user_id', $member->id)
-                ->where('facility_id', $data['facility_id'])
+                ->where('facility_id', $facilityId)
                 ->where('status', 'active')
                 ->whereColumn('used_sessions', '<', 'total_sessions')
                 ->whereDate('expires_at', '>=', today())
@@ -72,7 +74,7 @@ class PublicTrainerPackageController extends Controller
                 'user_id' => $member->id,
                 'trainer_package_id' => $trainerPackage->id,
                 'trainer_id' => $data['trainer_id'],
-                'facility_id' => $data['facility_id'],
+                'facility_id' => $facilityId,
                 'start_date' => $start->toDateString(),
                 'expires_at' => $expires->toDateString(),
                 'total_sessions' => $trainerPackage->total_sessions,
