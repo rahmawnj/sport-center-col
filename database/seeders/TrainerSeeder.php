@@ -29,14 +29,14 @@ class TrainerSeeder extends Seeder
 
 
         $trainers = [
-            ['name' => 'Alex Wijaya', 'email' => 'alex.wijaya@trainer.test', 'phone' => '081200000101'],
-            ['name' => 'Bima Saputra', 'email' => 'bima.saputra@trainer.test', 'phone' => '081200000102'],
-            ['name' => 'Citra Maharani', 'email' => 'citra.maharani@trainer.test', 'phone' => '081200000103'],
-            ['name' => 'Dimas Pratama', 'email' => 'dimas.pratama@trainer.test', 'phone' => '081200000104'],
-            ['name' => 'Eka Putri', 'email' => 'eka.putri@trainer.test', 'phone' => '081200000105'],
-            ['name' => 'Farhan Ramadhan', 'email' => 'farhan.ramadhan@trainer.test', 'phone' => '081200000106'],
-            ['name' => 'Gita Anggraini', 'email' => 'gita.anggraini@trainer.test', 'phone' => '081200000107'],
-            ['name' => 'Hendra Kurniawan', 'email' => 'hendra.kurniawan@trainer.test', 'phone' => '081200000108'],
+            ['name' => 'Alex Wijaya', 'email' => 'alex.wijaya@trainer.test'],
+            ['name' => 'Bima Saputra', 'email' => 'bima.saputra@trainer.test'],
+            ['name' => 'Citra Maharani', 'email' => 'citra.maharani@trainer.test'],
+            ['name' => 'Dimas Pratama', 'email' => 'dimas.pratama@trainer.test'],
+            ['name' => 'Eka Putri', 'email' => 'eka.putri@trainer.test'],
+            ['name' => 'Farhan Ramadhan', 'email' => 'farhan.ramadhan@trainer.test'],
+            ['name' => 'Gita Anggraini', 'email' => 'gita.anggraini@trainer.test'],
+            ['name' => 'Hendra Kurniawan', 'email' => 'hendra.kurniawan@trainer.test'],
         ];
 
         foreach ($trainers as $index => $data) {
@@ -52,7 +52,6 @@ class TrainerSeeder extends Seeder
                 [
                     'name' => $data['name'],
                     'specialty' => 'Personal Trainer',
-                    'phone' => $data['phone'],
                 ]
             );
 
