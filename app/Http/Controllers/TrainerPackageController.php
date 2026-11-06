@@ -42,6 +42,7 @@ class TrainerPackageController extends Controller
             ]);
 
         $members = User::query()->whereHas('memberProfile')->orderBy('name')->get(['id', 'name']);
+        $trainers = Trainer::query()->with(['facilities' => fn ($query) => $query->where('has_membership', true)->select('facilities.id', 'facilities.name')])->orderBy('name')->get(['id', 'name', 'specialty'])->map(fn (Trainer $trainer) => ['id' => $trainer->id, 'name' => $trainer->name, 'specialty' => $trainer->specialty, 'facility_ids' => $trainer->facilities->pluck('id')->map(fn ($id) => (int) $id)->all()]);
         $facilities = Facility::query()->where('status', 'active')->where('has_membership', true)->orderBy('name')->get(['id', 'name']);
 
         $memberPackages = MemberTrainerPackage::query()
@@ -84,6 +85,7 @@ class TrainerPackageController extends Controller
             'packages' => $packages,
             'packageOptions' => TrainerPackage::query()->where('is_active', true)->whereHas('facility', fn ($query) => $query->where('has_membership', true))->orderBy('name')->get(['id', 'facility_id', 'name', 'total_sessions', 'price'])->map(fn (TrainerPackage $package) => ['id' => $package->id, 'name' => $package->name, 'total_sessions' => $package->total_sessions, 'price' => (float) $package->price, 'facility_id' => $package->facility_id]),
             'members' => $members,
+            'trainers' => $trainers,
             'facilities' => $facilities,
             'memberPackages' => $memberPackages,
             'filters' => ['search' => $search, 'status' => $status],
@@ -124,8 +126,6 @@ class TrainerPackageController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
-            'trainer_ids' => ['required', 'array', 'min:1'],
-            'trainer_ids.*' => ['required', 'integer', 'distinct', 'exists:trainers,id'],
         ]);
 
         $trainerPackage->update($data);
