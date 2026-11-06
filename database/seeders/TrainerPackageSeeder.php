@@ -12,6 +12,7 @@ class TrainerPackageSeeder extends Seeder
     {
         $facilities = Facility::query()
             ->where('status', 'active')
+            ->where('has_membership', true)
             ->orderBy('id')
             ->get();
 
@@ -51,7 +52,6 @@ class TrainerPackageSeeder extends Seeder
                         'is_active' => true,
                     ]
                 );
-
             }
         }
     }
