@@ -102,7 +102,7 @@ class PublicMembershipRegistrationController extends Controller
         $rules = [
             'package_id' => [$isTrainerOnly ? 'nullable' : 'required', 'integer', 'exists:packages,id'],
             'trainer_package_id' => [$isTrainerOnly ? 'required' : 'nullable', 'integer', 'exists:trainer_packages,id'],
-            'trainer_id' => ['required_with:trainer_package_id', 'integer', 'exists:trainers,id'],
+            'trainer_id' => ['nullable', 'required_with:trainer_package_id', 'integer', 'exists:trainers,id'],
             'purchase_type' => ['nullable', Rule::in(['trainer'])],
             'terms_accepted' => ['required', 'accepted'],
             'payment_method' => ['required', Rule::in(['bank_transfer', 'cash'])],
