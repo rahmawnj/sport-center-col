@@ -16,6 +16,7 @@ return new class extends Migration
             $table->date('date_of_birth')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->text('address')->nullable();
+            $table->string('face_photo_path')->nullable();
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone', 50)->nullable();
             $table->timestamps();
