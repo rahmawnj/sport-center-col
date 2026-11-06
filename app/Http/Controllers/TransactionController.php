@@ -371,7 +371,7 @@ class TransactionController extends Controller
      * Ambil tanggal mulai berikutnya dari antrean global membership + trainer.
      * Semua paket aktif milik member diperhitungkan, lintas fasilitas.
      */
-    private function nextPurchaseStartDate(int $userId, ?int $excludeMembershipId = null, ?int $excludeTrainerPurchaseId = null): Carbon
+    private function nextPurchaseStartDate(int $userId, ?int $excludeMembershipId = null, ?int $excludeTrainerPurchaseId = null): \Carbon\CarbonInterface
     {
         $membershipEnd = UserMembership::query()
             ->where('user_id', $userId)
