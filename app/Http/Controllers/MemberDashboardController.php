@@ -84,8 +84,29 @@ class MemberDashboardController extends Controller
             ->withQueryString()
             ->through(fn (UserMembership $membership) => $this->membershipRow($membership));
 
+        $trainerPackages = MemberTrainerPackage::query()
+            ->with(['trainerPackage:id,name,total_sessions,duration_days', 'trainer:id,name,specialty', 'facility:id,name'])
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->paginate(10, ['*'], 'trainer_packages_page')
+            ->withQueryString()
+            ->through(fn (MemberTrainerPackage $item) => [
+                'id' => $item->id,
+                'package' => $item->trainerPackage?->name ?? 'Paket personal trainer',
+                'trainer' => $item->trainer?->name ?? 'Trainer belum tersedia',
+                'specialty' => $item->trainer?->specialty,
+                'facility' => $item->facility?->name,
+                'start_date' => $item->start_date?->toDateString(),
+                'expires_at' => $item->expires_at?->toDateString(),
+                'total_sessions' => (int) $item->total_sessions,
+                'used_sessions' => (int) $item->used_sessions,
+                'remaining_sessions' => $item->remaining_sessions,
+                'status' => $item->status,
+            ]);
+
         return Inertia::render('member/Membership', [
             'memberships' => $memberships,
+            'trainerPackages' => $trainerPackages,
         ]);
     }
 
