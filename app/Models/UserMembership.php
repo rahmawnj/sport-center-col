@@ -9,6 +9,7 @@ class UserMembership extends Model
 {
     protected $fillable = [
         'user_id',
+        'transaction_id',
         'package_id',
         'device_id',
         'start_date',
