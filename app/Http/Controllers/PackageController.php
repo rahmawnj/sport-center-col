@@ -57,9 +57,9 @@ class PackageController extends Controller
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', Rule::in(['session', 'membership', 'entry'])],
+            'type' => ['required', Rule::in(['session', 'entry'])],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'required_if:type,session'],
-            'duration_days' => ['nullable', 'integer', 'min:1', 'required_if:type,membership'],
+            'duration_days' => ['prohibited'],
             'pricing_rules' => ['required', 'array', 'min:1'],
             'pricing_rules.*.day_type' => ['required', Rule::in(['weekday', 'weekend', 'all'])],
             'pricing_rules.*.date_start' => ['nullable', 'date'],
