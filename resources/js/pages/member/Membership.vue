@@ -3,7 +3,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
 defineOptions({ layout: MemberDashboardLayout });
-type Membership = { id:number; package:string; facility:string|null; start_date:string|null; end_date:string|null; duration_days:number|null; status:string; scan_count:number };\ntype TrainerPackage = { id:number; package:string; trainer:string; specialty:string|null; facility:string|null; start_date:string|null; expires_at:string|null; total_sessions:number; used_sessions:number; remaining_sessions:number; status:string };
+type Membership = { id:number; package:string; facility:string|null; start_date:string|null; end_date:string|null; duration_days:number|null; status:string; scan_count:number };
+type TrainerPackage = { id:number; package:string; trainer:string; specialty:string|null; facility:string|null; start_date:string|null; expires_at:string|null; total_sessions:number; used_sessions:number; remaining_sessions:number; status:string };
 defineProps<{ memberships:{data:Membership[];links:{url:string|null;label:string;active:boolean}[]}; trainerPackages:{data:TrainerPackage[];links:{url:string|null;label:string;active:boolean}[]} }>();
 const dateLabel = (value:string|null) => value ? new Date(value+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}) : '—';
 const statusLabel = (value:string) => ({active:'Aktif',scheduled:'Menunggu giliran',pending:'Menunggu pembayaran',completed:'Selesai',expired:'Kedaluwarsa',cancelled:'Dibatalkan'}[value] || value);
