@@ -124,6 +124,7 @@ class PublicHomeController extends Controller
             ->get()
             ->map(fn (Package $package) => [
                 'id' => $package->id,
+                'facility_id' => $package->facility_id,
                 'name' => $package->name,
                 'facility' => $package->facility?->name,
                 'duration_days' => $package->duration_days,
