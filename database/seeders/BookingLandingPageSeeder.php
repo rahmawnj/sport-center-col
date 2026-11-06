@@ -299,16 +299,21 @@ class BookingLandingPageSeeder extends Seeder
             }
 
             foreach ([
-                ['name' => 'Coach Padel 1', 'specialty' => 'Padel'],
-                ['name' => 'Coach Gym 1', 'specialty' => 'Personal Training'],
-                ['name' => 'Instruktur Yoga', 'specialty' => 'Yoga'],
-                ['name' => 'Instruktur Pilates', 'specialty' => 'Pilates'],
-                ['name' => 'Instruktur Spinning', 'specialty' => 'Spinning'],
-            ] as $trainer) {
-                Trainer::updateOrCreate(
-                    ['name' => $trainer['name']],
-                    ['specialty' => $trainer['specialty']]
+                ['name' => 'Coach Padel 1', 'specialty' => 'Padel', 'facility' => 'padel'],
+                ['name' => 'Coach Gym 1', 'specialty' => 'Personal Training', 'facility' => 'gym'],
+                ['name' => 'Instruktur Yoga', 'specialty' => 'Yoga', 'facility' => 'yoga'],
+                ['name' => 'Instruktur Pilates', 'specialty' => 'Pilates', 'facility' => 'pilates'],
+                ['name' => 'Instruktur Spinning', 'specialty' => 'Spinning', 'facility' => 'spinning'],
+            ] as $trainerData) {
+                $trainer = Trainer::updateOrCreate(
+                    ['name' => $trainerData['name']],
+                    ['specialty' => $trainerData['specialty']]
                 );
+
+                // Keep demo trainers connected to their sport through facility_trainer.
+                if (isset($facilities[$trainerData['facility']])) {
+                    $trainer->facilities()->syncWithoutDetaching([$facilities[$trainerData['facility']]->id]);
+                }
             }
         });
     }
