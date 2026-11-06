@@ -24,41 +24,55 @@ class PublicMembershipRegistrationController extends Controller
 {
     public function create(Request $request): Response
     {
-        $package = $this->availableMembershipPackages()
-            ->whereKey($request->integer('package_id'))
-            ->firstOrFail();
-
+        $isTrainerOnly = $request->input('purchase_type') === 'trainer';
+        $package = null;
         $trainerPackage = null;
         $trainer = null;
 
-        if ($request->filled('trainer_package_id')) {
+        if (! $isTrainerOnly) {
+            $package = $this->availableMembershipPackages()
+                ->whereKey($request->integer('package_id'))
+                ->firstOrFail();
+        }
+
+        if ($isTrainerOnly || $request->filled('trainer_package_id')) {
             $trainerPackage = TrainerPackage::query()
                 ->where('is_active', true)
-                ->where('facility_id', $package->facility_id)
+                ->whereHas('facility', fn ($query) => $query
+                    ->where('status', 'active')
+                    ->where('is_bookable_online', true)
+                    ->where('has_membership', true))
                 ->findOrFail($request->integer('trainer_package_id'));
+            if ($package) {
+                abort_unless((int) $trainerPackage->facility_id === (int) $package->facility_id, 404);
+            }
         }
 
         if ($request->filled('trainer_id')) {
             abort_unless($trainerPackage, 404);
+            $facilityId = $package?->facility_id ?? $trainerPackage->facility_id;
             $trainer = Trainer::query()
-                ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $package->facility_id))
+                ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facilityId))
                 ->findOrFail($request->integer('trainer_id'));
         }
 
-        abort_if($trainerPackage && ! $trainer, 404, 'Pilih trainer untuk add-on yang dipilih.');
+        abort_if($trainerPackage && ! $trainer, 404, 'Pilih trainer untuk paket yang dipilih.');
 
         return Inertia::render('membership/Register', [
             'selection' => [
-                'package' => [
+                'purchase_type' => $isTrainerOnly ? 'trainer' : 'membership',
+                'package' => $package ? [
                     'id' => $package->id,
                     'name' => $package->name,
                     'facility_id' => $package->facility_id,
                     'facility' => $package->facility?->name,
                     'duration_days' => (int) $package->duration_days,
                     'price' => (float) $package->price,
-                ],
+                ] : null,
                 'trainer_package' => $trainerPackage ? [
                     'id' => $trainerPackage->id,
+                    'facility_id' => $trainerPackage->facility_id,
+                    'facility' => $trainerPackage->facility?->name,
                     'name' => $trainerPackage->name,
                     'total_sessions' => (int) $trainerPackage->total_sessions,
                     'duration_days' => (int) $trainerPackage->duration_days,
@@ -69,7 +83,7 @@ class PublicMembershipRegistrationController extends Controller
                     'name' => $trainer->name,
                     'specialty' => $trainer->specialty,
                 ] : null,
-                'total' => (float) $package->price + (float) ($trainerPackage?->price ?? 0),
+                'total' => (float) ($package?->price ?? 0) + (float) ($trainerPackage?->price ?? 0),
                 'payment_method' => $request->input('payment_method') === 'cash' ? 'cash' : 'bank_transfer',
             ],
             'currentUser' => $request->user()?->role?->name === 'Member' && $request->user()->memberProfile()->exists() ? [
