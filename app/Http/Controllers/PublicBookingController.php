@@ -185,6 +185,30 @@ class PublicBookingController extends Controller
         $total = (int) round($this->bookingPrice($package, $data) + $addonPrice);
 
         $booking = DB::transaction(function () use ($request, $package, $data, $total, $trainerAddon, $addonPrice) {
+            if ($trainerAddon) {
+                // Serialize bookings for the same trainer to prevent overlapping assignments.
+                $trainerAddon->newQuery()->whereKey($trainerAddon->id)->lockForUpdate()->first();
+                $trainerBookings = BookingTrainerAddon::query()
+                    ->where('trainer_id', $trainerAddon->id)
+                    ->whereHas('booking', fn ($query) => $query
+                        ->whereDate('date', $data['date'])
+                        ->whereNotIn('status', ['cancelled']));
+
+                if (! empty($data['start_time'])) {
+                    $trainerStart = Carbon::createFromFormat('H:i', $data['start_time']);
+                    $trainerEnd = $trainerStart->copy()->addHours(max(1, (int) ($data['duration_hours'] ?? 1)));
+                    $trainerBookings->whereHas('booking', fn ($query) => $query
+                        ->whereTime('start_time', '<', $trainerEnd->format('H:i:s'))
+                        ->whereTime('end_time', '>', $trainerStart->format('H:i:s')));
+                }
+
+                if ($trainerBookings->exists()) {
+                    throw ValidationException::withMessages([
+                        'trainer_id' => 'Trainer sudah memiliki booking pada tanggal atau jam tersebut. Silakan pilih trainer lain.',
+                    ]);
+                }
+            }
+
             $booking = $this->storeBooking($request, $package, $data);
             if ($trainerAddon) {
                 $booking->trainerAddon()->create([
