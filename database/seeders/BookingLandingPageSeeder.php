@@ -204,8 +204,17 @@ class BookingLandingPageSeeder extends Seeder
                             'type' => $packageData['type'],
                             'duration_minutes' => $packageData['minutes'] ?? 60,
                             'duration_days' => $packageData['days'],
+                            'price' => $packageData['type'] === 'membership'
+                                ? (float) ($packageData['rules'][0][3] ?? 0)
+                                : 0,
                         ]
                     );
+
+                    if ($packageData['type'] === 'membership') {
+                        // Membership memakai satu harga tetap di packages.price.
+                        // Tidak membuat package_pricing_rules untuk membership.
+                        continue;
+                    }
 
                     foreach ($packageData['rules'] as [$dayType, $start, $end, $price, $priority]) {
                         PackagePricingRule::updateOrCreate(
