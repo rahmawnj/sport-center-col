@@ -142,7 +142,7 @@ class MemberDashboardController extends Controller
             ->withQueryString()
             ->through(fn (Transaction $transaction) => [
                 'id' => $transaction->id,
-                'booking_code' => $transaction->booking_code,
+                'invoice_number' => $transaction->invoice_number,
                 'reference' => match ($transaction->transactionable_type) {
                     UserMembership::class => 'Membership',
                     MemberTrainerPackage::class => 'Paket personal trainer',
@@ -166,7 +166,7 @@ class MemberDashboardController extends Controller
                 'id' => $transaction->id,
                 'invoice_number' => $transaction->booking_code,
                 'customer_name' => $transaction->guest_name,
-                'customer_type' => $transaction->customer_type,
+                'transaction_type' => $transaction->transactionable_type,
                 'amount' => (float) $transaction->total_amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
