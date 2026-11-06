@@ -18,7 +18,7 @@ class MemberDashboardController extends Controller
         $today = today();
 
         $bookings = Booking::query()
-            ->with(['court:id,name,facility_id', 'court.facility:id,name'])
+            ->with(['court:id,name,facility_id', 'court.facility:id,name', 'trainerAddon.trainer'])
             ->where('user_id', $user->id)
             ->latest('date')
             ->latest('start_time')
@@ -174,6 +174,8 @@ class MemberDashboardController extends Controller
             'end_time' => $booking->end_time ? substr((string) $booking->end_time, 0, 5) : null,
             'court' => $booking->court?->name,
             'facility' => $booking->court?->facility?->name,
+            'trainer' => $booking->trainerAddon?->trainer?->name,
+            'trainer_addon_price' => (float) ($booking->trainerAddon?->price ?? 0),
             'status' => $booking->status,
             'scan_count' => (int) $booking->scan_count,
         ];
