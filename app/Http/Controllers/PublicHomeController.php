@@ -109,7 +109,7 @@ class PublicHomeController extends Controller
                 ->where('has_membership', true))
             ->with([
                 'facility:id,name,slug',
-                'pricingRules' => fn ($query) => $query
+                'membershipPricingRules' => fn ($query) => $query
                     ->where(fn ($rules) => $rules->whereNull('date_start')->orWhereDate('date_start', '<=', today()))
                     ->where(fn ($rules) => $rules->whereNull('date_end')->orWhereDate('date_end', '>=', today()))
                     ->orderBy('price'),
@@ -122,7 +122,7 @@ class PublicHomeController extends Controller
                 'name' => $package->name,
                 'facility' => $package->facility?->name,
                 'duration_days' => $package->duration_days,
-                'price' => $package->pricingRules->isEmpty() ? null : (float) $package->pricingRules->min('price'),
+                'price' => $package->membershipPricingRules->isEmpty() ? null : (float) $package->membershipPricingRules->min('price'),
                 'description' => 'Membership '.$package->facility?->name.' selama '.$package->duration_days.' hari.',
             ])->values();
 
