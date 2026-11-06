@@ -185,6 +185,10 @@ class PublicMembershipRegistrationController extends Controller
                 MemberProfile::create(['user_id' => $user->id, 'phone' => $data['phone']]);
             }
 
+            // Serialisasi pembelian member yang sama agar dua checkout bersamaan
+            // tidak mendapatkan tanggal mulai yang bertabrakan.
+            User::query()->lockForUpdate()->findOrFail($user->id);
+
             $start = today();
 
             if ($package) {
