@@ -14,6 +14,7 @@ class Package extends Model
         'type',
         'duration_minutes',
         'duration_days',
+        'price',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class Package extends Model
         return [
             'duration_minutes' => 'integer',
             'duration_days' => 'integer',
+            'price' => 'decimal:2',
         ];
     }
 
