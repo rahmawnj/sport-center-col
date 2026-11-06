@@ -10,6 +10,7 @@ class UserMembership extends Model
     protected $fillable = [
         'user_id',
         'package_id',
+        'device_id',
         'start_date',
         'end_date',
         'status',
@@ -31,6 +32,11 @@ class UserMembership extends Model
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function device(): BelongsTo
+    {
+        return $this->belongsTo(Device::class);
     }
 
     public function isActive(): bool
