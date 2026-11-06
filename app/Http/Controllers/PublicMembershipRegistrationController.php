@@ -207,7 +207,7 @@ class PublicMembershipRegistrationController extends Controller
 
             $latestEnd = collect([$latestMembershipEnd, $latestTrainerEnd])
                 ->filter()
-                ->map(fn ($date) => \\Illuminate\\Support\\Carbon::parse($date))
+                ->map(fn ($date) => \Illuminate\Support\Carbon::parse($date))
                 ->sort()
                 ->last();
 
