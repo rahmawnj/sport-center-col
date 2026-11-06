@@ -24,6 +24,18 @@ class Trainer extends Model
         return $this->belongsToMany(Facility::class)->withTimestamps();
     }
 
+    public function addonPackages(): BelongsToMany
+    {
+        return $this->belongsToMany(Package::class, 'package_trainer_addons')
+            ->withPivot('price')
+            ->withTimestamps();
+    }
+
+    public function bookingAddons(): HasMany
+    {
+        return $this->hasMany(BookingTrainerAddon::class);
+    }
+
     public function memberPackages(): HasMany
     {
         return $this->hasMany(MemberTrainerPackage::class);
