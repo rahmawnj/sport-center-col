@@ -12,6 +12,7 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\PublicMembershipController;
+use App\Http\Controllers\PublicMembershipRegistrationController;
 use App\Http\Controllers\PublicTrainerPackageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TrainerController;
@@ -26,6 +27,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PublicHomeController::class, 'index'])->name('home');
 Route::get('pelatih/{trainer}', [PublicHomeController::class, 'showTrainer'])->name('public.trainers.show');
 Route::get('membership', [PublicMembershipController::class, 'index'])->name('membership.index');
+Route::middleware('guest')->group(function () {
+    Route::get('membership/register', [PublicMembershipRegistrationController::class, 'create'])->name('membership.register');
+    Route::post('membership/register', [PublicMembershipRegistrationController::class, 'store'])->name('membership.register.store');
+});
 Route::get('membership/{package}', [PublicMembershipController::class, 'show'])->whereNumber('package')->name('membership.show');
 Route::get('trainer-packages/{trainerPackage}', [PublicTrainerPackageController::class, 'show'])->whereNumber('trainerPackage')->name('public.trainer-packages.show');
 
