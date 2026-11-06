@@ -38,7 +38,7 @@ class MemberDashboardController extends Controller
             ->where('user_id', $user->id)
             ->latest()
             ->limit(5)
-            ->get(['id', 'booking_code', 'guest_name', 'user_id', 'total_amount', 'payment_method', 'payment_status', 'created_at']);
+            ->get(['id', 'invoice_number', 'guest_name', 'user_id', 'total_amount', 'payment_method', 'payment_status', 'created_at']);
 
         return Inertia::render('member/Dashboard', [
             'stats' => [
