@@ -20,7 +20,7 @@ class MembershipController extends Controller
         $search = trim((string) $request->input('search', ''));
         $memberships = UserMembership::query()
             ->with(['user:id,name', 'package:id,name,duration_days'])
-            ->where('status', '!=', 'cancelled')
+            ->where('status', 'active')
             ->whereDate('start_date', '<=', today())
             ->whereDate('end_date', '>=', today())
             ->when($search !== '', fn ($query) => $query->whereHas(
@@ -36,10 +36,10 @@ class MembershipController extends Controller
             'memberships' => $memberships,
             'filters' => ['search' => $search, 'status' => 'active'],
             'stats' => [
-                'active' => UserMembership::where('status', '!=', 'cancelled')
+                'active' => UserMembership::where('status', 'active')
                     ->whereDate('start_date', '<=', today())
                     ->whereDate('end_date', '>=', today())->count(),
-                'expiring' => UserMembership::where('status', '!=', 'cancelled')
+                'expiring' => UserMembership::where('status', 'active')
                     ->whereDate('start_date', '<=', today())
                     ->whereDate('end_date', '>=', today())
                     ->whereDate('end_date', '<=', today()->addDays(7))->count(),
@@ -53,14 +53,15 @@ class MembershipController extends Controller
     {
         $membership->load(['user.memberProfile', 'package']);
 
+        $pending = $membership->status === 'pending';
         $cancelled = $membership->status === 'cancelled';
-        $scheduled = ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
+        $scheduled = ! $pending && ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
         $expired = ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
 
         return Inertia::render('memberships/Show', [
             'membership' => [
                 'id' => $membership->id,
-                'status' => $cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active')),
+                'status' => $pending ? 'pending' : ($cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active'))),
                 'start_date' => $membership->start_date?->toDateString(),
                 'end_date' => $membership->end_date?->toDateString(),
                 'days_left' => (int) Carbon::today()->diffInDays($membership->end_date, false),
@@ -89,9 +90,13 @@ class MembershipController extends Controller
         ]);
 
         $newStart = Carbon::parse($data['start_date']);
-        $status = $membership->status === 'cancelled'
-            ? 'cancelled'
-            : ($newStart->gt(Carbon::today()) ? 'active' : (Carbon::parse($data['end_date'])->lt(Carbon::today()) ? 'expired' : 'active'));
+        $status = match ($membership->status) {
+            'pending' => 'pending',
+            'cancelled' => 'cancelled',
+            default => $newStart->gt(Carbon::today())
+                ? 'active'
+                : (Carbon::parse($data['end_date'])->lt(Carbon::today()) ? 'expired' : 'active'),
+        };
 
         $membership->update([
             'start_date' => $data['start_date'],
@@ -169,8 +174,9 @@ class MembershipController extends Controller
      */
     private function toRow(UserMembership $membership): array
     {
+        $pending = $membership->status === 'pending';
         $cancelled = $membership->status === 'cancelled';
-        $scheduled = ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
+        $scheduled = ! $pending && ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
         $expired = ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
 
         return [
