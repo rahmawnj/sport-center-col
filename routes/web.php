@@ -102,7 +102,12 @@ Route::middleware(['auth'])->group(function () {
         Route::put('members/{member}', [MemberController::class, 'update'])->name('members.update');
         Route::delete('members/{member}', [MemberController::class, 'destroy'])->name('members.destroy');
 
-        Route::get('membership-packages', [MembershipPackageController::class, 'index'])->name('membership-packages.index');\n        Route::post('membership-packages', [MembershipPackageController::class, 'store'])->name('membership-packages.store');\n        Route::put('membership-packages/{package}', [MembershipPackageController::class, 'update'])->name('membership-packages.update');\n        Route::delete('membership-packages/{package}', [MembershipPackageController::class, 'destroy'])->name('membership-packages.destroy');\n\n        Route::get('memberships', [MembershipController::class, 'index'])->name('memberships.index');
+        Route::get('membership-packages', [MembershipPackageController::class, 'index'])->name('membership-packages.index');
+        Route::post('membership-packages', [MembershipPackageController::class, 'store'])->name('membership-packages.store');
+        Route::put('membership-packages/{package}', [MembershipPackageController::class, 'update'])->name('membership-packages.update');
+        Route::delete('membership-packages/{package}', [MembershipPackageController::class, 'destroy'])->name('membership-packages.destroy');
+
+        Route::get('memberships', [MembershipController::class, 'index'])->name('memberships.index');
         Route::get('memberships/{membership}', [MembershipController::class, 'show'])->name('memberships.show');
         Route::put('memberships/{membership}', [MembershipController::class, 'update'])->name('memberships.update');
         Route::post('memberships/{membership}/renew', [MembershipController::class, 'renew'])->name('memberships.renew');
