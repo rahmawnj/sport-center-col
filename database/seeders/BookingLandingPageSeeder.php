@@ -235,6 +235,12 @@ class BookingLandingPageSeeder extends Seeder
                 }
             }
 
+            // Bersihkan aturan harga lama milik membership. Harga membership
+            // sekarang hanya disimpan pada packages.price.
+            PackagePricingRule::query()
+                ->whereHas('package', fn ($query) => $query->where('type', 'membership'))
+                ->delete();
+
             // Controllers: one per room for per-court sports, one per venue otherwise.
             $devicePlan = [
                 'padel' => ['per_court' => true],
