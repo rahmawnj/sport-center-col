@@ -189,24 +189,29 @@ class PublicMembershipRegistrationController extends Controller
             // tidak mendapatkan tanggal mulai yang bertabrakan.
             User::query()->lockForUpdate()->findOrFail($user->id);
 
-            $start = today();
+            // Semua pembelian membership dan trainer memakai satu antrean
+            // global per member, tanpa membedakan fasilitas atau jenis paket.
+            $latestMembershipEnd = UserMembership::query()
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->whereDate('end_date', '>=', today())
+                ->lockForUpdate()
+                ->max('end_date');
 
-            if ($package) {
-                // Membership baru untuk fasilitas yang sama dimulai setelah
-                // masa membership aktif/terjadwal terakhir selesai.
-                $latestMembership = UserMembership::query()
-                    ->where('user_id', $user->id)
-                    ->where('status', 'active')
-                    ->whereDate('end_date', '>=', today())
-                    ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
-                    ->orderByDesc('end_date')
-                    ->lockForUpdate()
-                    ->first();
+            $latestTrainerEnd = MemberTrainerPackage::query()
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->whereDate('expires_at', '>=', today())
+                ->lockForUpdate()
+                ->max('expires_at');
 
-                if ($latestMembership?->end_date) {
-                    $start = $latestMembership->end_date->copy()->addDay();
-                }
-            }
+            $latestEnd = collect([$latestMembershipEnd, $latestTrainerEnd])
+                ->filter()
+                ->map(fn ($date) => \\Illuminate\\Support\\Carbon::parse($date))
+                ->sort()
+                ->last();
+
+            $start = $latestEnd ? $latestEnd->copy()->addDay() : today();
 
             $transaction = Transaction::create([
                 'user_id' => $user->id,
