@@ -15,6 +15,7 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->enum('status', ['active', 'expired', 'cancelled'])->default('active');
+            $table->unsignedInteger('scan_count')->default(0);
             $table->timestamps();
         });
     }
