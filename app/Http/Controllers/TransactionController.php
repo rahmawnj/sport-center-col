@@ -89,7 +89,10 @@ class TransactionController extends Controller
             ->where('status', 'active')
             ->with(['packages' => fn ($query) => $query
                 ->orderBy('name')
-                ->with(['pricingRules' => fn ($rules) => $rules->orderByDesc('priority')])])
+                ->with([
+                    'pricingRules' => fn ($rules) => $rules->orderByDesc('priority'),
+                    'membershipPricingRules' => fn ($rules) => $rules->orderByDesc('priority'),
+                ])])
             ->orderBy('name')
             ->get()
             ->map(fn (Facility $facility) => [
@@ -101,7 +104,7 @@ class TransactionController extends Controller
                     'type' => $package->type,
                     'duration_minutes' => $package->duration_minutes,
                     'duration_days' => $package->duration_days,
-                    'pricing_rules' => $package->pricingRules->map(fn ($rule) => [
+                    'pricing_rules' => ($package->type === 'membership' ? $package->membershipPricingRules : $package->pricingRules)->map(fn ($rule) => [
                         'id' => $rule->id,
                         'label' => $this->ruleLabel($rule),
                         'price' => (float) $rule->price,
@@ -192,6 +195,7 @@ class TransactionController extends Controller
         $data = $request->validate([
             'package_id' => ['required', 'integer', 'exists:packages,id'],
             'pricing_rule_id' => ['nullable', 'integer', 'exists:package_pricing_rules,id'],
+            'membership_pricing_rule_id' => ['nullable', 'integer', 'exists:membership_package_pricing_rules,id'],
             'quantity' => ['required', 'integer', 'min:1'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
