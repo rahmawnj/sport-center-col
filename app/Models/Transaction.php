@@ -29,6 +29,7 @@ class Transaction extends Model
         return [
             'amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'cancelled_at' => 'datetime',
         ];
     }
 
