@@ -16,6 +16,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -94,6 +96,30 @@ class PublicMembershipRegistrationController extends Controller
     }
 
     public function store(Request $request): RedirectResponse
+    {
+        try {
+            return $this->processStore($request);
+        } catch (Throwable $exception) {
+            Log::error('Membership registration checkout gagal.', [
+                'user_id' => $request->user()?->id,
+                'purchase_type' => $request->input('purchase_type', 'membership'),
+                'package_id' => $request->input('package_id'),
+                'trainer_package_id' => $request->input('trainer_package_id'),
+                'trainer_id' => $request->input('trainer_id'),
+                'payment_method' => $request->input('payment_method'),
+                'request_url' => $request->fullUrl(),
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            throw $exception;
+        }
+    }
+
+    private function processStore(Request $request): RedirectResponse
     {
         $isExistingMember = $request->user()?->role?->name === 'Member'
             && $request->user()->memberProfile()->exists();
