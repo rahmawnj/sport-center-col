@@ -12,7 +12,7 @@ import QrcodeVue from 'qrcode.vue';
 import { computed } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 
-type MembershipStatus = 'active' | 'scheduled' | 'expired' | 'cancelled';
+type MembershipStatus = 'pending' | 'active' | 'scheduled' | 'expired' | 'cancelled';
 type Props = {
     membership: {
         id: number;
@@ -41,6 +41,12 @@ const statusMeta: Record<
     MembershipStatus,
     { label: string; badge: string; dot: string; gradient: string }
 > = {
+    pending: {
+        label: 'Menunggu pembayaran',
+        badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        dot: 'bg-amber-500',
+        gradient: 'from-amber-400 to-orange-600',
+    },
     active: {
         label: 'Aktif',
         badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
