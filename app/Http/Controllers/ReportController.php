@@ -63,6 +63,7 @@ class ReportController extends Controller
         return Inertia::render('reports/Index', [
             'type' => $type,
             'types' => collect(self::TYPES)
+                ->filter(fn ($meta, $key) => $key !== 'membership')
                 ->map(fn ($meta, $key) => ['value' => $key, 'label' => $meta['label']])
                 ->values()
                 ->push(['value' => 'trainer', 'label' => 'Trainer']),
