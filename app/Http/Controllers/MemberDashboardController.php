@@ -143,11 +143,7 @@ class MemberDashboardController extends Controller
             ->through(fn (Transaction $transaction) => [
                 'id' => $transaction->id,
                 'invoice_number' => $transaction->invoice_number,
-                'reference' => match ($transaction->transactionable_type) {
-                    UserMembership::class => 'Membership',
-                    MemberTrainerPackage::class => 'Paket personal trainer',
-                    default => $transaction->customer_type === 'member' ? 'Transaksi member' : 'Transaksi umum',
-                },
+                'reference' => $transaction->transactionable_type === 'membership' ? 'Membership + Personal Trainer' : 'Booking',
                 'amount' => (float) $transaction->total_amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
