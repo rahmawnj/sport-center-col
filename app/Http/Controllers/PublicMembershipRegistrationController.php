@@ -160,6 +160,14 @@ class PublicMembershipRegistrationController extends Controller
             }
 
             $start = today();
+            $transaction = Transaction::create([
+                'user_id' => $user->id,
+                'transactionable_type' => $package ? 'membership' : 'trainer_package',
+                'guest_name' => $user->name,
+                'total_amount' => (float) ($package?->price ?? 0) + (float) ($trainerPackage?->price ?? 0),
+                'payment_method' => $data['payment_method'],
+                'payment_status' => 'unpaid',
+            ]);
 
             if ($package) {
                 $membershipEnd = $start->copy()->addDays(max(1, (int) $package->duration_days) - 1);
@@ -170,6 +178,7 @@ class PublicMembershipRegistrationController extends Controller
                     'start_date' => $start->toDateString(),
                     'end_date' => $membershipEnd->toDateString(),
                     'status' => 'active',
+                    'transaction_id' => $transaction->id,
                 ]);
             }
 
@@ -185,17 +194,9 @@ class PublicMembershipRegistrationController extends Controller
                     'total_sessions' => $trainerPackage->total_sessions,
                     'used_sessions' => 0,
                     'status' => 'pending',
+                    'transaction_id' => $transaction->id,
                 ]);
             }
-
-            $transaction = Transaction::create([
-                'user_id' => $user->id,
-                'transactionable_type' => $package ? 'membership' : 'trainer_package',
-                'guest_name' => $user->name,
-                'total_amount' => (float) ($package?->price ?? 0) + (float) ($trainerPackage?->price ?? 0),
-                'payment_method' => $data['payment_method'],
-                'payment_status' => 'unpaid',
-            ]);
 
             return ['user' => $user, 'transaction' => $transaction];
         });
