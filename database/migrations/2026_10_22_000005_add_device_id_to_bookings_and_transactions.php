@@ -16,10 +16,10 @@ return new class extends Migration
                 ->nullOnDelete();
         });
 
-        Schema::table('transactions', function (Blueprint $table) {
+        Schema::table('user_memberships', function (Blueprint $table) {
             $table->foreignId('device_id')
                 ->nullable()
-                ->after('user_id')
+                ->after('package_id')
                 ->constrained('devices')
                 ->nullOnDelete();
         });
@@ -27,12 +27,12 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('bookings', function (Blueprint $table) {
+        Schema::table('user_memberships', function (Blueprint $table) {
             $table->dropForeign(['device_id']);
             $table->dropColumn('device_id');
         });
 
-        Schema::table('transactions', function (Blueprint $table) {
+        Schema::table('bookings', function (Blueprint $table) {
             $table->dropForeign(['device_id']);
             $table->dropColumn('device_id');
         });
