@@ -3,10 +3,10 @@ import { Head, Link } from '@inertiajs/vue3';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
 defineOptions({ layout: MemberDashboardLayout });
-type Membership = { id:number; package:string; facility:string|null; start_date:string|null; end_date:string|null; duration_days:number|null; status:string; scan_count:number };
-defineProps<{ memberships:{data:Membership[];links:{url:string|null;label:string;active:boolean}[]} }>();
+type Membership = { id:number; package:string; facility:string|null; start_date:string|null; end_date:string|null; duration_days:number|null; status:string; scan_count:number };\ntype TrainerPackage = { id:number; package:string; trainer:string; specialty:string|null; facility:string|null; start_date:string|null; expires_at:string|null; total_sessions:number; used_sessions:number; remaining_sessions:number; status:string };
+defineProps<{ memberships:{data:Membership[];links:{url:string|null;label:string;active:boolean}[]}; trainerPackages:{data:TrainerPackage[];links:{url:string|null;label:string;active:boolean}[]} }>();
 const dateLabel = (value:string|null) => value ? new Date(value+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}) : '—';
-const statusLabel = (value:string) => ({active:'Aktif',scheduled:'Menunggu giliran',expired:'Kedaluwarsa',cancelled:'Dibatalkan'}[value] || value);
+const statusLabel = (value:string) => ({active:'Aktif',scheduled:'Menunggu giliran',pending:'Menunggu pembayaran',completed:'Selesai',expired:'Kedaluwarsa',cancelled:'Dibatalkan'}[value] || value);
 </script>
 <template>
   <Head title="Membership Saya" />
@@ -21,6 +21,18 @@ const statusLabel = (value:string) => ({active:'Aktif',scheduled:'Menunggu gilir
       </Link>
     </div>
     <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><div class="mx-auto grid size-14 place-items-center rounded-2xl bg-violet-50 text-2xl">🏆</div><h2 class="mt-4 font-bold text-slate-900">Belum ada membership</h2><p class="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">Pilih package membership yang tersedia untuk mulai menjadi member. Paket yang sudah terdaftar akan muncul di halaman ini.</p><Link href="/membership" class="mt-5 inline-flex rounded-xl bg-[#001428] px-4 py-3 text-sm font-semibold text-white">Jelajahi package</Link></div>
+    <section class="space-y-4">
+      <header><p class="text-xs font-bold uppercase tracking-[.18em] text-orange-700">Add-on latihan</p><h2 class="mt-2 text-xl font-bold text-slate-900">Paket Personal Trainer Saya</h2><p class="mt-1 text-sm text-slate-500">Paket trainer dan nama pelatih yang kamu pilih saat pendaftaran.</p></header>
+      <div v-if="trainerPackages.data.length" class="grid gap-4 lg:grid-cols-2">
+        <article v-for="item in trainerPackages.data" :key="item.id" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-orange-700">{{ item.facility || 'Sport Center' }}</p><h3 class="mt-2 text-lg font-bold text-slate-900">{{ item.package }}</h3></div><span class="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">{{ statusLabel(item.status) }}</span></div>
+          <div class="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-4"><span class="grid size-10 place-items-center rounded-xl bg-white text-orange-700"><i class="fa-solid fa-user-tie"></i></span><div><p class="font-semibold text-slate-900">{{ item.trainer }}</p><p class="text-sm text-slate-500">{{ item.specialty || 'Personal trainer' }}</p></div></div>
+          <div class="mt-4 grid grid-cols-2 gap-3"><div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Sisa sesi</p><p class="mt-1 font-bold text-slate-900">{{ item.remaining_sessions }} / {{ item.total_sessions }}</p></div><div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa berlaku sampai</p><p class="mt-1 text-sm font-semibold text-slate-900">{{ dateLabel(item.expires_at) }}</p></div></div>
+          <p class="mt-4 text-xs text-slate-500">Mulai {{ dateLabel(item.start_date) }} · {{ item.used_sessions }} sesi sudah digunakan</p>
+        </article>
+      </div>
+      <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center"><p class="font-semibold text-slate-800">Belum ada paket personal trainer</p><p class="mt-1 text-sm text-slate-500">Jika memilih add-on trainer saat pendaftaran membership, paketmu akan muncul di sini.</p></div>
+    </section>
     <nav v-if="memberships.links.length > 3" class="flex flex-wrap gap-2"><template v-for="link in memberships.links" :key="link.label"><Link v-if="link.url" :href="link.url" class="rounded-lg border px-3 py-2 text-sm" :class="link.active?'border-violet-300 bg-violet-50 font-bold':'border-slate-200 bg-white text-slate-600'" v-html="link.label" /><span v-else class="rounded-lg border border-slate-100 px-3 py-2 text-sm text-slate-300" v-html="link.label" /></template></nav>
   </div>
 </template>
