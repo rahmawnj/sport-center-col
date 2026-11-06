@@ -25,6 +25,7 @@ type SellPackage = {
     type: 'session' | 'membership' | 'entry';
     duration_minutes: number;
     duration_days: number | null;
+    price: number | null;
     pricing_rules: PricingRule[];
 };
 type Facility = {
@@ -97,7 +98,6 @@ const courtId = ref<number | null>(null);
 const form = useForm({
     package_id: null as number | null,
     pricing_rule_id: null as number | null,
-    membership_pricing_rule_id: null as number | null,
     quantity: 1,
     customer_name: '',
     payment_method: 'cash',
@@ -153,11 +153,11 @@ const membershipPeriod = computed(() => {
 
     return { start: formatDate(start), end: formatDate(end) };
 });
-const unitPrice = computed(() =>
-    isSession.value
-        ? (selectedSlot.value?.price ?? 0)
-        : (activeRule.value?.price ?? 0),
-);
+const unitPrice = computed(() => {
+    if (isSession.value) return selectedSlot.value?.price ?? 0;
+    if (isMembership.value) return selected.value?.price ?? 0;
+    return activeRule.value?.price ?? 0;
+});
 const total = computed(() =>
     isSession.value ? unitPrice.value : unitPrice.value * quantity.value,
 );
@@ -184,7 +184,7 @@ watch(facilityId, () => {
     memberId.value = '';
 });
 
-watch([activeRule, quantity, selectedSlot], () => {
+watch([unitPrice, quantity], () => {
     form.amount = total.value;
 });
 
@@ -233,7 +233,7 @@ watch(date, () => {
 
 function choosePackage(item: SellPackage) {
     selected.value = item;
-    ruleId.value = String(item.pricing_rules[0]?.id ?? '');
+    ruleId.value = item.type === 'membership' ? '' : String(item.pricing_rules[0]?.id ?? '');
 }
 
 function chooseSlot(slot: Slot) {
@@ -258,9 +258,6 @@ function submit() {
     form.pricing_rule_id = !isSession.value && !isMembership.value && ruleId.value
         ? Number(ruleId.value)
         : null;
-    form.membership_pricing_rule_id = isMembership.value && ruleId.value
-        ? Number(ruleId.value)
-        : null;
     form.quantity = isSession.value ? 1 : quantity.value;
     form.court_id = isSession.value ? courtId.value : null;
     form.date = isSession.value ? date.value : '';
@@ -273,10 +270,8 @@ function submit() {
 }
 
 function packageMinPrice(item: SellPackage) {
-    if (!item.pricing_rules.length) {
-        return '—';
-    }
-
+    if (item.type === 'membership') return item.price === null ? '—' : formatIDR(item.price);
+    if (!item.pricing_rules.length) return '—';
     return formatIDR(Math.min(...item.pricing_rules.map((rule) => rule.price)));
 }
 
@@ -563,7 +558,7 @@ function formatDate(value: Date) {
                     </div>
 
                     <div
-                        v-if="!isSession && selected.pricing_rules.length"
+                        v-if="!isSession && !isMembership && selected.pricing_rules.length"
                         class="grid gap-2"
                     >
                         <Label for="pos-rule" class="text-xs">Harga</Label>
