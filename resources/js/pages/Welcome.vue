@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
@@ -35,12 +35,14 @@ type TrainerItem = {
 
 type TrainerPackageItem = {
     id: number;
+    facility_id: number;
     name: string;
     total_sessions: number;
     duration_days: number;
     price: number;
     description: string | null;
     sports: string[];
+    trainers: TrainerItem[];
 };
 
 type MembershipPackage = {
@@ -66,6 +68,28 @@ const props = defineProps<{
 }>();
 
 const featuredFacilities = computed(() => props.facilities);
+
+const selectedTrainerPackage = ref<TrainerPackageItem | null>(null);
+const selectedTrainer = ref<TrainerItem | null>(null);
+const trainerModalOpen = ref(false);
+const trainerPaymentMethod = ref<'bank_transfer' | 'cash'>('bank_transfer');
+const openTrainerCheckout = (item: TrainerPackageItem) => {
+    selectedTrainerPackage.value = item;
+    selectedTrainer.value = null;
+    trainerPaymentMethod.value = 'bank_transfer';
+    trainerModalOpen.value = true;
+};
+const closeTrainerCheckout = () => { trainerModalOpen.value = false; };
+const continueTrainerCheckout = () => {
+    if (!selectedTrainerPackage.value || !selectedTrainer.value) return;
+    router.get('/membership/register', {
+        purchase_type: 'trainer',
+        trainer_package_id: selectedTrainerPackage.value.id,
+        trainer_id: selectedTrainer.value.id,
+        payment_method: trainerPaymentMethod.value,
+    });
+};
+
 
 const statsPanel = ref<HTMLElement | null>(null);
 const animatedStats = ref({
@@ -352,6 +376,74 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     </article>
                 </div>
             </section>
+
+
+            <section v-if="trainerPackages.length" id="paket-trainer" class="bg-[#f6f8f2]">
+                <div class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
+                    <div class="mb-10">
+                        <p class="section-kicker">Latihan lebih terarah</p>
+                        <h2 class="section-title">Pilih <span>paket personal trainer</span></h2>
+                        <p class="mt-3 max-w-xl text-slate-500">Pilih program latihan, tentukan trainer, lalu lanjutkan checkout.</p>
+                    </div>
+                    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        <article v-for="(item, index) in trainerPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="rounded-full bg-[#f2f7df] px-3 py-1.5 text-xs font-extrabold text-[#6e9000]">{{ item.sports[0] || 'Personal Trainer' }}</span>
+                                <span class="text-xs font-bold text-slate-400">{{ String(index + 1).padStart(2, '0') }}</span>
+                            </div>
+                            <h3 class="mt-5 text-xl font-extrabold text-[#001428]">{{ item.name }}</h3>
+                            <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ item.description || 'Program latihan personal bersama trainer.' }}</p>
+                            <div class="mt-5 grid grid-cols-2 gap-3">
+                                <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Jumlah sesi</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.total_sessions }} sesi</p></div>
+                                <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa berlaku</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.duration_days }} hari</p></div>
+                            </div>
+                            <div class="mt-5 border-t border-slate-100 pt-5">
+                                <p class="text-xs font-semibold text-slate-500">Harga paket</p>
+                                <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price) }}</p>
+                                <button type="button" @click="openTrainerCheckout(item)" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]">
+                                    Pilih Paket Trainer <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <Transition name="membership-modal">
+                <div v-if="trainerModalOpen && selectedTrainerPackage" class="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-[#001428]/75 px-4 py-6 backdrop-blur-sm" @click.self="closeTrainerCheckout">
+                    <section role="dialog" aria-modal="true" class="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-black uppercase tracking-[.18em] text-[#789900]">Checkout personal trainer</p>
+                                <h2 class="mt-2 text-2xl font-black text-[#001428]">{{ selectedTrainerPackage.name }}</h2>
+                                <p class="mt-1 text-sm text-slate-500">{{ selectedTrainerPackage.sports[0] }} · {{ selectedTrainerPackage.total_sessions }} sesi · {{ selectedTrainerPackage.duration_days }} hari</p>
+                            </div>
+                            <button type="button" @click="closeTrainerCheckout" class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Tutup modal"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="mt-7">
+                            <h3 class="font-extrabold text-[#001428]">1. Pilih trainer</h3>
+                            <div v-if="selectedTrainerPackage.trainers.length" class="mt-3 grid gap-3 sm:grid-cols-2">
+                                <button v-for="trainer in selectedTrainerPackage.trainers" :key="trainer.id" type="button" @click="selectedTrainer = trainer" class="rounded-2xl border p-4 text-left transition" :class="selectedTrainer?.id === trainer.id ? 'border-[#a4da01] bg-[#f7fbe9] ring-2 ring-[#a4da01]/30' : 'border-slate-200 hover:border-slate-300'">
+                                    <span class="font-extrabold text-[#001428]">{{ trainer.name }}</span>
+                                    <span class="mt-1 block text-sm text-slate-500">{{ trainer.specialty || 'Personal trainer' }}</span>
+                                </button>
+                            </div>
+                            <p v-else class="mt-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Belum ada trainer yang tersedia untuk fasilitas ini.</p>
+                        </div>
+                        <div class="mt-7">
+                            <h3 class="font-extrabold text-[#001428]">2. Metode pembayaran</h3>
+                            <div class="mt-3 grid grid-cols-2 gap-3">
+                                <button type="button" @click="trainerPaymentMethod = 'bank_transfer'" class="rounded-2xl border p-4 text-left" :class="trainerPaymentMethod === 'bank_transfer' ? 'border-[#a4da01] bg-[#f7fbe9]' : 'border-slate-200'"><i class="fa-solid fa-building-columns"></i><span class="mt-2 block text-sm font-bold">Transfer bank</span></button>
+                                <button type="button" @click="trainerPaymentMethod = 'cash'" class="rounded-2xl border p-4 text-left" :class="trainerPaymentMethod === 'cash' ? 'border-[#a4da01] bg-[#f7fbe9]' : 'border-slate-200'"><i class="fa-solid fa-cash-register"></i><span class="mt-2 block text-sm font-bold">Bayar di kasir</span></button>
+                            </div>
+                        </div>
+                        <div class="mt-7 flex items-center justify-between border-t border-slate-100 pt-5">
+                            <div><p class="text-xs text-slate-500">Total checkout</p><p class="text-2xl font-black text-[#001428]">{{ formatCurrency(selectedTrainerPackage.price) }}</p></div>
+                            <button type="button" :disabled="!selectedTrainer || !selectedTrainerPackage.trainers.length" @click="continueTrainerCheckout" class="rounded-full bg-[#a4da01] px-6 py-3 font-black text-[#001428] disabled:cursor-not-allowed disabled:opacity-40">Lanjut checkout <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                        </div>
+                    </section>
+                </div>
+            </Transition>
 
             <section class="px-5 pb-20 lg:px-8 lg:pb-28">
                 <div class="cta-strip mx-auto flex max-w-7xl flex-col gap-6 rounded-3xl px-7 py-9 sm:flex-row sm:items-center sm:justify-between sm:px-12">
