@@ -147,26 +147,45 @@ class TransactionController extends Controller
             'payment_status' => ['required', Rule::in(['pending', 'paid', 'partial', 'failed', 'refunded'])],
         ]);
 
-        $transaction->customer_name = $data['customer_name'] ?? null;
-        $transaction->amount = $data['amount'];
-        $transaction->payment_method = $data['payment_method'];
-        $transaction->payment_status = match ($data['payment_status']) {
-            'paid' => 'fully_paid',
-            'pending' => 'unpaid',
-            'partial' => 'dp_paid',
-            default => $data['payment_status'],
-        };
-        $transaction->save();
+        DB::transaction(function () use ($transaction, $data) {
+            $locked = Transaction::query()->lockForUpdate()->findOrFail($transaction->id);
 
-        if (in_array($transaction->transactionable_type, ['membership', 'trainer_package'], true) && $transaction->user_id) {
-            MemberTrainerPackage::query()->where('user_id', $transaction->user_id)
-                ->where('status', 'pending')
-                ->latest()->limit(1)->update(['status' => match ($transaction->payment_status) {
-                    'fully_paid' => 'active',
-                    'failed', 'refunded' => 'cancelled',
-                    default => 'pending',
-                }]);
-        }
+            $locked->customer_name = $data['customer_name'] ?? null;
+            $locked->amount = $data['amount'];
+            $locked->payment_method = $data['payment_method'];
+            $locked->payment_status = match ($data['payment_status']) {
+                'paid' => 'fully_paid',
+                'pending' => 'unpaid',
+                'partial' => 'dp_paid',
+                default => $data['payment_status'],
+            };
+            $locked->save();
+
+            // Activate/cancel only purchase records belonging to this exact
+            // invoice. Never update another pending purchase from the same member.
+            $childStatus = match ($locked->payment_status) {
+                'fully_paid' => 'active',
+                'failed', 'refunded' => 'cancelled',
+                default => 'pending',
+            };
+
+            if ($locked->transactionable_type === 'membership') {
+                UserMembership::query()
+                    ->where('transaction_id', $locked->id)
+                    ->whereIn('status', ['pending', 'active'])
+                    ->update(['status' => $childStatus]);
+
+                MemberTrainerPackage::query()
+                    ->where('transaction_id', $locked->id)
+                    ->whereIn('status', ['pending', 'active'])
+                    ->update(['status' => $childStatus]);
+            } elseif ($locked->transactionable_type === 'trainer_package') {
+                MemberTrainerPackage::query()
+                    ->where('transaction_id', $locked->id)
+                    ->whereIn('status', ['pending', 'active'])
+                    ->update(['status' => $childStatus]);
+            }
+        });
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil diperbarui.');
     }
