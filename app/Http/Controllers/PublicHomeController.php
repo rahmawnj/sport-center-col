@@ -50,6 +50,7 @@ class PublicHomeController extends Controller
             ->where('is_bookable_online', true)
             ->withCount(['courts' => fn ($query) => $query->where('status', 'available')])
             ->with(['packages' => fn ($query) => $query
+                ->where('type', '!=', 'membership')
                 ->with(['pricingRules' => fn ($rules) => $rules->orderBy('price')])
                 ->orderBy('name')])
             ->orderBy('name')
