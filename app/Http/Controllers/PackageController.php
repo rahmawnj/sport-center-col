@@ -44,9 +44,9 @@ class PackageController extends Controller
     public function destroy(Package $package): RedirectResponse
     {
         abort_if(
-            $package->userMemberships()->exists(),
+            $package->userMemberships()->exists() || $package->bookingTrainerAddons()->exists(),
             422,
-            'Paket tidak dapat dihapus karena sudah dimiliki member.',
+            'Paket tidak dapat dihapus karena sudah digunakan member atau memiliki riwayat trainer add-on.',
         );
 
         $package->delete();
