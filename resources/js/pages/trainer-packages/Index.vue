@@ -36,8 +36,6 @@ type TrainerPackage = {
     price: number;
     description: string | null;
     is_active: boolean;
-    trainers: { id: number; name: string }[];
-    trainer_ids: number[];
     facility_id: number | null;
     facility: { id: number; name: string } | null;
 };
@@ -65,7 +63,7 @@ type Paginated<T> = {
 };
 const props = defineProps<{
     packages: Paginated<TrainerPackage>;
-    packageOptions: { id: number; name: string; total_sessions: number; price: number; facility_id: number | null; trainer_ids: number[] }[];
+    packageOptions: { id: number; name: string; total_sessions: number; price: number; facility_id: number | null }[];
     members: Option[];
     trainers: Option[];
     facilities: { id: number; name: string }[];
@@ -97,7 +95,6 @@ const editing = ref<TrainerPackage | null>(null);
 const packageForm = useForm({
     name: '',
     facility_id: '',
-    trainer_ids: [] as number[],
     total_sessions: 5,
     duration_days: 30,
     price: '',
@@ -105,7 +102,6 @@ const packageForm = useForm({
     is_active: true,
 });
 const packageTitle = computed(() => editing.value ? 'Edit paket trainer' : 'Tambah paket trainer');
-const packageTrainers = computed(() => props.trainers.filter((trainer) => trainer.facility_ids?.includes(Number(packageForm.facility_id))));
 
 function openCreatePackage() {
     editing.value = null;
@@ -113,7 +109,6 @@ function openCreatePackage() {
     packageForm.clearErrors();
     packageForm.name = '';
     packageForm.facility_id = '';
-    packageForm.trainer_ids = [];
     packageForm.total_sessions = 5;
     packageForm.duration_days = 30;
     packageForm.price = '';
@@ -126,7 +121,6 @@ function editPackage(item: TrainerPackage) {
     packageForm.clearErrors();
     packageForm.name = item.name;
     packageForm.facility_id = item.facility_id ? String(item.facility_id) : '';
-    packageForm.trainer_ids = [...item.trainer_ids];
     packageForm.total_sessions = item.total_sessions;
     packageForm.duration_days = item.duration_days;
     packageForm.price = String(item.price);
@@ -163,8 +157,7 @@ const purchaseForm = useForm({
     payment_status: 'paid',
 });
 const packagesForSport = computed(() => props.packageOptions.filter((item) => item.facility_id === Number(purchaseForm.facility_id)));
-const selectedPackage = computed(() => packagesForSport.value.find((item) => item.id === Number(purchaseForm.trainer_package_id)));
-const availableTrainers = computed(() => props.trainers.filter((trainer) => trainer.facility_ids?.includes(Number(purchaseForm.facility_id)) && selectedPackage.value?.trainer_ids.includes(trainer.id)));
+const availableTrainers = computed(() => props.trainers.filter((trainer) => trainer.facility_ids?.includes(Number(purchaseForm.facility_id))));
 
 function openPurchase() {
     purchaseForm.reset();
@@ -324,7 +317,6 @@ function useSession(item: MemberPackage) {
                             <tr>
                                 <th class="px-4 py-3 font-medium">Nama paket</th>
                                 <th class="px-4 py-3 font-medium">Olahraga</th>
-                                <th class="px-4 py-3 font-medium">Trainer</th>
                                 <th class="px-4 py-3 font-medium">Jumlah sesi</th>
                                 <th class="px-4 py-3 font-medium">Masa berlaku</th>
                                 <th class="px-4 py-3 font-medium">Harga</th>
@@ -339,7 +331,6 @@ function useSession(item: MemberPackage) {
                                     <p v-if="item.description" class="mt-0.5 text-xs font-normal text-muted-foreground">{{ item.description }}</p>
                                 </td>
                                 <td class="px-4 py-3">{{ item.facility?.name || 'Belum dipilih' }}</td>
-                                <td class="px-4 py-3"><div class="flex max-w-xs flex-wrap gap-1"><span v-for="trainer in item.trainers" :key="trainer.id" class="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">{{ trainer.name }}</span><span v-if="!item.trainers.length" class="text-xs text-muted-foreground">Belum di-assign</span></div></td>
                                 <td class="px-4 py-3">{{ item.total_sessions }} sesi</td>
                                 <td class="px-4 py-3">{{ item.duration_days }} hari</td>
                                 <td class="px-4 py-3 font-medium">{{ rupiah(item.price) }}</td>
@@ -362,7 +353,7 @@ function useSession(item: MemberPackage) {
                                 </td>
                             </tr>
                             <tr v-if="!packages.data.length">
-                                <td colspan="8" class="px-4 py-12 text-center text-muted-foreground">Belum ada master paket trainer.</td>
+                                <td colspan="7" class="px-4 py-12 text-center text-muted-foreground">Belum ada master paket trainer.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -386,8 +377,7 @@ function useSession(item: MemberPackage) {
             <form class="space-y-4 p-5" @submit.prevent="savePackage">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="grid gap-2 sm:col-span-2"><Label>Nama paket</Label><Input v-model="packageForm.name" placeholder="Personal Trainer 10 Sesi" /><p v-if="packageForm.errors.name" class="text-xs text-destructive">{{ packageForm.errors.name }}</p></div>
-                    <div class="grid gap-2 sm:col-span-2"><Label>Olahraga paket</Label><select v-model="packageForm.facility_id" required class="h-10 rounded-md border bg-background px-3 text-sm" @change="packageForm.trainer_ids = []"><option value="">Pilih olahraga</option><option v-for="facility in facilities" :key="facility.id" :value="String(facility.id)">{{ facility.name }}</option></select><p v-if="packageForm.errors.facility_id" class="text-xs text-destructive">{{ packageForm.errors.facility_id }}</p></div>
-                    <div class="grid gap-2 sm:col-span-2"><Label>Assign trainer</Label><div class="max-h-44 space-y-2 overflow-y-auto rounded-md border p-3"><label v-for="trainer in packageTrainers" :key="trainer.id" class="flex cursor-pointer items-center gap-2 text-sm"><input v-model="packageForm.trainer_ids" type="checkbox" :value="trainer.id" class="size-4 rounded" /><span>{{ trainer.name }}</span><span v-if="trainer.specialty" class="text-xs text-muted-foreground">· {{ trainer.specialty }}</span></label><p v-if="!packageForm.facility_id" class="text-xs text-muted-foreground">Pilih olahraga terlebih dahulu.</p><p v-else-if="!packageTrainers.length" class="text-xs text-muted-foreground">Belum ada trainer yang terdaftar pada olahraga ini.</p></div><p class="text-xs text-muted-foreground">Pilih satu atau beberapa trainer yang menguasai olahraga ini.</p><p v-if="packageForm.errors.trainer_ids" class="text-xs text-destructive">{{ packageForm.errors.trainer_ids }}</p></div>
+                    <div class="grid gap-2 sm:col-span-2"><Label>Olahraga paket</Label><select v-model="packageForm.facility_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih olahraga</option><option v-for="facility in facilities" :key="facility.id" :value="String(facility.id)">{{ facility.name }}</option></select><p v-if="packageForm.errors.facility_id" class="text-xs text-destructive">{{ packageForm.errors.facility_id }}</p></div>
                     <div class="grid gap-2"><Label>Jumlah sesi</Label><Input v-model.number="packageForm.total_sessions" type="number" min="1" /><p v-if="packageForm.errors.total_sessions" class="text-xs text-destructive">{{ packageForm.errors.total_sessions }}</p></div>
                     <div class="grid gap-2"><Label>Masa berlaku (hari)</Label><Input v-model.number="packageForm.duration_days" type="number" min="1" /><p v-if="packageForm.errors.duration_days" class="text-xs text-destructive">{{ packageForm.errors.duration_days }}</p></div>
                     <div class="grid gap-2 sm:col-span-2"><Label>Harga (Rp)</Label><Input v-model="packageForm.price" type="number" min="0" placeholder="900000" /><p v-if="packageForm.errors.price" class="text-xs text-destructive">{{ packageForm.errors.price }}</p></div>
