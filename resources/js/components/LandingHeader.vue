@@ -21,8 +21,7 @@ const closeMenu = () => {
             <nav class="hidden flex-1 items-center justify-center gap-6 text-sm font-semibold lg:flex xl:gap-8" aria-label="Navigasi utama">
                 <Link href="/#olahraga" class="public-nav-link">Olahraga</Link>
                 <Link href="/#pelatih" class="public-nav-link">Pelatih</Link>
-                <Link href="/membership" class="public-nav-link">Membership</Link>
-                <Link href="/membership" class="public-nav-link">Paket</Link>
+                <Link href="/#membership" class="public-nav-link">Paket</Link>
                 <Link href="/book" class="public-nav-link">Booking</Link>
             </nav>
 
@@ -65,8 +64,7 @@ const closeMenu = () => {
                 <div class="mx-auto flex max-w-7xl flex-col">
                     <Link href="/#olahraga" class="mobile-nav-link" @click="closeMenu">Olahraga</Link>
                     <Link href="/#pelatih" class="mobile-nav-link" @click="closeMenu">Pelatih</Link>
-                    <Link href="/membership" class="mobile-nav-link" @click="closeMenu">Membership</Link>
-                    <Link href="/membership" class="mobile-nav-link" @click="closeMenu">Paket</Link>
+                    <Link href="/#membership" class="mobile-nav-link" @click="closeMenu">Paket</Link>
                     <Link href="/book" class="mobile-nav-link" @click="closeMenu">Booking</Link>
                     <Link v-if="$page.props.auth.user" :href="dashboard()" class="mobile-nav-link border-b-0 font-bold" @click="closeMenu">Dasbor</Link>
                 </div>
