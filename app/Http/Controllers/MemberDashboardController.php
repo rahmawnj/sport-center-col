@@ -206,16 +206,19 @@ class MemberDashboardController extends Controller
                 $membershipQuery->update(['status' => 'cancelled']);
             }
 
-            if (! $trainerQuery->exists()) {
+            if ($trainerQuery->exists()) {
+                $trainerQuery->where('status', 'pending')->update(['status' => 'cancelled']);
+            } elseif (in_array($locked->transactionable_type, ['membership', 'trainer_package'], true)) {
+                // Legacy purchases without transaction_id: only cancel a single
+                // unambiguous pending trainer package created with this checkout.
                 $legacyTrainerPackages = MemberTrainerPackage::query()
                     ->where('user_id', $locked->user_id)
                     ->where('status', 'pending')
                     ->whereBetween('created_at', [$from, $until]);
+
                 if ($legacyTrainerPackages->count() === 1) {
                     $legacyTrainerPackages->update(['status' => 'cancelled']);
                 }
-            } else {
-                $trainerQuery->where('status', 'pending')->update(['status' => 'cancelled']);
             }
         });
 
