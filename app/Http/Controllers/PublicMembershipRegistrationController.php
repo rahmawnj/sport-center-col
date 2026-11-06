@@ -70,6 +70,7 @@ class PublicMembershipRegistrationController extends Controller
                     'specialty' => $trainer->specialty,
                 ] : null,
                 'total' => (float) $package->price + (float) ($trainerPackage?->price ?? 0),
+                'payment_method' => $request->input('payment_method') === 'cash' ? 'cash' : 'bank_transfer',
             ],
             'currentUser' => $request->user()?->role?->name === 'Member' && $request->user()->memberProfile()->exists() ? [
                 'name' => $request->user()->name,
@@ -88,6 +89,7 @@ class PublicMembershipRegistrationController extends Controller
             'trainer_package_id' => ['nullable', 'integer', 'exists:trainer_packages,id'],
             'trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
             'terms_accepted' => ['required', 'accepted'],
+            'payment_method' => ['required', Rule::in(['bank_transfer', 'cash'])],
         ];
 
         if (! $isExistingMember) {
@@ -173,7 +175,7 @@ class PublicMembershipRegistrationController extends Controller
                 'transactionable_type' => 'membership',
                 'guest_name' => $user->name,
                 'total_amount' => (float) $package->price + (float) ($trainerPackage?->price ?? 0),
-                'payment_method' => 'bank_transfer',
+                'payment_method' => $data['payment_method'],
                 'payment_status' => 'unpaid',
             ]);
 
