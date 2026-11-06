@@ -25,7 +25,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicHomeController::class, 'index'])->name('home');
 Route::get('pelatih/{trainer}', [PublicHomeController::class, 'showTrainer'])->name('public.trainers.show');
-Route::get('membership', fn () => redirect('/#membership'))->name('membership.index');
 Route::get('membership/register', [PublicMembershipRegistrationController::class, 'create'])->name('membership.register');
 Route::post('membership/register', [PublicMembershipRegistrationController::class, 'store'])->name('membership.register.store');
 Route::post('membership/register/switch-account', function (Request $request) {
