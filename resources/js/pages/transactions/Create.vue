@@ -97,6 +97,7 @@ const courtId = ref<number | null>(null);
 const form = useForm({
     package_id: null as number | null,
     pricing_rule_id: null as number | null,
+    membership_pricing_rule_id: null as number | null,
     quantity: 1,
     customer_name: '',
     payment_method: 'cash',
@@ -254,11 +255,12 @@ function submit() {
     }
 
     form.package_id = selected.value.id;
-    form.pricing_rule_id = isSession.value
-        ? null
-        : ruleId.value
-          ? Number(ruleId.value)
-          : null;
+    form.pricing_rule_id = !isSession.value && !isMembership.value && ruleId.value
+        ? Number(ruleId.value)
+        : null;
+    form.membership_pricing_rule_id = isMembership.value && ruleId.value
+        ? Number(ruleId.value)
+        : null;
     form.quantity = isSession.value ? 1 : quantity.value;
     form.court_id = isSession.value ? courtId.value : null;
     form.date = isSession.value ? date.value : '';
