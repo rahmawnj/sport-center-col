@@ -114,7 +114,7 @@ class MembershipPackageController extends Controller
             DB::transaction(function () use ($package, $data, $pricingRules) {
                 $package->update($data);
                 $package->membershipPricingRules()->delete();
-                $package->pricingRules()->createMany($pricingRules);
+                $package->membershipPricingRules()->createMany($pricingRules);
             });
         } catch (Throwable $exception) {
             Log::error('Gagal memperbarui paket membership.', [
@@ -144,7 +144,7 @@ class MembershipPackageController extends Controller
             return back()->with('error', 'Paket sudah dimiliki member dan tidak dapat dihapus. Edit paketnya atau pertahankan untuk riwayat member.');
         }
 
-        $package->pricingRules()->delete();
+        $package->membershipPricingRules()->delete();
         $package->delete();
 
         return back()->with('success', 'Paket membership berhasil dihapus.');
