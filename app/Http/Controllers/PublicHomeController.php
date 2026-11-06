@@ -33,12 +33,14 @@ class PublicHomeController extends Controller
             ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
             ->map(fn ($package) => [
                 'id' => $package->id,
+                'facility_id' => $package->facility_id,
                 'name' => $package->name,
                 'total_sessions' => $package->total_sessions,
                 'duration_days' => $package->duration_days,
                 'price' => (float) $package->price,
                 'description' => $package->description,
                 'sports' => ($package->facility ? collect([$package->facility->name]) : collect()),
+                'trainers' => $package->facility?->trainers->map(fn ($trainer) => ['id' => $trainer->id, 'name' => $trainer->name, 'specialty' => $trainer->specialty])->values() ?? collect(),
             ])->values();
 
         return Inertia::render('PublicTrainerShow', [
@@ -96,9 +98,8 @@ class PublicHomeController extends Controller
                 ->where('status', 'active')
                 ->where('is_bookable_online', true)
                 ->where('has_membership', true))
-            ->with('facility:id,name')
+            ->with(['facility:id,name', 'facility.trainers:id,name,specialty'])
             ->orderBy('price')
-            ->limit(6)
             ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
             ->map(fn (TrainerPackage $package) => [
                 'id' => $package->id,
