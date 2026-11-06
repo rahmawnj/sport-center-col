@@ -61,7 +61,7 @@ class MembershipController extends Controller
 
     public function show(UserMembership $membership): Response
     {
-        $membership->load(['user.memberProfile', 'package.pricingRules']);
+        $membership->load(['user.memberProfile', 'package.membershipPricingRules']);
 
         $cancelled = $membership->status === 'cancelled';
         $scheduled = ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
@@ -85,7 +85,7 @@ class MembershipController extends Controller
                     'type' => $membership->package?->type,
                     'duration_days' => $membership->package?->duration_days,
             'scan_count' => (int) $membership->scan_count,
-                    'price' => (float) ($membership->package?->pricingRules->min('price') ?? 0),
+                    'price' => (float) ($membership->package?->membershipPricingRules->min('price') ?? 0),
                 ],
             ],
         ]);
@@ -126,7 +126,7 @@ class MembershipController extends Controller
             $today = Carbon::today();
             $oldEnd = $lockedMembership->end_date?->copy();
             $isStillValid = $oldEnd && $oldEnd->gte($today);
-            $price = (float) ($lockedMembership->package?->pricingRules()->min('price') ?? 0);
+            $price = (float) ($lockedMembership->package?->membershipPricingRules()->min('price') ?? 0);
 
             if ($isStillValid) {
                 $newEnd = $oldEnd->copy()->addDays($duration);
