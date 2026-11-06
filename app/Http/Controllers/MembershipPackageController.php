@@ -154,6 +154,32 @@ class MembershipPackageController extends Controller
     {
         $validator = Validator::make($request->all(), $this->membershipRules());
 
+        // Rentang jam boleh melewati tengah malam, misalnya 11:01 sampai 00:01.
+        // Yang tidak valid hanya jam mulai dan selesai yang sama.
+        $validator->after(function ($validator) use ($request) {
+            $pricingRules = $request->input('pricing_rules', []);
+
+            if (! is_array($pricingRules)) {
+                return;
+            }
+
+            foreach ($pricingRules as $index => $rule) {
+                if (! is_array($rule)) {
+                    continue;
+                }
+
+                $startTime = $rule['start_time'] ?? null;
+                $endTime = $rule['end_time'] ?? null;
+
+                if ($startTime && $endTime && $startTime === $endTime) {
+                    $validator->errors()->add(
+                        "pricing_rules.{$index}.end_time",
+                        'Jam selesai tidak boleh sama dengan jam mulai.'
+                    );
+                }
+            }
+        });
+
         if ($validator->fails()) {
             Log::warning('Validasi paket membership gagal.', [
                 'action' => $action,
@@ -179,7 +205,7 @@ class MembershipPackageController extends Controller
             'pricing_rules.*.date_start' => ['nullable', 'date'],
             'pricing_rules.*.date_end' => ['nullable', 'date', 'after_or_equal:pricing_rules.*.date_start'],
             'pricing_rules.*.start_time' => ['nullable', 'date_format:H:i', 'required_with:pricing_rules.*.end_time'],
-            'pricing_rules.*.end_time' => ['nullable', 'date_format:H:i', 'after:pricing_rules.*.start_time'],
+            'pricing_rules.*.end_time' => ['nullable', 'date_format:H:i'],
             'pricing_rules.*.price' => ['required', 'numeric', 'min:0'],
             'pricing_rules.*.priority' => ['nullable', 'integer'],
         ];
