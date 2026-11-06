@@ -137,12 +137,12 @@ class PublicMembershipRegistrationController extends Controller
 
             if (! $user) {
                 $memberRole = Role::firstOrCreate(['name' => 'Member']);
-                $user = User::create([
+                $user = new User([
                     'name' => $data['name'],
                     'email' => $data['email'],
                     'password' => $data['password'],
                 ]);
-                $user->role_id = $memberRole->id;
+                $user->role()->associate($memberRole);
                 $user->save();
 
                 MemberProfile::create([
