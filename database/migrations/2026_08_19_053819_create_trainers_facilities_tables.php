@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('trainers', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->unique()->constrained('users')->nullOnDelete();
             $table->string('name');
             $table->string('specialty');
+            $table->string('phone')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
