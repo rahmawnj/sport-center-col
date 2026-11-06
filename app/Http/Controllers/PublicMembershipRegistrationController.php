@@ -1,24 +1,24 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\Device;
-use App\\Models\\MemberProfile;
-use App\\Models\\MemberTrainerPackage;
-use App\\Models\\Package;
-use App\\Models\\Role;
-use App\\Models\\Trainer;
-use App\\Models\\TrainerPackage;
-use App\\Models\\Transaction;
-use App\\Models\\User;
-use App\\Models\\UserMembership;
-use Illuminate\\Http\\RedirectResponse;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\Auth;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Validation\\Rule;
-use Inertia\\Inertia;
-use Inertia\\Response;
+use App\Models\Device;
+use App\Models\MemberProfile;
+use App\Models\MemberTrainerPackage;
+use App\Models\Package;
+use App\Models\Role;
+use App\Models\Trainer;
+use App\Models\TrainerPackage;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Models\UserMembership;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PublicMembershipRegistrationController extends Controller
 {
