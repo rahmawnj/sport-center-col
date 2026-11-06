@@ -160,13 +160,13 @@ class MemberDashboardController extends Controller
         return Inertia::render('member/PaymentShow', [
             'payment' => [
                 'id' => $transaction->id,
-                'invoice_number' => $transaction->booking_code,
+                'invoice_number' => $transaction->invoice_number,
                 'customer_name' => $transaction->guest_name,
                 'transaction_type' => $transaction->transactionable_type,
                 'amount' => (float) $transaction->total_amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
-                'booking_status' => $transaction->booking_status,
+                'booking_status' => null,
                 'created_at' => $transaction->created_at?->toISOString(),
             ],
         ]);
