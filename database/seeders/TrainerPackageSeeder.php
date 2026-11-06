@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Facility;
-use App\Models\Trainer;
 use App\Models\TrainerPackage;
 use Illuminate\Database\Seeder;
 
@@ -17,17 +16,6 @@ class TrainerPackageSeeder extends Seeder
             ->get();
 
         foreach ($facilities as $facility) {
-            $eligibleTrainers = Trainer::query()
-                ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facility->id))
-                ->orderBy('name')
-                ->get();
-
-            if ($eligibleTrainers->isEmpty()) {
-                $this->command?->warn("Tidak ada trainer untuk olahraga {$facility->name}; paket trainer dilewati.");
-
-                continue;
-            }
-
             $packageDefinitions = [
                 [
                     'sessions' => 5,
@@ -64,11 +52,6 @@ class TrainerPackageSeeder extends Seeder
                     ]
                 );
 
-                // Setiap paket wajib memiliki tepat satu olahraga. Beberapa trainer
-                // boleh ditugaskan, tetapi semuanya harus menguasai olahraga tersebut.
-                $package->trainers()->sync(
-                    $eligibleTrainers->take(2)->pluck('id')->all()
-                );
             }
         }
     }
