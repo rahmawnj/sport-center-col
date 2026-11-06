@@ -17,7 +17,7 @@ class PublicTrainerPackageController extends Controller
     public function show(Request $request, TrainerPackage $trainerPackage): Response
     {
         abort_unless($trainerPackage->is_active, 404);
-        $trainerPackage->load(['trainers:id,name,specialty', 'facility:id,name']);
+        $trainerPackage->load(['facility.trainers:id,name,specialty', 'facility:id,name']);
         abort_unless($trainerPackage->facility, 404, 'Paket trainer belum memiliki olahraga.');
 
         return Inertia::render('trainer-packages/Show', [
@@ -28,7 +28,7 @@ class PublicTrainerPackageController extends Controller
                 'total_sessions' => $trainerPackage->total_sessions,
                 'duration_days' => $trainerPackage->duration_days,
                 'price' => (float) $trainerPackage->price,
-                'trainers' => $trainerPackage->trainers->map(fn ($trainer) => [
+                'trainers' => $trainerPackage->facility->trainers->map(fn ($trainer) => [
                     'id' => $trainer->id,
                     'name' => $trainer->name,
                     'specialty' => $trainer->specialty,
@@ -49,9 +49,8 @@ class PublicTrainerPackageController extends Controller
             'trainer_id' => ['required', 'integer', 'exists:trainers,id'],
         ]);
 
-        $trainerPackage->load(['trainers:id', 'facility:id']);
+        $trainerPackage->load(['facility:id']);
         abort_unless($trainerPackage->facility, 422, 'Paket trainer belum memiliki olahraga.');
-        abort_unless($trainerPackage->trainers->contains('id', (int) $data['trainer_id']), 422, 'Trainer tidak tersedia untuk paket ini.');
         $facilityId = (int) $trainerPackage->facility_id;
         abort_unless(\App\Models\Trainer::query()->whereKey($data['trainer_id'])->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facilityId))->exists(), 422, 'Trainer tidak terdaftar pada olahraga paket ini.');
 
