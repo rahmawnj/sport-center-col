@@ -16,9 +16,11 @@ class PublicHomeController extends Controller
     {
         $trainer->load(['facilities:id,name']);
 
-        $packages = \App\Models\TrainerPackage::query()
+        $facilityIds = $trainer->facilities->pluck('id');
+
+        $packages = TrainerPackage::query()
             ->where('is_active', true)
-            ->whereHas('trainers', fn ($query) => $query->where('trainers.id', $trainer->id))
+            ->whereIn('facility_id', $facilityIds)
             ->with('facility:id,name')
             ->orderBy('price')
             ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
@@ -83,10 +85,11 @@ class PublicHomeController extends Controller
 
         $trainerPackages = TrainerPackage::query()
             ->where('is_active', true)
-            ->with([
-                'trainers:id,name,specialty',
-                'facility:id,name',
-            ])
+            ->whereHas('facility', fn ($query) => $query
+                ->where('status', 'active')
+                ->where('is_bookable_online', true)
+                ->where('has_membership', true))
+            ->with('facility:id,name')
             ->orderBy('price')
             ->limit(6)
             ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
@@ -97,7 +100,6 @@ class PublicHomeController extends Controller
                 'duration_days' => $package->duration_days,
                 'price' => (float) $package->price,
                 'description' => $package->description,
-                'trainers' => $package->trainers->pluck('name')->values(),
                 'sports' => ($package->facility ? collect([$package->facility->name]) : collect()),
             ])->values();
 
