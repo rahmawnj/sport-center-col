@@ -73,6 +73,8 @@ const saveSelection = () => {
 };
 
 const selectMembership = (item: MembershipPackage) => {
+    // Hapus pilihan checkout sebelumnya sebelum memulai pesanan baru.
+    localStorage.removeItem(STORAGE_KEY);
     selectedPackage.value = item;
     selectedTrainerPackage.value = null;
     selectedTrainer.value = null;
@@ -133,6 +135,13 @@ const resetSelection = () => {
 };
 
 onMounted(() => {
+    // Akun yang sudah login memulai checkout baru tanpa mewarisi pilihan
+    // guest yang mungkin masih tertinggal dari sesi pendaftaran sebelumnya.
+    if (props.currentUser) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+    }
+
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!saved) return;
