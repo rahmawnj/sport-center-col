@@ -24,22 +24,12 @@ class MembershipPackageSeeder extends Seeder
 
         DB::transaction(function (): void {
             Package::query()
-                ->with(['facility', 'pricingRules' => fn ($query) => $query
-                    ->orderByDesc('priority')
-                    ->orderBy('price')])
+                ->with('facility')
                 ->where('type', 'membership')
                 ->whereNotNull('duration_days')
                 ->orderBy('id')
                 ->get()
                 ->each(function (Package $package): void {
-                    $priceRule = $package->pricingRules->first();
-
-                    if (! $priceRule) {
-                        $this->command?->warn("Skipped membership package '{$package->name}' because it has no pricing rule.");
-
-                        return;
-                    }
-
                     preg_match('/(\d+)\s*sesi/i', $package->name, $matches);
                     $sessionQuota = isset($matches[1]) ? (int) $matches[1] : null;
                     $facilityName = $package->facility?->name;
@@ -54,7 +44,7 @@ class MembershipPackageSeeder extends Seeder
                     MembershipPackage::withTrashed()->updateOrCreate(
                         ['name' => $package->name],
                         [
-                            'price' => $priceRule->price,
+                            'price' => $package->price,
                             'duration_days' => $package->duration_days,
                             'session_quota' => $sessionQuota,
                             'description' => $description,
