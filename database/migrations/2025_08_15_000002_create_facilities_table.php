@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->string('slug')->unique();
             $table->boolean('is_bookable_online')->default(true);
+            $table->boolean('has_membership')->default(true);
             $table->enum('status', ['active', 'maintenance', 'inactive'])->default('active');
             $table->timestamps();
         });
