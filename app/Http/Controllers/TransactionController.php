@@ -178,7 +178,7 @@ class TransactionController extends Controller
                     ->first();
 
                 if ($membership) {
-                    if ($childStatus === 'active') {
+                    if ($childStatus === 'active' && $membership->status === 'pending') {
                         // Start the membership only when payment is approved.
                         // Paid future memberships remain in the queue.
                         User::query()->lockForUpdate()->findOrFail($locked->user_id);
@@ -216,7 +216,7 @@ class TransactionController extends Controller
                     ->first();
 
                 if ($trainerPurchase) {
-                    if ($childStatus === 'active') {
+                    if ($childStatus === 'active' && $trainerPurchase->status === 'pending') {
                         $trainerStart = today();
                         $trainerEnd = $trainerStart->copy()->addDays(max(1, (int) ($trainerPurchase->trainerPackage?->duration_days ?? 30)) - 1);
 
