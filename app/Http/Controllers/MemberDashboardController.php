@@ -143,7 +143,7 @@ class MemberDashboardController extends Controller
             ->through(fn (Transaction $transaction) => [
                 'id' => $transaction->id,
                 'invoice_number' => $transaction->invoice_number,
-                'reference' => $transaction->transactionable_type === 'membership' ? 'Membership + Personal Trainer' : 'Booking',
+                'reference' => match ($transaction->transactionable_type) { 'membership' => 'Membership + Personal Trainer', 'trainer_package' => 'Personal Trainer', default => 'Booking' },
                 'amount' => (float) $transaction->total_amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
