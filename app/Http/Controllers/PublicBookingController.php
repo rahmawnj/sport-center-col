@@ -32,7 +32,7 @@ class PublicBookingController extends Controller
         $facilities = Facility::query()
             ->where('status', 'active')
             ->where('is_bookable_online', true)
-            ->with(['packages' => fn ($query) => $query->where('type', 'session')->orderBy('name')->with('pricingRules')])
+            ->with(['packages' => fn ($query) => $query->where('type', 'session')->orderBy('name')->with(['pricingRules', 'trainerAddons'])])
             ->orderBy('name')
             ->get()
             ->map(fn (Facility $facility) => [
@@ -44,6 +44,12 @@ class PublicBookingController extends Controller
                     'name' => $package->name,
                     'type' => $package->type,
                     'duration_minutes' => $package->duration_minutes,
+                    'trainer_addons' => $package->trainerAddons->map(fn ($trainer) => [
+                        'id' => $trainer->id,
+                        'name' => $trainer->name,
+                        'specialty' => $trainer->specialty,
+                        'price' => (float) $trainer->pivot->price,
+                    ])->values(),
                     'pricing_rules' => $package->pricingRules
                         ->filter(fn ($rule) => $this->isActiveOn($rule, Carbon::today()->toDateString()))
                         ->map(fn ($rule) => [
@@ -122,10 +128,11 @@ class PublicBookingController extends Controller
     {
         $data = $request->validate([
             'package_id' => ['required', 'integer', 'exists:packages,id'],
+            'trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
             'payment_method' => ['nullable', 'in:cash,bank_transfer'],
         ]);
 
-        $package = Package::with(['pricingRules', 'facility'])->findOrFail($data['package_id']);
+        $package = Package::with(['pricingRules', 'facility', 'trainerAddons'])->findOrFail($data['package_id']);
 
         if ($package->type === 'membership') {
             abort_unless($request->user(), 403, 'Silakan login sebagai member untuk membeli membership.');
@@ -166,10 +173,26 @@ class PublicBookingController extends Controller
             return redirect()->route('booking.index')->with('success', 'Pesanan berhasil dibuat dan tersimpan.');
         }
 
-        $total = (int) round($this->bookingPrice($package, $data));
+        $trainerAddon = null;
+        if (! empty($data['trainer_id'])) {
+            $trainerAddon = $package->trainerAddons->firstWhere('id', (int) $data['trainer_id']);
+            if (! $trainerAddon) {
+                throw ValidationException::withMessages(['trainer_id' => 'Trainer tersebut tidak tersedia sebagai add-on untuk paket ini.']);
+            }
+        }
 
-        $booking = DB::transaction(function () use ($request, $package, $data, $total) {
+        $addonPrice = $trainerAddon ? (float) $trainerAddon->pivot->price : 0;
+        $total = (int) round($this->bookingPrice($package, $data) + $addonPrice);
+
+        $booking = DB::transaction(function () use ($request, $package, $data, $total, $trainerAddon, $addonPrice) {
             $booking = $this->storeBooking($request, $package, $data);
+            if ($trainerAddon) {
+                $booking->trainerAddon()->create([
+                    'package_id' => $package->id,
+                    'trainer_id' => $trainerAddon->id,
+                    'price' => $addonPrice,
+                ]);
+            }
             $user = $request->user();
 
             // Keep the receipt code identical to the QR ticket code in transactions.
@@ -194,6 +217,8 @@ class PublicBookingController extends Controller
 
         Cache::put('booking_receipt_'.$booking->id, [
             'package' => $package->name,
+            'trainer' => $trainerAddon?->name,
+            'trainer_addon_price' => $addonPrice,
             'total' => $total,
         ], now()->addDays(30));
 
@@ -202,7 +227,7 @@ class PublicBookingController extends Controller
 
     public function receipt(Request $request, Booking $booking): Response
     {
-        $booking->load(['court.facility', 'user']);
+        $booking->load(['court.facility', 'user', 'trainerAddon.trainer']);
         $receiptDetails = Cache::get('booking_receipt_'.$booking->id, []);
 
         return Inertia::render('book/Receipt', [
@@ -215,6 +240,8 @@ class PublicBookingController extends Controller
                 'facility' => $booking->court?->facility?->name ?? 'Olahraga',
                 'court' => $booking->court?->name ?? '—',
                 'package' => (string) ($receiptDetails['package'] ?? 'Booking sesi'),
+                'trainer' => $booking->trainerAddon?->trainer?->name,
+                'trainerAddonPrice' => (int) ($booking->trainerAddon?->price ?? 0),
                 'date' => $booking->date?->format('d M Y'),
                 'startTime' => substr((string) $booking->start_time, 0, 5),
                 'endTime' => substr((string) $booking->end_time, 0, 5),
