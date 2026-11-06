@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
 defineOptions({ layout: MemberDashboardLayout });
-type Booking = { id: number; date: string | null; start_time: string | null; end_time: string | null; court: string | null; facility: string | null; status: string; scan_count: number };
+type Booking = { id: number; date: string | null; start_time: string | null; end_time: string | null; court: string | null; facility: string | null; trainer: string | null; trainer_addon_price: number; status: string; scan_count: number };
 defineProps<{ bookings: { data: Booking[]; links: { url: string | null; label: string; active: boolean }[] } }>();
 const dateLabel = (value: string | null) => value ? new Date(value + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
 const statusLabel = (value: string) => ({ pending: 'Menunggu konfirmasi', confirmed: 'Dikonfirmasi', completed: 'Selesai', cancelled: 'Dibatalkan' }[value] || value);
@@ -18,7 +18,7 @@ const statusLabel = (value: string) => ({ pending: 'Menunggu konfirmasi', confir
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <div v-if="bookings.data.length" class="divide-y divide-slate-100">
         <article v-for="item in bookings.data" :key="item.id" class="flex flex-wrap items-center justify-between gap-4 p-5">
-          <div class="flex items-start gap-4"><div class="grid size-11 shrink-0 place-items-center rounded-xl bg-lime-50 text-lime-800"><span class="text-lg">⚽</span></div><div><p class="font-semibold text-slate-900">{{ item.facility || 'Olahraga' }} <span v-if="item.court" class="font-normal text-slate-500">· {{ item.court }}</span></p><p class="mt-1 text-sm text-slate-500">{{ dateLabel(item.date) }}<span v-if="item.start_time"> · {{ item.start_time }}–{{ item.end_time }}</span></p><p class="mt-1 text-xs text-slate-400">Kode booking #{{ item.id }} · Dipindai {{ item.scan_count }} kali</p></div></div>
+          <div class="flex items-start gap-4"><div class="grid size-11 shrink-0 place-items-center rounded-xl bg-lime-50 text-lime-800"><span class="text-lg">⚽</span></div><div><p class="font-semibold text-slate-900">{{ item.facility || 'Olahraga' }} <span v-if="item.court" class="font-normal text-slate-500">· {{ item.court }}</span></p><p class="mt-1 text-sm text-slate-500">{{ dateLabel(item.date) }}<span v-if="item.start_time"> · {{ item.start_time }}–{{ item.end_time }}</span></p><p v-if="item.trainer" class="mt-1 text-xs font-medium text-lime-700">Trainer add-on: {{ item.trainer }} · {{ new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.trainer_addon_price) }}</p><p class="mt-1 text-xs text-slate-400">Kode booking #{{ item.id }} · Dipindai {{ item.scan_count }} kali</p></div></div>
           <span class="rounded-full px-3 py-1.5 text-xs font-bold" :class="{'bg-amber-50 text-amber-700':item.status==='pending','bg-sky-50 text-sky-700':item.status==='confirmed','bg-emerald-50 text-emerald-700':item.status==='completed','bg-rose-50 text-rose-700':item.status==='cancelled'}">{{ statusLabel(item.status) }}</span>
         </article>
       </div>
