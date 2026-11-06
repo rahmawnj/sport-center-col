@@ -71,21 +71,37 @@ class PublicMembershipRegistrationController extends Controller
                 ] : null,
                 'total' => (float) $package->price + (float) ($trainerPackage?->price ?? 0),
             ],
+            'currentUser' => $request->user() ? [
+                'name' => $request->user()->name,
+                'email' => $request->user()->email,
+            ] : null,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
+        $rules = [
             'package_id' => ['required', 'integer', 'exists:packages,id'],
             'trainer_package_id' => ['nullable', 'integer', 'exists:trainer_packages,id'],
             'trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
-            'phone' => ['required', 'string', 'max:25'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'terms_accepted' => ['required', 'accepted'],
-        ]);
+        ];
+
+        if (! $request->user()) {
+            $rules += [
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+                'phone' => ['required', 'string', 'max:25'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ];
+        }
+
+        $data = $request->validate($rules);
+
+        if ($request->user()) {
+            abort_unless($request->user()->role?->name === 'Member', 403, 'Pendaftaran membership hanya tersedia untuk akun member.');
+            abort_unless($request->user()->memberProfile()->exists(), 403, 'Profil member belum tersedia pada akun ini.');
+        }
 
         $package = $this->availableMembershipPackages()->findOrFail($data['package_id']);
         $trainerPackage = null;
@@ -108,21 +124,24 @@ class PublicMembershipRegistrationController extends Controller
             return back()->withErrors(['trainer_id' => 'Trainer hanya dapat dipilih jika paket add-on dipilih.'])->withInput();
         }
 
-        $user = DB::transaction(function () use ($data, $package, $trainerPackage, $trainer) {
-            $memberRole = Role::firstOrCreate(['name' => 'Member']);
+        $user = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer) {
+            $user = $request->user();
 
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-            ]);
-            $user->role_id = $memberRole->id;
-            $user->save();
+            if (! $user) {
+                $memberRole = Role::firstOrCreate(['name' => 'Member']);
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => $data['password'],
+                ]);
+                $user->role_id = $memberRole->id;
+                $user->save();
 
-            MemberProfile::create([
-                'user_id' => $user->id,
-                'phone' => $data['phone'],
-            ]);
+                MemberProfile::create([
+                    'user_id' => $user->id,
+                    'phone' => $data['phone'],
+                ]);
+            }
 
             $start = today();
             $membershipEnd = $start->copy()->addDays(max(1, (int) $package->duration_days) - 1);
@@ -175,8 +194,10 @@ class PublicMembershipRegistrationController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
+        if (! $request->user()) {
+            Auth::login($user);
+            $request->session()->regenerate();
+        }
 
         return redirect()->route('member.payments')
             ->with('success', 'Pendaftaran berhasil. Membership dan pilihan trainer sudah tersimpan di akunmu. Silakan lanjutkan pembayaran.');
