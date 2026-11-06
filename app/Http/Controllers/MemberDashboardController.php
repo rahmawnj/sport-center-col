@@ -45,6 +45,22 @@ class MemberDashboardController extends Controller
             ->latest('start_date')
             ->first();
 
+        $upcomingMemberships = UserMembership::query()
+            ->with(['package:id,name,duration_days,facility_id', 'package.facility:id,name'])
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereDate('start_date', '>', $today)
+            ->orderBy('start_date')
+            ->get()
+            ->map(fn (UserMembership $membership) => [
+                'id' => $membership->id,
+                'package' => $membership->package?->name ?? 'Membership',
+                'facility' => $membership->package?->facility?->name,
+                'start_date' => $membership->start_date?->toDateString(),
+                'end_date' => $membership->end_date?->toDateString(),
+                'duration_days' => $membership->package?->duration_days,
+            ]);
+
         $activeTrainerPackages = MemberTrainerPackage::query()
             ->with(['trainerPackage:id,name,total_sessions,duration_days', 'trainer:id,name,specialty', 'facility:id,name'])
             ->where('user_id', $user->id)
@@ -98,6 +114,7 @@ class MemberDashboardController extends Controller
                 'end_date' => $currentMembership->end_date?->toDateString(),
                 'duration_days' => $currentMembership->package?->duration_days,
             ] : null,
+            'upcomingMemberships' => $upcomingMemberships,
             'activeTrainerPackages' => $activeTrainerPackages,
         ]);
     }
