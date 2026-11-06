@@ -158,7 +158,7 @@ class TransactionController extends Controller
         };
         $transaction->save();
 
-        if ($transaction->transactionable_type === 'membership' && $transaction->user_id) {
+        if (in_array($transaction->transactionable_type, ['membership', 'trainer_package'], true) && $transaction->user_id) {
             MemberTrainerPackage::query()->where('user_id', $transaction->user_id)
                 ->where('status', 'pending')
                 ->latest()->limit(1)->update(['status' => match ($transaction->payment_status) {
