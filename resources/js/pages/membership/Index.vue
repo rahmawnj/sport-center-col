@@ -37,6 +37,8 @@ const STORAGE_KEY = 'sport-center-membership-selection-v1';
 const selectedPackage = ref<MembershipPackage | null>(null);
 const selectedTrainerPackage = ref<TrainerPackage | null>(null);
 const selectedTrainer = ref<Trainer | null>(null);
+const membershipModalOpen = ref(false);
+const modalStep = ref<1 | 2 | 3>(1);
 const readyPackages = computed(() => props.packages.filter((item) => item.price !== null));
 const availableTrainerPackages = computed(() => selectedPackage.value
     ? props.trainerPackages.filter((item) => item.facility_id === selectedPackage.value?.facility_id)
@@ -74,22 +76,38 @@ const selectMembership = (item: MembershipPackage) => {
     selectedPackage.value = item;
     selectedTrainerPackage.value = null;
     selectedTrainer.value = null;
+    modalStep.value = 1;
+    membershipModalOpen.value = true;
     saveSelection();
-    window.setTimeout(() => document.getElementById('pilih-trainer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
 };
 
 const selectTrainerPackage = (item: TrainerPackage) => {
     selectedTrainerPackage.value = item;
     selectedTrainer.value = null;
     saveSelection();
-    window.setTimeout(() => document.getElementById('pilih-pelatih')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+};
+
+const closeMembershipModal = () => {
+    membershipModalOpen.value = false;
+};
+
+const continueToTrainerPackages = () => {
+    modalStep.value = 2;
+};
+
+const continueToTrainerSelection = () => {
+    if (!selectedTrainerPackage.value) return;
+    modalStep.value = 3;
 };
 
 const skipTrainer = () => {
     selectedTrainerPackage.value = null;
     selectedTrainer.value = null;
     saveSelection();
+    continueRegistration();
 };
+
+
 
 const selectTrainer = (item: Trainer) => {
     selectedTrainer.value = item;
@@ -182,12 +200,12 @@ onMounted(() => {
 
             <section id="pilih-paket" class="mx-auto max-w-7xl scroll-mt-24 px-5 py-16 sm:py-20 lg:px-8">
                 <div class="mb-10 text-center">
-                    <p class="section-kicker">Langkah 01</p>
+                    <p class="section-kicker">Pilih sesuai kebutuhanmu</p>
                     <h2 class="section-title">Pilih paket <span>membership</span></h2>
-                    <p class="mx-auto mt-3 max-w-2xl leading-7 text-slate-500">Tentukan fasilitas olahraga dan masa membership yang ingin kamu ambil.</p>
+                    <p class="mx-auto mt-3 max-w-2xl leading-7 text-slate-500">Klik tombol pada paket untuk melihat detailnya dan melanjutkan pendaftaran melalui satu jendela pilihan.</p>
                 </div>
                 <div v-if="readyPackages.length" class="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
-                    <article v-for="(item, index) in readyPackages" :key="item.id" class="package-card relative flex flex-col rounded-3xl border bg-white p-6 sm:p-7" :class="selectedPackage?.id === item.id ? 'border-[#a4da01] ring-2 ring-[#a4da01]/30' : 'border-slate-200'">
+                    <article v-for="item in readyPackages" :key="item.id" class="package-card relative flex flex-col rounded-3xl border bg-white p-6 sm:p-7" :class="selectedPackage?.id === item.id ? 'border-[#a4da01] ring-2 ring-[#a4da01]/30' : 'border-slate-200'">
                         <div class="mb-6 flex items-start justify-between gap-4">
                             <div class="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-700"><i :class="item.name.toLowerCase().includes('gym') ? 'fa-solid fa-dumbbell' : 'fa-solid fa-medal'" class="text-lg"></i></div>
                             <span class="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">{{ durationLabel(item.duration_days) }}</span>
@@ -201,8 +219,7 @@ onMounted(() => {
                             <p class="mt-2 text-sm text-slate-500">Berlaku {{ durationLabel(item.duration_days) }}</p>
                         </div>
                         <button type="button" class="mt-auto flex w-full items-center justify-center gap-3 rounded-full px-5 py-3.5 font-extrabold transition" :class="selectedPackage?.id === item.id ? 'bg-[#001428] text-white' : 'bg-[#a4da01] text-[#001428] hover:bg-[#b8ec24]'" @click="selectMembership(item)">
-                            <i :class="selectedPackage?.id === item.id ? 'fa-solid fa-check' : 'fa-solid fa-arrow-right'"></i>
-                            {{ selectedPackage?.id === item.id ? 'Paket dipilih' : 'Pilih membership' }}
+                            <i class="fa-solid fa-arrow-right"></i> Pilih membership
                         </button>
                     </article>
                 </div>
@@ -213,74 +230,117 @@ onMounted(() => {
                 </div>
             </section>
 
-            <section v-if="selectedPackage" id="pilih-trainer" class="scroll-mt-24 bg-[#f6f8f2]">
-                <div class="mx-auto max-w-7xl px-5 py-16 sm:py-20 lg:px-8">
-                    <div class="mb-9">
-                        <p class="section-kicker">Langkah 02 · Opsional</p>
-                        <h2 class="section-title">Tambahkan paket <span>personal trainer</span></h2>
-                        <p class="mt-3 max-w-2xl leading-7 text-slate-500">Pilih program latihan tambahan dari {{ selectedPackage.facility }}. Paket trainer tidak wajib dan tidak mengubah paket membership.</p>
-                    </div>
-                    <div v-if="availableTrainerPackages.length" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                        <article v-for="item in availableTrainerPackages" :key="item.id" class="rounded-3xl border bg-white p-6 transition" :class="selectedTrainerPackage?.id === item.id ? 'border-[#a4da01] ring-2 ring-[#a4da01]/30' : 'border-slate-200'">
-                            <div class="flex items-start justify-between gap-3"><span class="rounded-full bg-[#eff6d9] px-3 py-1.5 text-xs font-extrabold text-[#668500]">Personal trainer</span><i v-if="selectedTrainerPackage?.id === item.id" class="fa-solid fa-circle-check text-xl text-[#789900]"></i></div>
-                            <h3 class="mt-5 text-xl font-black text-[#001428]">{{ item.name }}</h3>
-                            <p class="mt-2 min-h-10 text-sm leading-6 text-slate-500">{{ item.description || 'Program latihan terarah bersama personal trainer.' }}</p>
-                            <div class="mt-5 grid grid-cols-2 gap-3">
-                                <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Jumlah sesi</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.total_sessions }} sesi</p></div>
-                                <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa berlaku</p><p class="mt-1 font-extrabold text-[#001428]">{{ durationLabel(item.duration_days) }}</p></div>
+            <Transition name="membership-modal">
+                <div v-if="membershipModalOpen && selectedPackage" class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#001428]/75 px-4 py-6 backdrop-blur-sm" @click.self="closeMembershipModal">
+                    <section role="dialog" aria-modal="true" aria-labelledby="membership-modal-title" class="relative my-auto max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-[1.75rem] bg-white shadow-2xl">
+                        <header class="flex items-center justify-between border-b border-slate-100 px-6 py-5 sm:px-8">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-[.2em] text-[#789900]">Pendaftaran membership</p>
+                                <h2 id="membership-modal-title" class="mt-1 text-xl font-black text-[#001428]">
+                                    {{ modalStep === 1 ? 'Detail paket membership' : modalStep === 2 ? 'Paket personal trainer' : 'Pilih personal trainer' }}
+                                </h2>
                             </div>
-                            <div class="mt-5 border-t border-slate-100 pt-5"><p class="text-xs font-bold text-slate-500">Harga add-on</p><p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price) }}</p></div>
-                            <button type="button" :disabled="!item.trainers.length" class="mt-5 w-full rounded-full px-5 py-3 font-extrabold transition disabled:cursor-not-allowed disabled:opacity-40" :class="selectedTrainerPackage?.id === item.id ? 'bg-[#001428] text-white' : 'bg-[#a4da01] text-[#001428] hover:bg-[#b8ec24]'" @click="selectTrainerPackage(item)">
-                                {{ !item.trainers.length ? 'Belum ada trainer tersedia' : selectedTrainerPackage?.id === item.id ? 'Paket dipilih' : 'Pilih paket trainer' }}
+                            <button type="button" aria-label="Tutup modal" class="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200" @click="closeMembershipModal">
+                                <i class="fa-solid fa-xmark"></i>
                             </button>
-                        </article>
-                    </div>
-                    <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">Belum ada paket trainer aktif untuk facility ini. Kamu tetap bisa melanjutkan tanpa add-on.</div>
-                    <button type="button" class="mt-6 text-sm font-bold text-slate-600 underline decoration-dashed underline-offset-4 hover:text-[#789900]" @click="skipTrainer">Lewati, tanpa add-on trainer</button>
-                </div>
-            </section>
+                        </header>
 
-            <section v-if="selectedTrainerPackage" id="pilih-pelatih" class="scroll-mt-24">
-                <div class="mx-auto max-w-7xl px-5 py-16 sm:py-20 lg:px-8">
-                    <div class="mb-9">
-                        <p class="section-kicker">Langkah 03</p>
-                        <h2 class="section-title">Pilih <span>personal trainer</span></h2>
-                        <p class="mt-3 max-w-2xl leading-7 text-slate-500">Pilih trainer yang terdaftar di {{ selectedPackage?.facility }}. Trainer baru disimpan sebagai pilihan setelah kamu menyelesaikan pendaftaran.</p>
-                    </div>
-                    <div v-if="selectedTrainerPackage.trainers.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <button v-for="trainer in selectedTrainerPackage.trainers" :key="trainer.id" type="button" class="flex items-center gap-4 rounded-2xl border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md" :class="selectedTrainer?.id === trainer.id ? 'border-[#a4da01] ring-2 ring-[#a4da01]/30' : 'border-slate-200'" @click="selectTrainer(trainer)">
-                            <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#eff6d9] text-xl text-[#668500]"><i class="fa-solid fa-user-tie"></i></span>
-                            <span class="min-w-0 flex-1"><span class="block font-extrabold text-[#001428]">{{ trainer.name }}</span><span class="mt-1 block text-sm text-slate-500">{{ trainer.specialty || 'Personal trainer' }}</span></span>
-                            <i v-if="selectedTrainer?.id === trainer.id" class="fa-solid fa-circle-check text-xl text-[#789900]"></i>
-                        </button>
-                    </div>
-                </div>
-            </section>
+                        <div class="max-h-[calc(92vh-170px)] overflow-y-auto px-6 py-6 sm:px-8">
+                            <div class="mb-6 flex items-center gap-2">
+                                <span v-for="step in 3" :key="step" class="h-1.5 flex-1 rounded-full transition" :class="modalStep >= step ? 'bg-[#a4da01]' : 'bg-slate-100'"></span>
+                            </div>
 
-            <section v-if="selectedPackage" class="bg-[#001428]">
-                <div class="mx-auto grid max-w-7xl gap-8 px-5 py-10 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
-                    <div class="text-white">
-                        <p class="text-xs font-extrabold uppercase tracking-[.18em] text-[#b7e934]">Ringkasan pilihan</p>
-                        <h2 class="mt-2 text-2xl font-black">{{ selectedPackage.name }}</h2>
-                        <p class="mt-1 text-sm text-slate-300">{{ selectedPackage.facility }} · {{ durationLabel(selectedPackage.duration_days) }}</p>
-                        <div class="mt-4 space-y-1 text-sm text-slate-300">
-                            <p v-if="selectedTrainerPackage">Add-on: {{ selectedTrainerPackage.name }} · {{ selectedTrainer?.name || 'Pilih trainer terlebih dahulu' }}</p>
-                            <p v-else>Tanpa add-on trainer</p>
+                            <div v-if="modalStep === 1">
+                                <div class="rounded-2xl bg-[#f6f8f2] p-6">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div>
+                                            <p class="text-xs font-extrabold uppercase tracking-[.16em] text-[#789900]">{{ selectedPackage.facility || 'DreamSports' }}</p>
+                                            <h3 class="mt-2 text-2xl font-black text-[#001428]">{{ selectedPackage.name }}</h3>
+                                        </div>
+                                        <span class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-600">{{ durationLabel(selectedPackage.duration_days) }}</span>
+                                    </div>
+                                    <p class="mt-4 text-sm leading-7 text-slate-600">{{ selectedPackage.description || 'Paket membership untuk menikmati fasilitas olahraga.' }}</p>
+                                    <div class="mt-6 border-t border-slate-200 pt-5">
+                                        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Harga membership</p>
+                                        <p class="mt-1 text-3xl font-black text-[#001428]">{{ formatCurrency(selectedPackage.price) }}</p>
+                                        <p class="mt-1 text-xs text-slate-500">Masa aktif {{ durationLabel(selectedPackage.duration_days) }}</p>
+                                    </div>
+                                </div>
+                                <p class="mt-4 text-sm leading-6 text-slate-500">Pastikan paket dan fasilitas yang dipilih sudah sesuai. Pada langkah berikutnya, kamu bisa menambahkan paket personal trainer secara opsional.</p>
+                            </div>
+
+                            <div v-else-if="modalStep === 2">
+                                <p class="mb-5 text-sm leading-6 text-slate-500">Pilih paket trainer untuk {{ selectedPackage.facility || 'fasilitas ini' }}. Add-on ini opsional dan tidak mengubah paket membership.</p>
+                                <div v-if="availableTrainerPackages.length" class="space-y-3">
+                                    <button v-for="item in availableTrainerPackages" :key="item.id" type="button" class="w-full rounded-2xl border p-4 text-left transition" :class="selectedTrainerPackage?.id === item.id ? 'border-[#a4da01] bg-[#f7fbe9] ring-1 ring-[#a4da01]' : 'border-slate-200 hover:border-slate-300' " @click="selectTrainerPackage(item)">
+                                        <span class="flex items-start justify-between gap-3">
+                                            <span>
+                                                <span class="block font-extrabold text-[#001428]">{{ item.name }}</span>
+                                                <span class="mt-1 block text-xs text-slate-500">{{ item.total_sessions }} sesi · {{ durationLabel(item.duration_days) }}</span>
+                                            </span>
+                                            <span class="shrink-0 text-right">
+                                                <span class="block font-black text-[#001428]">{{ formatCurrency(item.price) }}</span>
+                                                <i v-if="selectedTrainerPackage?.id === item.id" class="fa-solid fa-circle-check mt-2 text-[#789900]"></i>
+                                            </span>
+                                        </span>
+                                        <span v-if="item.description" class="mt-3 block text-sm leading-6 text-slate-500">{{ item.description }}</span>
+                                    </button>
+                                </div>
+                                <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">Belum ada paket trainer aktif untuk fasilitas ini. Kamu bisa langsung melanjutkan tanpa add-on.</div>
+                            </div>
+
+                            <div v-else>
+                                <p class="mb-5 text-sm leading-6 text-slate-500">Pilih trainer untuk paket <strong class="text-[#001428]">{{ selectedTrainerPackage?.name }}</strong>.</p>
+                                <div v-if="selectedTrainerPackage?.trainers.length" class="space-y-3">
+                                    <button v-for="trainer in selectedTrainerPackage.trainers" :key="trainer.id" type="button" class="flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition" :class="selectedTrainer?.id === trainer.id ? 'border-[#a4da01] bg-[#f7fbe9] ring-1 ring-[#a4da01]' : 'border-slate-200 hover:border-slate-300'" @click="selectTrainer(trainer)">
+                                        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#eff6d9] text-lg text-[#668500]"><i class="fa-solid fa-user-tie"></i></span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block font-extrabold text-[#001428]">{{ trainer.name }}</span>
+                                            <span class="mt-1 block text-sm text-slate-500">{{ trainer.specialty || 'Personal trainer' }}</span>
+                                        </span>
+                                        <i v-if="selectedTrainer?.id === trainer.id" class="fa-solid fa-circle-check text-xl text-[#789900]"></i>
+                                    </button>
+                                </div>
+                                <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">Belum ada trainer yang tersedia untuk paket ini.</div>
+                            </div>
+
+                            <div class="mt-6 rounded-2xl bg-[#001428] p-5 text-white">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold uppercase tracking-[.16em] text-[#b7e934]">Ringkasan pilihan</p>
+                                        <p class="mt-2 truncate font-bold">{{ selectedPackage.name }}</p>
+                                        <p class="mt-1 text-xs text-slate-300">{{ selectedTrainerPackage ? selectedTrainerPackage.name : 'Tanpa add-on trainer' }}<span v-if="selectedTrainer"> · {{ selectedTrainer.name }}</span></p>
+                                    </div>
+                                    <div class="shrink-0 text-right">
+                                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Total</p>
+                                        <p class="mt-1 text-lg font-black">{{ formatCurrency(totalPrice) }}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="min-w-[250px]">
-                        <div class="mb-4 flex items-end justify-between gap-6 text-white"><span class="text-sm text-slate-300">Estimasi total</span><strong class="text-2xl font-black">{{ formatCurrency(totalPrice) }}</strong></div>
-                        <button type="button" :disabled="!canContinue" class="flex w-full items-center justify-center gap-3 rounded-full bg-[#a4da01] px-7 py-4 font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-40" @click="continueRegistration">
-                            Lanjut ke pendaftaran <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                        <button type="button" class="mt-3 w-full text-xs font-semibold text-slate-400 underline underline-offset-4 hover:text-white" @click="resetSelection">Reset semua pilihan</button>
-                    </div>
-                </div>
-            </section>
 
-            <section v-if="!selectedPackage" class="mx-auto max-w-7xl px-5 pb-16 text-center">
-                <p class="text-sm text-slate-500">Pilih paket membership terlebih dahulu untuk melihat pilihan add-on trainer.</p>
-            </section>
+                        <footer class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                            <button v-if="modalStep > 1" type="button" class="rounded-full px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-[#001428]" @click="modalStep = modalStep === 3 ? 2 : 1">
+                                <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
+                            </button>
+                            <button v-else type="button" class="rounded-full px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-[#001428]" @click="closeMembershipModal">Nanti dulu</button>
+
+                            <button v-if="modalStep === 1" type="button" class="rounded-full bg-[#a4da01] px-7 py-3.5 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]" @click="continueToTrainerPackages">
+                                Lanjutkan <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                            <div v-else-if="modalStep === 2" class="flex flex-col gap-2 sm:flex-row">
+                                <button type="button" class="rounded-full border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50" @click="skipTrainer">Tanpa add-on</button>
+                                <button type="button" :disabled="!selectedTrainerPackage" class="rounded-full bg-[#a4da01] px-6 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-40" @click="continueToTrainerSelection">
+                                    Pilih trainer <i class="fa-solid fa-arrow-right ml-2"></i>
+                                </button>
+                            </div>
+                            <button v-else type="button" :disabled="!selectedTrainer" class="rounded-full bg-[#a4da01] px-7 py-3.5 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-40" @click="continueRegistration">
+                                Lanjut ke pendaftaran <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                        </footer>
+                    </section>
+                </div>
+            </Transition>
 
             <section class="mx-auto max-w-5xl px-5 py-14">
                 <div class="rounded-3xl bg-[#f6f8f2] px-6 py-8 text-center sm:px-12">
@@ -300,6 +360,10 @@ onMounted(() => {
 .hero-orbit-one { top: -340px; right: -150px; width: 760px; height: 760px; box-shadow: 0 0 0 60px rgba(164,218,1,.025), 0 0 0 120px rgba(164,218,1,.02); }
 .hero-orbit-two { right: 16%; bottom: -400px; width: 600px; height: 600px; }
 .hero-image { background: rgba(255,255,255,.04); }
+.membership-modal-enter-active, .membership-modal-leave-active { transition: opacity .2s ease; }
+.membership-modal-enter-active section, .membership-modal-leave-active section { transition: transform .2s ease; }
+.membership-modal-enter-from, .membership-modal-leave-to { opacity: 0; }
+.membership-modal-enter-from section, .membership-modal-leave-to section { transform: translateY(14px) scale(.98); }
 .section-kicker { color: #789900; font-size: 11px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
 .section-title { margin-top: 10px; color: var(--navy); font-size: clamp(28px, 3vw, 40px); font-weight: 900; line-height: 1.16; letter-spacing: -.04em; }
 .section-title span { color: #7da500; }
