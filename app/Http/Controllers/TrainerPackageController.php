@@ -120,7 +120,7 @@ class TrainerPackageController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+            'facility_id' => ['required', 'integer', Rule::exists('facilities', 'id')->where('has_membership', true)->where('status', 'active')],
             'total_sessions' => ['required', 'integer', 'min:1'],
             'duration_days' => ['required', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
