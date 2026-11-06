@@ -11,8 +11,6 @@ class Transaction extends Model
 {
     protected $fillable = [
         'user_id',
-        'device_id',
-        'customer_type',
         'customer_name',
         'guest_name',
         'amount',
@@ -37,12 +35,14 @@ class Transaction extends Model
     protected static function booted(): void
     {
         static::creating(function (Transaction $transaction) {
-            $transaction->booking_code ??= 'INV'.now()->format('YmdHis').strtoupper(Str::random(4));
+            $transaction->invoice_number ??= 'INV'.now()->format('YmdHis').strtoupper(Str::random(4));
+
             if ($transaction->payment_status === 'paid') {
                 $transaction->payment_status = 'fully_paid';
             } elseif ($transaction->payment_status === 'pending') {
                 $transaction->payment_status = 'unpaid';
             }
+
             if ($transaction->payment_method === 'qris') {
                 $transaction->payment_method = 'bank_transfer';
             }
@@ -69,24 +69,23 @@ class Transaction extends Model
         return $this->attributes['guest_name'] ?? null;
     }
 
-    public function setInvoiceNumberAttribute(?string $value): void
+    /**
+     * Backward-compatible alias while older parts of the application
+     * still refer to booking_code as the invoice identifier.
+     */
+    public function setBookingCodeAttribute(?string $value): void
     {
-        $this->attributes['booking_code'] = $value;
+        $this->attributes['invoice_number'] = $value;
     }
 
-    public function getInvoiceNumberAttribute(): ?string
+    public function getBookingCodeAttribute(): ?string
     {
-        return $this->attributes['booking_code'] ?? null;
+        return $this->attributes['invoice_number'] ?? null;
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function device(): BelongsTo
-    {
-        return $this->belongsTo(Device::class);
     }
 
     public function transactionable(): MorphTo
