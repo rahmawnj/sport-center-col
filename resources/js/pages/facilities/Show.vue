@@ -69,6 +69,8 @@ type PricingRuleInput = {
     price: string;
     priority: string;
 };
+type Trainer = { id: number; name: string; specialty: string | null };
+type TrainerAddon = { trainer_id: number; trainer_name: string; price: number };
 type Package = {
     id: number;
     name: string;
@@ -76,6 +78,7 @@ type Package = {
     duration_minutes: number;
     duration_days: number | null;
     pricing_rules: PricingRule[];
+    trainer_addons: TrainerAddon[];
 };
 type Props = {
     facility: {
@@ -88,6 +91,7 @@ type Props = {
         created_at: string | null;
         courts: Court[];
         packages: Package[];
+        trainers: Trainer[];
         devices: Device[];
     };
 };
@@ -167,11 +171,13 @@ const form = ref<{
     duration_minutes: string;
     duration_days: string;
     pricing_rules: PricingRuleInput[];
+    trainer_addons: { trainer_id: number; price: string }[];
 }>({
     type: 'session',
     duration_minutes: '60',
     duration_days: '30',
     pricing_rules: [emptyRule()],
+    trainer_addons: [],
 });
 const formTitle = computed(() =>
     editing.value ? 'Edit paket' : 'Tambah paket',
@@ -206,6 +212,7 @@ function openCreate() {
         duration_minutes: '60',
         duration_days: '30',
         pricing_rules: [emptyRule()],
+        trainer_addons: [],
     };
     formKey.value++;
     showForm.value = true;
@@ -217,6 +224,7 @@ function openEdit(pkg: Package) {
         type: pkg.type,
         duration_minutes: String(pkg.duration_minutes ?? 60),
         duration_days: pkg.duration_days ? String(pkg.duration_days) : '',
+        trainer_addons: pkg.trainer_addons.map((addon) => ({ trainer_id: addon.trainer_id, price: String(addon.price) })),
         pricing_rules: pkg.pricing_rules.length
             ? pkg.pricing_rules.map((rule) => ({
                   _key: ++ruleUid,
@@ -232,6 +240,17 @@ function openEdit(pkg: Package) {
     };
     formKey.value++;
     showForm.value = true;
+}
+
+function toggleTrainerAddon(trainerId: number, checked: boolean) {
+    if (checked) {
+        if (!form.value.trainer_addons.some((addon) => addon.trainer_id === trainerId)) {
+            form.value.trainer_addons.push({ trainer_id: trainerId, price: '0' });
+        }
+        return;
+    }
+
+    form.value.trainer_addons = form.value.trainer_addons.filter((addon) => addon.trainer_id !== trainerId);
 }
 
 function addRule() {
@@ -884,6 +903,45 @@ function promoRange(rule: PricingRule) {
                         >
                             {{ errors.duration_days }}
                         </p>
+                    </div>
+                    <div v-if="form.type !== 'membership'" class="grid gap-3 sm:col-span-2 rounded-xl border p-4">
+                        <div>
+                            <Label>Trainer Add-on (opsional)</Label>
+                            <p class="mt-1 text-xs text-muted-foreground">Pilih pelatih yang dapat ditambahkan saat booking. Harga berlaku satu kali per booking, bukan per jam.</p>
+                        </div>
+                        <div v-if="props.facility.trainers.length" class="grid gap-3 sm:grid-cols-2">
+                            <div v-for="trainer in props.facility.trainers" :key="trainer.id" class="rounded-lg border p-3">
+                                <label class="flex items-center gap-2 text-sm font-medium">
+                                    <input
+                                        type="checkbox"
+                                        :checked="form.trainer_addons.some((addon) => addon.trainer_id === trainer.id)"
+                                        @change="toggleTrainerAddon(trainer.id, ($event.target as HTMLInputElement).checked)"
+                                    />
+                                    {{ trainer.name }}
+                                    <span v-if="trainer.specialty" class="text-xs font-normal text-muted-foreground">· {{ trainer.specialty }}</span>
+                                </label>
+                                <div v-if="form.trainer_addons.some((addon) => addon.trainer_id === trainer.id)" class="mt-2 grid gap-1">
+                                    <Label :for="`trainer-addon-price-${trainer.id}`" class="text-xs">Biaya add-on per booking</Label>
+                                    <Input
+                                        :id="`trainer-addon-price-${trainer.id}`"
+                                        type="number"
+                                        min="0"
+                                        step="1000"
+                                        :name="`trainer_addons[${form.trainer_addons.findIndex((addon) => addon.trainer_id === trainer.id)}][price]`"
+                                        v-model="form.trainer_addons.find((addon) => addon.trainer_id === trainer.id)!.price"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        :name="`trainer_addons[${form.trainer_addons.findIndex((addon) => addon.trainer_id === trainer.id)}][trainer_id]`"
+                                        :value="trainer.id"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <p v-else class="text-xs text-muted-foreground">Belum ada trainer yang terhubung dengan olahraga ini. Hubungkan trainer melalui menu Trainer terlebih dahulu.</p>
+                        <template v-for="(msg, key) in errors" :key="key">
+                            <p v-if="String(key).startsWith('trainer_addons')" class="text-xs text-destructive">{{ msg }}</p>
+                        </template>
                     </div>
                     <div class="grid gap-2 sm:col-span-2">
                         <div class="flex items-start justify-between gap-2">
