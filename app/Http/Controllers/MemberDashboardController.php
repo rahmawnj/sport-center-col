@@ -169,6 +169,7 @@ class MemberDashboardController extends Controller
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
                 'can_cancel' => $transaction->payment_status === 'unpaid',
+                'cancelled_at' => $transaction->cancelled_at?->toISOString(),
                 'booking_status' => null,
                 'created_at' => $transaction->created_at?->toISOString(),
             ],
@@ -183,11 +184,39 @@ class MemberDashboardController extends Controller
             $locked = Transaction::query()->lockForUpdate()->findOrFail($transaction->id);
             abort_unless($locked->payment_status === 'unpaid', 422, 'Hanya pembayaran yang masih pending yang bisa dibatalkan.');
 
-            $locked->update(['payment_status' => 'failed']);
+            $locked->update(['payment_status' => 'failed', 'cancelled_at' => now()]);
 
-            UserMembership::query()->where('transaction_id', $locked->id)->update(['status' => 'cancelled']);
-            MemberTrainerPackage::query()->where('transaction_id', $locked->id)
-                ->where('status', 'pending')->update(['status' => 'cancelled']);
+            $membershipQuery = UserMembership::query()->where('transaction_id', $locked->id);
+            $trainerQuery = MemberTrainerPackage::query()->where('transaction_id', $locked->id);
+
+            // Legacy checkouts created before transaction_id was introduced:
+            // only link a single unambiguous child record created close to this invoice.
+            $from = $locked->created_at->copy()->subMinutes(5);
+            $until = $locked->created_at->copy()->addMinutes(5);
+
+            if (! $membershipQuery->exists() && $locked->transactionable_type === 'membership') {
+                $legacyMemberships = UserMembership::query()
+                    ->where('user_id', $locked->user_id)
+                    ->where('status', '!=', 'cancelled')
+                    ->whereBetween('created_at', [$from, $until]);
+                if ($legacyMemberships->count() === 1) {
+                    $legacyMemberships->update(['status' => 'cancelled']);
+                }
+            } else {
+                $membershipQuery->update(['status' => 'cancelled']);
+            }
+
+            if (! $trainerQuery->exists()) {
+                $legacyTrainerPackages = MemberTrainerPackage::query()
+                    ->where('user_id', $locked->user_id)
+                    ->where('status', 'pending')
+                    ->whereBetween('created_at', [$from, $until]);
+                if ($legacyTrainerPackages->count() === 1) {
+                    $legacyTrainerPackages->update(['status' => 'cancelled']);
+                }
+            } else {
+                $trainerQuery->where('status', 'pending')->update(['status' => 'cancelled']);
+            }
         });
 
         return redirect()->route('member.payments.show', $transaction->id)->with('success', 'Pembayaran berhasil dibatalkan.');
