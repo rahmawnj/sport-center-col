@@ -33,6 +33,7 @@ class PublicHomeController extends Controller
             ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
             ->map(fn ($package) => [
                 'id' => $package->id,
+                'facility_id' => $package->facility_id,
                 'name' => $package->name,
                 'total_sessions' => $package->total_sessions,
                 'duration_days' => $package->duration_days,
