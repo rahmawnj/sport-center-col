@@ -97,11 +97,13 @@ class PublicMembershipRegistrationController extends Controller
     {
         $isExistingMember = $request->user()?->role?->name === 'Member'
             && $request->user()->memberProfile()->exists();
+        $isTrainerOnly = $request->input('purchase_type') === 'trainer';
 
         $rules = [
-            'package_id' => ['required', 'integer', 'exists:packages,id'],
-            'trainer_package_id' => ['nullable', 'integer', 'exists:trainer_packages,id'],
-            'trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
+            'package_id' => [$isTrainerOnly ? 'nullable' : 'required', 'integer', 'exists:packages,id'],
+            'trainer_package_id' => [$isTrainerOnly ? 'required' : 'nullable', 'integer', 'exists:trainer_packages,id'],
+            'trainer_id' => ['required_with:trainer_package_id', 'integer', 'exists:trainers,id'],
+            'purchase_type' => ['nullable', Rule::in(['trainer'])],
             'terms_accepted' => ['required', 'accepted'],
             'payment_method' => ['required', Rule::in(['bank_transfer', 'cash'])],
         ];
@@ -116,28 +118,33 @@ class PublicMembershipRegistrationController extends Controller
         }
 
         $data = $request->validate($rules);
-        $package = $this->availableMembershipPackages()->findOrFail($data['package_id']);
+        $package = ! empty($data['package_id'])
+            ? $this->availableMembershipPackages()->findOrFail($data['package_id'])
+            : null;
         $trainerPackage = null;
         $trainer = null;
+        $facilityId = $package?->facility_id;
 
         if (! empty($data['trainer_package_id'])) {
             $trainerPackage = TrainerPackage::query()
                 ->where('is_active', true)
-                ->where('facility_id', $package->facility_id)
+                ->whereHas('facility', fn ($query) => $query
+                    ->where('status', 'active')
+                    ->where('is_bookable_online', true)
+                    ->where('has_membership', true))
                 ->findOrFail($data['trainer_package_id']);
-
-            if (empty($data['trainer_id'])) {
-                return back()->withErrors(['trainer_id' => 'Pilih trainer untuk paket add-on yang kamu pilih.'])->withInput();
-            }
-
+            $facilityId ??= $trainerPackage->facility_id;
+            abort_unless((int) $trainerPackage->facility_id === (int) $facilityId, 422, 'Fasilitas paket trainer tidak sesuai.');
             $trainer = Trainer::query()
-                ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $package->facility_id))
+                ->whereHas('facilities', fn ($query) => $query->where('facilities.id', $facilityId))
                 ->findOrFail($data['trainer_id']);
-        } elseif (! empty($data['trainer_id'])) {
-            return back()->withErrors(['trainer_id' => 'Trainer hanya dapat dipilih jika paket add-on dipilih.'])->withInput();
         }
 
-        $result = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer, $isExistingMember) {
+        if (! $package && ! $trainerPackage) {
+            abort(422, 'Pilih paket yang ingin dibeli.');
+        }
+
+        $result = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer, $facilityId, $isExistingMember) {
             $user = $isExistingMember ? $request->user() : null;
 
             if (! $user) {
@@ -149,33 +156,30 @@ class PublicMembershipRegistrationController extends Controller
                 ]);
                 $user->role()->associate($memberRole);
                 $user->save();
-
-                MemberProfile::create([
-                    'user_id' => $user->id,
-                    'phone' => $data['phone'],
-                ]);
+                MemberProfile::create(['user_id' => $user->id, 'phone' => $data['phone']]);
             }
 
             $start = today();
-            $membershipEnd = $start->copy()->addDays(max(1, (int) $package->duration_days) - 1);
 
-            $membership = UserMembership::create([
-                'user_id' => $user->id,
-                'package_id' => $package->id,
-                'device_id' => Device::forFacility($package->facility_id)?->id,
-                'start_date' => $start->toDateString(),
-                'end_date' => $membershipEnd->toDateString(),
-                'status' => 'active',
-            ]);
+            if ($package) {
+                $membershipEnd = $start->copy()->addDays(max(1, (int) $package->duration_days) - 1);
+                UserMembership::create([
+                    'user_id' => $user->id,
+                    'package_id' => $package->id,
+                    'device_id' => Device::forFacility($package->facility_id)?->id,
+                    'start_date' => $start->toDateString(),
+                    'end_date' => $membershipEnd->toDateString(),
+                    'status' => 'active',
+                ]);
+            }
 
             if ($trainerPackage && $trainer) {
                 $trainerEnd = $start->copy()->addDays(max(1, (int) $trainerPackage->duration_days) - 1);
-
                 MemberTrainerPackage::create([
                     'user_id' => $user->id,
                     'trainer_package_id' => $trainerPackage->id,
                     'trainer_id' => $trainer->id,
-                    'facility_id' => $package->facility_id,
+                    'facility_id' => $facilityId,
                     'start_date' => $start->toDateString(),
                     'expires_at' => $trainerEnd->toDateString(),
                     'total_sessions' => $trainerPackage->total_sessions,
@@ -186,9 +190,9 @@ class PublicMembershipRegistrationController extends Controller
 
             $transaction = Transaction::create([
                 'user_id' => $user->id,
-                'transactionable_type' => 'membership',
+                'transactionable_type' => $package ? 'membership' : 'trainer_package',
                 'guest_name' => $user->name,
-                'total_amount' => (float) $package->price + (float) ($trainerPackage?->price ?? 0),
+                'total_amount' => (float) ($package?->price ?? 0) + (float) ($trainerPackage?->price ?? 0),
                 'payment_method' => $data['payment_method'],
                 'payment_status' => 'unpaid',
             ]);
@@ -205,7 +209,9 @@ class PublicMembershipRegistrationController extends Controller
         }
 
         return redirect()->route('member.payments.show', $transaction->id)
-            ->with('success', 'Checkout berhasil dibuat. Membership dan add-on trainer tergabung dalam satu transaksi.');
+            ->with('success', $package
+                ? 'Checkout berhasil dibuat. Membership dan add-on trainer tergabung dalam satu transaksi.'
+                : 'Checkout paket personal trainer berhasil dibuat.');
     }
 
     private function availableMembershipPackages()
