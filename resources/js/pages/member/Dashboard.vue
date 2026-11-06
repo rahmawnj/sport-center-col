@@ -10,6 +10,8 @@ defineProps<{
   stats:{upcoming_bookings:number;completed_bookings:number;active_memberships:number;payments_count:number;payments_total:number};
   bookings:Booking[];
   memberships:Membership[];
+  currentMembership:{id:number;package:string;facility:string|null;start_date:string|null;end_date:string|null;duration_days:number|null}|null;
+  activeTrainerPackages:{id:number;package:string;trainer:string;specialty:string|null;facility:string|null;start_date:string|null;expires_at:string|null;total_sessions:number;used_sessions:number;remaining_sessions:number}[];
 }>();
 const currency=(value:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value);
 const dateLabel=(value:string|null)=>value?new Date(value+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'Jadwal belum ditentukan';
@@ -26,8 +28,38 @@ const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;act
   <div class="space-y-7">
     <section class="relative isolate overflow-hidden rounded-3xl bg-[#001428] p-6 text-white sm:p-8 lg:p-10">
       <div class="absolute -right-10 -top-20 -z-10 size-72 rounded-full bg-[#a4da01]/20 blur-3xl" /><div class="absolute bottom-0 right-1/4 -z-10 size-40 rounded-full bg-sky-400/10 blur-3xl" />
-      <div class="max-w-2xl"><p class="text-xs font-bold uppercase tracking-[.2em] text-[#b9ec35]">Member dashboard</p><h1 class="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Halo, {{ $page.props.auth?.user?.name || 'Member' }}! 👋</h1><p class="mt-3 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">Semua booking, membership, dan transaksi yang terhubung dengan akunmu bisa dipantau di sini.</p><a href="/book" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#a4da01] px-5 py-3 text-sm font-bold text-[#001428] transition hover:-translate-y-0.5 hover:bg-[#b8ec24]"><Plus class="size-4" /> Buat booking <ArrowUpRight class="size-4" /></a></div>
-      <div class="absolute bottom-0 right-7 hidden opacity-20 md:block"><Trophy class="size-40" :stroke-width="1" /></div>
+      <div class="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
+        <div class="relative z-10">
+          <p class="text-xs font-bold uppercase tracking-[.2em] text-[#b9ec35]">Keanggotaan kamu</p>
+          <template v-if="currentMembership">
+            <div class="mt-4 flex items-center gap-2"><span class="inline-flex items-center gap-2 rounded-full bg-[#a4da01]/15 px-3 py-1.5 text-xs font-bold text-[#c9f36a]"><span class="size-1.5 rounded-full bg-[#a4da01]" /> MEMBERSHIP AKTIF</span></div>
+            <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">{{ currentMembership.package }}</h1>
+            <p class="mt-2 text-sm text-slate-300">{{ currentMembership.facility || 'Sport Center' }}</p>
+            <div class="mt-6 grid max-w-lg grid-cols-2 gap-3">
+              <div class="rounded-2xl border border-white/10 bg-white/5 p-4"><p class="text-xs text-slate-400">Mulai aktif</p><p class="mt-2 text-sm font-bold text-white">{{ dateLabel(currentMembership.start_date) }}</p></div>
+              <div class="rounded-2xl border border-white/10 bg-white/5 p-4"><p class="text-xs text-slate-400">Berlaku sampai</p><p class="mt-2 text-sm font-bold text-white">{{ dateLabel(currentMembership.end_date) }}</p></div>
+            </div>
+          </template>
+          <template v-else>
+            <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">Belum ada membership aktif</h1>
+            <p class="mt-3 max-w-xl text-sm leading-6 text-slate-300">Membership yang sudah aktif akan tampil di sini, lengkap dengan tanggal mulai dan masa berlakunya.</p>
+            <a href="/#membership" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#a4da01] px-5 py-3 text-sm font-bold text-[#001428] transition hover:-translate-y-0.5 hover:bg-[#b8ec24]">Lihat paket membership <ArrowUpRight class="size-4" /></a>
+          </template>
+          <a href="/book" class="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"><Plus class="size-4" /> Buat booking</a>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[.06] p-5 sm:p-6">
+          <div class="flex items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-[.16em] text-[#b9ec35]">Personal trainer</p><h2 class="mt-2 text-lg font-bold text-white">Paket trainer aktif</h2></div><Trophy class="size-8 text-[#b9ec35]" /></div>
+          <div v-if="activeTrainerPackages.length" class="mt-4 space-y-3">
+            <article v-for="item in activeTrainerPackages" :key="item.id" class="rounded-xl border border-white/10 bg-[#00101f]/50 p-4">
+              <p class="font-semibold text-white">{{ item.package }}</p>
+              <p class="mt-1 text-xs text-slate-300">{{ item.trainer }}<span v-if="item.facility"> · {{ item.facility }}</span></p>
+              <div class="mt-3 flex items-end justify-between gap-3"><div><p class="text-[11px] text-slate-400">Sisa sesi</p><p class="mt-1 text-lg font-bold text-[#c9f36a]">{{ item.remaining_sessions }}<span class="text-xs font-medium text-slate-400"> / {{ item.total_sessions }}</span></p></div><div class="text-right"><p class="text-[11px] text-slate-400">Berakhir</p><p class="mt-1 text-xs font-semibold text-white">{{ dateLabel(item.expires_at) }}</p></div></div>
+              <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-[#a4da01]" :style="{width: (item.total_sessions ? (item.remaining_sessions / item.total_sessions) * 100 : 0) + '%'}" /></div>
+            </article>
+          </div>
+          <div v-else class="mt-5 rounded-xl border border-dashed border-white/15 px-4 py-6 text-center"><p class="text-sm font-semibold text-white">Belum ada paket trainer aktif</p><p class="mt-1 text-xs leading-5 text-slate-400">Paket personal trainer yang aktif akan muncul di bagian ini.</p></div>
+        </div>
+      </div>
     </section>
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <article v-for="item in summaries(stats)" :key="item.label" class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,.03)] transition duration-200 hover:-translate-y-1 hover:shadow-lg"><div class="flex items-start justify-between gap-3"><div><p class="text-sm font-medium text-slate-500">{{ item.label }}</p><p class="mt-3 text-2xl font-bold tracking-tight text-slate-900">{{ item.value }}</p></div><div class="grid size-11 place-items-center rounded-xl" :class="{'bg-lime-100 text-lime-800':item.tone==='lime','bg-sky-100 text-sky-700':item.tone==='blue','bg-violet-100 text-violet-700':item.tone==='violet','bg-orange-100 text-orange-700':item.tone==='orange'}"><component :is="item.icon" class="size-5" /></div></div><p class="mt-4 text-xs text-slate-400">{{ item.note }}</p></article>
