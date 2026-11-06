@@ -41,7 +41,25 @@ class TrainerDashboardController extends Controller
             ->latest()
             ->get();
 
+        $trainerSchedules = \\App\\Models\\TrainerSessionSchedule::query()
+            ->with(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainerPackage:id,name'])
+            ->whereHas('memberTrainerPackage', fn ($query) => $query->where('trainer_id', $trainer->id))
+            ->latest('session_date')->latest('start_time')->limit(30)->get()
+            ->map(fn ($schedule) => [
+                'id' => $schedule->id,
+                'member' => $schedule->memberTrainerPackage?->user?->name,
+                'package' => $schedule->memberTrainerPackage?->trainerPackage?->name,
+                'date' => $schedule->session_date?->toDateString(),
+                'start_time' => substr((string) $schedule->start_time, 0, 5),
+                'end_time' => substr((string) $schedule->end_time, 0, 5),
+                'member_attended' => (bool) $schedule->member_attended,
+                'trainer_attended' => (bool) $schedule->trainer_attended,
+                'status' => $schedule->status,
+                'can_confirm' => $schedule->status === 'scheduled' && now()->gte($schedule->session_date->toDateString().' '.$schedule->end_time),
+            ]);
+
         return Inertia::render('trainer/Dashboard', [
+            'trainerSchedules' => $trainerSchedules,
             'trainer' => [
                 'name' => $trainer->name,
                 'specialty' => $trainer->specialty,
