@@ -215,9 +215,7 @@ class TrainerPackageController extends Controller
 
             Transaction::create([
                 'user_id' => $member->id,
-                'customer_type' => 'member',
-                'transactionable_type' => MemberTrainerPackage::class,
-                'transactionable_id' => $memberPackage->id,
+                'transactionable_type' => 'membership',
                 'customer_name' => $member->name,
                 'amount' => $package->price,
                 'payment_method' => $data['payment_method'],
