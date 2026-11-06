@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowUpRight, CalendarDays, Clock3, CreditCard, Plus, Trophy } from '@lucide/vue';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
@@ -13,6 +13,7 @@ defineProps<{
   currentMembership:{id:number;package:string;facility:string|null;start_date:string|null;end_date:string|null;duration_days:number|null}|null;
   upcomingMemberships:{id:number;package:string;facility:string|null;start_date:string|null;end_date:string|null;duration_days:number|null}[];
   activeTrainerPackages:{id:number;package:string;trainer:string;specialty:string|null;facility:string|null;start_date:string|null;expires_at:string|null;total_sessions:number;used_sessions:number;remaining_sessions:number}[];
+  trainerSchedules:{id:number;trainer:string|null;package:string|null;date:string;start_time:string;end_time:string;member_attended:boolean;trainer_attended:boolean;status:string;can_confirm:boolean}[];
 }>();
 const currency=(value:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value);
 const dateLabel=(value:string|null)=>value?new Date(value+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'Jadwal belum ditentukan';
@@ -71,6 +72,13 @@ const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;act
           <div v-else class="mt-5 rounded-xl border border-dashed border-white/15 px-4 py-6 text-center"><p class="text-sm font-semibold text-white">Belum ada paket trainer aktif</p><p class="mt-1 text-xs leading-5 text-slate-400">Paket personal trainer yang aktif akan muncul di bagian ini.</p></div>
         </div>
       </div>
+    </section>
+    <section v-if="trainerSchedules.length" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b p-5"><h2 class="font-bold text-slate-900">Jadwal personal trainer</h2><p class="mt-1 text-sm text-slate-500">Konfirmasi kehadiran setelah sesi selesai. Kuota berkurang jika kamu dan trainer sama-sama hadir.</p></div>
+      <div class="divide-y"><article v-for="item in trainerSchedules" :key="item.id" class="flex flex-wrap items-center justify-between gap-3 p-5">
+        <div><p class="font-semibold text-slate-900">{{ item.package }} · {{ item.trainer }}</p><p class="mt-1 text-sm text-slate-500">{{ dateLabel(item.date) }} · {{ item.start_time }}–{{ item.end_time }}</p><p class="mt-2 text-xs text-slate-500">Kehadiran kamu: {{ item.member_attended ? 'Sudah konfirmasi' : 'Belum' }} · Trainer: {{ item.trainer_attended ? 'Sudah konfirmasi' : 'Belum' }}</p></div>
+        <div class="flex items-center gap-2"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{{ item.status === 'completed' ? 'Selesai' : 'Terjadwal' }}</span><button v-if="item.can_confirm && !item.member_attended && item.status === 'scheduled'" type="button" class="rounded-xl bg-[#001428] px-4 py-2.5 text-xs font-semibold text-white" @click="router.post('/member/trainer-schedules/'+item.id+'/confirm-attendance')">Konfirmasi hadir</button><span v-else-if="item.member_attended" class="text-xs font-semibold text-emerald-700">Sudah hadir</span></div>
+      </article></div>
     </section>
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <article v-for="item in summaries(stats)" :key="item.label" class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,.03)] transition duration-200 hover:-translate-y-1 hover:shadow-lg"><div class="flex items-start justify-between gap-3"><div><p class="text-sm font-medium text-slate-500">{{ item.label }}</p><p class="mt-3 text-2xl font-bold tracking-tight text-slate-900">{{ item.value }}</p></div><div class="grid size-11 place-items-center rounded-xl" :class="{'bg-lime-100 text-lime-800':item.tone==='lime','bg-sky-100 text-sky-700':item.tone==='blue','bg-violet-100 text-violet-700':item.tone==='violet','bg-orange-100 text-orange-700':item.tone==='orange'}"><component :is="item.icon" class="size-5" /></div></div><p class="mt-4 text-xs text-slate-400">{{ item.note }}</p></article>
