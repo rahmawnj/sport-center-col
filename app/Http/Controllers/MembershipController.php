@@ -43,7 +43,7 @@ class MembershipController extends Controller
                     ->whereDate('start_date', '<=', today())
                     ->whereDate('end_date', '>=', today())
                     ->whereDate('end_date', '<=', today()->addDays(7))->count(),
-                'expired' => UserMembership::where('status', '!=', 'cancelled')
+                'expired' => UserMembership::where('status', 'active')
                     ->whereDate('end_date', '<', today())->count(),
             ],
         ]);
@@ -56,7 +56,7 @@ class MembershipController extends Controller
         $pending = $membership->status === 'pending';
         $cancelled = $membership->status === 'cancelled';
         $scheduled = ! $pending && ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
-        $expired = ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
+        $expired = ! $pending && ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
 
         return Inertia::render('memberships/Show', [
             'membership' => [
@@ -177,7 +177,7 @@ class MembershipController extends Controller
         $pending = $membership->status === 'pending';
         $cancelled = $membership->status === 'cancelled';
         $scheduled = ! $pending && ! $cancelled && $membership->start_date && $membership->start_date->gt(Carbon::today());
-        $expired = ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
+        $expired = ! $pending && ! $cancelled && ! $scheduled && $membership->end_date->lt(Carbon::today());
 
         return [
             'id' => $membership->id,
