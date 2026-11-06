@@ -114,7 +114,7 @@ const submit = () => {
                     </div>
                     <div v-else class="mt-4 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">Kamu tidak memilih add-on trainer.</div>
                     <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-5"><span class="font-bold text-slate-600">Total pilihan</span><strong class="text-2xl font-black text-[#001428]">{{ currency(selection.total) }}</strong></div>
-                    <p class="mt-4 text-xs leading-5 text-slate-400">Tagihan membership dan add-on trainer akan tercatat pada akunmu sebagai transaksi masing-masing. Status pembayaran dapat dipantau melalui menu Pembayaran.</p>
+                    <p class="mt-4 text-xs leading-5 text-slate-400">Membership dan add-on trainer digabung menjadi satu invoice dan satu transaksi. Status pembayaran dapat dipantau melalui menu Pembayaran.</p>
                 </aside>
             </section>
         </main>
