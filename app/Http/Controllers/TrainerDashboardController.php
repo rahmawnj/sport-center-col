@@ -41,7 +41,7 @@ class TrainerDashboardController extends Controller
             ->latest()
             ->get();
 
-        $trainerSchedules = \\App\\Models\\TrainerSessionSchedule::query()
+        $trainerSchedules = \App\Models\TrainerSessionSchedule::query()
             ->with(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainerPackage:id,name'])
             ->whereHas('memberTrainerPackage', fn ($query) => $query->where('trainer_id', $trainer->id))
             ->latest('session_date')->latest('start_time')->limit(30)->get()
