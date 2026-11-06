@@ -28,7 +28,7 @@ class TrainerSessionController extends Controller
 
             $overlap = TrainerSessionSchedule::query()
                 ->where('session_date', $data['session_date'])
-                ->where('status', 'scheduled')
+                ->whereIn('status', ['scheduled', 'completed'])
                 ->where('start_time', '<', $data['end_time'])
                 ->where('end_time', '>', $data['start_time'])
                 ->whereHas('memberTrainerPackage', fn ($q) => $q->where(function ($sub) use ($package) {
