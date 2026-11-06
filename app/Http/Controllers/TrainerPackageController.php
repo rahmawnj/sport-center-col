@@ -181,8 +181,38 @@ class TrainerPackageController extends Controller
             })
             ->count();
 
+        $schedulePackages = (clone $activeTrainers)
+            ->with(['user:id,name', 'trainer:id,name', 'trainerPackage:id,name', 'facility:id,name'])
+            ->get()
+            ->map(fn (MemberTrainerPackage $item) => [
+                'id' => $item->id,
+                'label' => ($item->user?->name ?? 'Member').' — '.($item->trainer?->name ?? 'Trainer').' — '.($item->trainerPackage?->name ?? 'Paket').' ('.$item->remaining_sessions.' sesi)',
+            ])
+            ->values();
+
+        $sessionSchedules = \\App\\Models\\TrainerSessionSchedule::query()
+            ->with(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name'])
+            ->latest('session_date')
+            ->latest('start_time')
+            ->limit(100)
+            ->get()
+            ->map(fn ($schedule) => [
+                'id' => $schedule->id,
+                'member' => $schedule->memberTrainerPackage?->user?->name,
+                'trainer' => $schedule->memberTrainerPackage?->trainer?->name,
+                'package' => $schedule->memberTrainerPackage?->trainerPackage?->name,
+                'date' => $schedule->session_date?->toDateString(),
+                'start_time' => substr((string) $schedule->start_time, 0, 5),
+                'end_time' => substr((string) $schedule->end_time, 0, 5),
+                'member_attended' => (bool) $schedule->member_attended,
+                'trainer_attended' => (bool) $schedule->trainer_attended,
+                'status' => $schedule->status,
+            ]);
+
         return Inertia::render('membership-trainers/Index', [
             'rows' => $rows,
+            'schedulePackages' => $schedulePackages,
+            'sessionSchedules' => $sessionSchedules,
             'filters' => ['search' => $search],
             'stats' => [
                 'active_trainers' => (clone $activeTrainers)->count(),
