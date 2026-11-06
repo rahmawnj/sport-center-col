@@ -21,6 +21,7 @@ class Facility extends Model
     {
         return [
             'is_bookable_online' => 'boolean',
+            'has_membership' => 'boolean',
             'turnaround_minutes' => 'integer',
         ];
     }
