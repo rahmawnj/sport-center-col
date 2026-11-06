@@ -21,7 +21,7 @@ class MembershipPackageController extends Controller
     {
         $packages = Package::query()
             ->where('type', 'membership')
-            ->whereHas('facility', fn ($query) => $query->where('has_membership', true))
+            ->whereHas('facility', fn ($query) => $query->where('has_membership', true)->where('status', 'active'))
             ->with(['facility:id,name', 'pricingRules'])
             ->latest()
             ->paginate(10)
@@ -53,7 +53,7 @@ class MembershipPackageController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'stats' => [
-                'packages' => Package::where('type', 'membership')->whereHas('facility', fn ($query) => $query->where('has_membership', true))->count(),
+                'packages' => Package::where('type', 'membership')->whereHas('facility', fn ($query) => $query->where('has_membership', true)->where('status', 'active'))->count(),
                 'members' => DB::table('user_memberships')
                     ->join('packages', 'packages.id', '=', 'user_memberships.package_id')
                     ->where('packages.type', 'membership')
