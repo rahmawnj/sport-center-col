@@ -5,12 +5,10 @@ import { computed, ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SummaryCards from '@/components/SummaryCards.vue';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Rule = { id?: number; day_type: 'all' | 'weekday' | 'weekend'; date_start: string | null; date_end: string | null; start_time: string | null; end_time: string | null; price: number; priority: number };
-type MembershipPackage = { id: number; name: string; facility_id: number; facility_name: string | null; duration_days: number; pricing_rules: Rule[]; member_count: number };
+type MembershipPackage = { id: number; name: string; facility_id: number; facility_name: string | null; duration_days: number; price: number; member_count: number };
 type LinkItem = { url: string | null; label: string; active: boolean };
 const props = defineProps<{
     packages: { data: MembershipPackage[]; current_page: number; last_page: number; total: number; links: LinkItem[] };
@@ -20,12 +18,7 @@ const props = defineProps<{
 
 const showForm = ref(false);
 const editing = ref<MembershipPackage | null>(null);
-const form = useForm({
-    name: '',
-    facility_id: '',
-    duration_days: 30,
-    pricing_rules: [{ day_type: 'all' as 'all' | 'weekday' | 'weekend', date_start: '', date_end: '', start_time: '', end_time: '', price: '', priority: 0 }],
-});
+const form = useForm({ name: '', facility_id: '', duration_days: 30, price: '' });
 const title = computed(() => editing.value ? 'Edit paket membership' : 'Tambah paket membership');
 
 function resetForm() {
@@ -34,7 +27,7 @@ function resetForm() {
     form.name = '';
     form.facility_id = '';
     form.duration_days = 30;
-    form.pricing_rules = [{ day_type: 'all', date_start: '', date_end: '', start_time: '', end_time: '', price: '', priority: 0 }];
+    form.price = '';
 }
 function createPackage() {
     editing.value = null;
@@ -47,23 +40,8 @@ function editPackage(item: MembershipPackage) {
     form.name = item.name;
     form.facility_id = String(item.facility_id);
     form.duration_days = item.duration_days;
-    form.pricing_rules = item.pricing_rules.map(rule => ({
-        day_type: rule.day_type,
-        date_start: rule.date_start ?? '',
-        date_end: rule.date_end ?? '',
-        start_time: rule.start_time ?? '',
-        end_time: rule.end_time ?? '',
-        price: String(rule.price),
-        priority: rule.priority ?? 0,
-    }));
-    if (!form.pricing_rules.length) form.pricing_rules = [{ day_type: 'all', date_start: '', date_end: '', start_time: '', end_time: '', price: '', priority: 0 }];
+    form.price = String(item.price);
     showForm.value = true;
-}
-function addRule() {
-    form.pricing_rules.push({ day_type: 'all', date_start: '', date_end: '', start_time: '', end_time: '', price: '', priority: 0 });
-}
-function removeRule(index: number) {
-    if (form.pricing_rules.length > 1) form.pricing_rules.splice(index, 1);
 }
 function closeForm() {
     showForm.value = false;
@@ -86,15 +64,12 @@ function goToPage(url: string | null) {
 function rupiah(value: number) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value));
 }
-function dayLabel(value: Rule['day_type']) {
-    return value === 'all' ? 'Semua hari' : value === 'weekday' ? 'Weekday' : 'Weekend';
-}
 </script>
 
 <template>
     <Head title="Paket Membership" />
     <div class="space-y-6 p-4 md:p-6">
-        <PageHeader eyebrow="Member" title="Paket Membership" description="Kelola master paket membership yang tersedia untuk setiap olahraga." />
+        <PageHeader eyebrow="Member" title="Paket Membership" description="Kelola paket membership dengan satu harga tetap untuk setiap olahraga." />
         <SummaryCards :items="[
             { label: 'Master paket', value: props.stats.packages, icon: CalendarDays, accent: 'primary' },
             { label: 'Member terdaftar', value: props.stats.members, icon: BadgeCheck, accent: 'emerald' },
@@ -110,7 +85,7 @@ function dayLabel(value: Rule['day_type']) {
                             <th class="px-4 py-3 font-medium">Nama paket</th>
                             <th class="px-4 py-3 font-medium">Olahraga</th>
                             <th class="px-4 py-3 font-medium">Masa aktif</th>
-                            <th class="px-4 py-3 font-medium">Aturan harga</th>
+                            <th class="px-4 py-3 font-medium">Harga tetap</th>
                             <th class="px-4 py-3 font-medium">Member</th>
                             <th class="px-4 py-3 text-right font-medium">Aksi</th>
                         </tr>
@@ -120,13 +95,7 @@ function dayLabel(value: Rule['day_type']) {
                             <td class="px-4 py-3 font-medium">{{ item.name }}</td>
                             <td class="px-4 py-3">{{ item.facility_name || '—' }}</td>
                             <td class="px-4 py-3">{{ item.duration_days }} hari</td>
-                            <td class="px-4 py-3">
-                                <div v-for="rule in item.pricing_rules" :key="rule.id" class="flex flex-wrap justify-between gap-x-3 gap-y-1">
-                                    <span class="text-muted-foreground">{{ dayLabel(rule.day_type) }}<template v-if="rule.start_time && rule.end_time"> · {{ rule.start_time }}–{{ rule.end_time }}</template></span>
-                                    <span class="font-medium">{{ rupiah(rule.price) }}</span>
-                                </div>
-                                <span v-if="!item.pricing_rules.length" class="text-muted-foreground">Belum ada harga</span>
-                            </td>
+                            <td class="px-4 py-3 font-semibold">{{ rupiah(item.price) }}</td>
                             <td class="px-4 py-3">{{ item.member_count }} member</td>
                             <td class="px-4 py-3 text-right">
                                 <DropdownMenu>
@@ -182,25 +151,10 @@ function dayLabel(value: Rule['day_type']) {
                         <Label>Masa aktif (hari)</Label><Input v-model.number="form.duration_days" type="number" min="1" />
                         <p v-if="form.errors.duration_days" class="text-xs text-destructive">{{ form.errors.duration_days }}</p>
                     </div>
-                </div>
-                <div class="space-y-3 border-t pt-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <div><h3 class="font-semibold">Aturan harga</h3><p class="text-xs text-muted-foreground">Atur harga berdasarkan hari dan jam. Bisa menambahkan harga promo.</p></div>
-                        <Button type="button" size="sm" variant="outline" @click="addRule"><Plus class="mr-1 size-4" />Tambah aturan</Button>
-                    </div>
-                    <div v-for="(rule, index) in form.pricing_rules" :key="index" class="space-y-3 rounded-xl border p-3">
-                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            <div class="grid gap-1"><Label class="text-xs">Hari</Label><select v-model="rule.day_type" class="h-9 rounded-md border bg-background px-2 text-sm"><option value="all">Semua hari</option><option value="weekday">Weekday</option><option value="weekend">Weekend</option></select></div>
-                            <div class="grid gap-1"><Label class="text-xs">Mulai jam</Label><Input v-model="rule.start_time" type="time" /></div>
-                            <div class="grid gap-1"><Label class="text-xs">Sampai jam</Label><Input v-model="rule.end_time" type="time" /></div>
-                            <div class="grid gap-1"><Label class="text-xs">Harga (Rp)</Label><Input v-model="rule.price" type="number" min="0" /></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                            <div class="grid gap-1"><Label class="text-xs">Promo mulai</Label><Input v-model="rule.date_start" type="date" /></div>
-                            <div class="grid gap-1"><Label class="text-xs">Promo sampai</Label><Input v-model="rule.date_end" type="date" /></div>
-                            <div class="flex items-end justify-between gap-2"><div class="grid flex-1 gap-1"><Label class="text-xs">Prioritas</Label><Input v-model.number="rule.priority" type="number" /></div><Button type="button" variant="ghost" size="icon" class="text-destructive" :disabled="form.pricing_rules.length === 1" @click="removeRule(index)"><Trash2 class="size-4" /></Button></div>
-                        </div>
-                        <p v-if="form.errors['pricing_rules.' + index + '.price']" class="text-xs text-destructive">{{ form.errors['pricing_rules.' + index + '.price'] }}</p>
+                    <div class="grid gap-2 sm:col-span-2">
+                        <Label>Harga tetap (Rp)</Label><Input v-model="form.price" type="number" min="0" placeholder="150000" />
+                        <p class="text-xs text-muted-foreground">Satu harga untuk seluruh hari dan jam. Tidak menggunakan pricing rule.</p>
+                        <p v-if="form.errors.price" class="text-xs text-destructive">{{ form.errors.price }}</p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 border-t pt-4">
