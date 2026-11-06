@@ -7,6 +7,7 @@ type Selection = {
     trainer_package: { id: number; name: string; total_sessions: number; duration_days: number; price: number } | null;
     trainer: { id: number; name: string; specialty: string | null } | null;
     total: number;
+    payment_method: 'bank_transfer' | 'cash';
 };
 type CurrentUser = { name: string; email: string } | null;
 
@@ -15,6 +16,7 @@ const form = useForm({
     package_id: props.selection.package.id,
     trainer_package_id: props.selection.trainer_package?.id ?? null as number | null,
     trainer_id: props.selection.trainer?.id ?? null as number | null,
+    payment_method: props.selection.payment_method,
     name: '',
     email: '',
     phone: '',
@@ -113,6 +115,7 @@ const submit = () => {
                         <p class="mt-4 text-lg font-black">{{ currency(selection.trainer_package.price) }}</p>
                     </div>
                     <div v-else class="mt-4 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">Kamu tidak memilih add-on trainer.</div>
+                    <div class="mt-6 rounded-2xl border border-slate-200 p-4"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Metode pembayaran</p><div class="mt-2 flex items-center gap-3"><span class="grid size-10 place-items-center rounded-xl bg-[#f6f8f2] text-[#668500]"><i :class="selection.payment_method === 'cash' ? 'fa-solid fa-cash-register' : 'fa-solid fa-building-columns'"></i></span><strong class="text-sm text-[#001428]">{{ selection.payment_method === 'cash' ? 'Bayar di kasir' : 'Transfer bank' }}</strong></div></div>
                     <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-5"><span class="font-bold text-slate-600">Total pilihan</span><strong class="text-2xl font-black text-[#001428]">{{ currency(selection.total) }}</strong></div>
                     <p class="mt-4 text-xs leading-5 text-slate-400">Membership dan add-on trainer digabung menjadi satu invoice dan satu transaksi. Status pembayaran dapat dipantau melalui menu Pembayaran.</p>
                 </aside>
