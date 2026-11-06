@@ -170,20 +170,87 @@ class TransactionController extends Controller
             };
 
             if ($locked->transactionable_type === 'membership') {
-                UserMembership::query()
+                $membership = UserMembership::query()
+                    ->with('package')
                     ->where('transaction_id', $locked->id)
                     ->whereIn('status', ['pending', 'active'])
-                    ->update(['status' => $childStatus]);
+                    ->lockForUpdate()
+                    ->first();
 
-                MemberTrainerPackage::query()
+                if ($membership) {
+                    if ($childStatus === 'active') {
+                        // Start the membership only when payment is approved.
+                        // Paid future memberships remain in the queue.
+                        User::query()->lockForUpdate()->findOrFail($locked->user_id);
+
+                        $latestPaidMembership = UserMembership::query()
+                            ->where('user_id', $locked->user_id)
+                            ->where('id', '!=', $membership->id)
+                            ->where('status', 'active')
+                            ->whereDate('end_date', '>=', today())
+                            ->whereHas('package', fn ($query) => $query->where('facility_id', $membership->package?->facility_id))
+                            ->orderByDesc('end_date')
+                            ->lockForUpdate()
+                            ->first();
+
+                        $start = $latestPaidMembership
+                            ? $latestPaidMembership->end_date->copy()->addDay()
+                            : today();
+                        $end = $start->copy()->addDays(max(1, (int) ($membership->package?->duration_days ?? 30)) - 1);
+
+                        $membership->update([
+                            'start_date' => $start->toDateString(),
+                            'end_date' => $end->toDateString(),
+                            'status' => 'active',
+                        ]);
+                    } else {
+                        $membership->update(['status' => $childStatus]);
+                    }
+                }
+
+                $trainerPurchase = MemberTrainerPackage::query()
+                    ->with('trainerPackage')
                     ->where('transaction_id', $locked->id)
                     ->whereIn('status', ['pending', 'active'])
-                    ->update(['status' => $childStatus]);
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($trainerPurchase) {
+                    if ($childStatus === 'active') {
+                        $trainerStart = today();
+                        $trainerEnd = $trainerStart->copy()->addDays(max(1, (int) ($trainerPurchase->trainerPackage?->duration_days ?? 30)) - 1);
+
+                        $trainerPurchase->update([
+                            'start_date' => $trainerStart->toDateString(),
+                            'expires_at' => $trainerEnd->toDateString(),
+                            'status' => 'active',
+                        ]);
+                    } else {
+                        $trainerPurchase->update(['status' => $childStatus]);
+                    }
+                }
             } elseif ($locked->transactionable_type === 'trainer_package') {
-                MemberTrainerPackage::query()
+                $trainerPurchase = MemberTrainerPackage::query()
+                    ->with('trainerPackage')
                     ->where('transaction_id', $locked->id)
                     ->whereIn('status', ['pending', 'active'])
-                    ->update(['status' => $childStatus]);
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($trainerPurchase) {
+                    if ($childStatus === 'active') {
+                        $trainerStart = today();
+                        $trainerEnd = $trainerStart->copy()->addDays(max(1, (int) ($trainerPurchase->trainerPackage?->duration_days ?? 30)) - 1);
+
+                        $trainerPurchase->update([
+                            'start_date' => $trainerStart->toDateString(),
+                            'expires_at' => $trainerEnd->toDateString(),
+                            'status' => 'active',
+                        ]);
+                    } else {
+                        $trainerPurchase->update(['status' => $childStatus]);
+                    }
+                }
             }
         });
 
