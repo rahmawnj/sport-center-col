@@ -419,6 +419,10 @@ class PublicBookingController extends Controller
 
     private function basePrice(Package $package, Carbon $date): ?float
     {
+        if ($package->type === 'membership') {
+            return (float) $package->price;
+        }
+
         $rules = $this->matchingRules($package, $date);
 
         if ($rules->isEmpty()) {
