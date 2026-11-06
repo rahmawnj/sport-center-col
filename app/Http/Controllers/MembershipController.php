@@ -162,9 +162,7 @@ class MembershipController extends Controller
 
             Transaction::create([
                 'user_id' => $lockedMembership->user_id,
-                'transactionable_type' => UserMembership::class,
-                'transactionable_id' => $lockedMembership->id,
-                'device_id' => Device::forFacility($lockedMembership->package->facility_id)?->id,
+                'transactionable_type' => 'membership',
                 'amount' => $price,
                 'payment_method' => $data['payment_method'],
                 'payment_status' => 'fully_paid',
