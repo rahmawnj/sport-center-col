@@ -225,7 +225,9 @@ class PublicMembershipRegistrationController extends Controller
                     'device_id' => Device::forFacility($package->facility_id)?->id,
                     'start_date' => $start->toDateString(),
                     'end_date' => $membershipEnd->toDateString(),
-                    'status' => 'active',
+                    // Checkout is not activation. The membership becomes
+                    // active only after its linked transaction is approved as paid.
+                    'status' => 'pending',
                     'transaction_id' => $transaction->id,
                 ]);
             }
