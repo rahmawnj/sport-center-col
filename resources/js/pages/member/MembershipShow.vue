@@ -26,7 +26,7 @@ const dateTimeLabel = (value: string | null) =>
   value ? new Date(value).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : '—';
 
 const statusLabel = (value: string) =>
-  ({ active: 'Aktif', scheduled: 'Menunggu giliran', expired: 'Kedaluwarsa', cancelled: 'Dibatalkan' }[value] || value);
+  ({ pending: 'Menunggu pembayaran', active: 'Aktif', scheduled: 'Menunggu giliran', expired: 'Kedaluwarsa', cancelled: 'Dibatalkan' }[value] || value);
 
 const typeLabel = (value: string | null) =>
   ({ daily: 'Harian', monthly: 'Bulanan', yearly: 'Tahunan', session: 'Per sesi' }[value || ''] || value || 'Membership');
@@ -55,6 +55,7 @@ const typeLabel = (value: string | null) =>
         </div>
         <span class="inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
           :class="{
+            'bg-amber-100 text-amber-800': membership.status === 'pending',
             'bg-emerald-100 text-emerald-800': membership.status === 'active',
             'bg-sky-100 text-sky-800': membership.status === 'scheduled',
             'bg-amber-100 text-amber-800': membership.status === 'expired',
