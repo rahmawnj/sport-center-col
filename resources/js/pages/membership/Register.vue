@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
 type Selection = {
@@ -27,6 +27,10 @@ const currency = (amount: number) => new Intl.NumberFormat('id-ID', {
     style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
 }).format(amount);
 const duration = (days: number) => days >= 30 && days % 30 === 0 ? `${days / 30} bulan` : `${days} hari`;
+
+const switchToMemberLogin = () => {
+    router.post('/membership/register/switch-account');
+};
 
 const submit = () => {
     form.post('/membership/register', {
@@ -88,10 +92,7 @@ const submit = () => {
 
                     <div v-if="!currentUser" class="mt-6 rounded-2xl bg-slate-50 p-4 text-center text-sm text-slate-600">
                         <p>Sudah punya akun member?</p>
-                        <form method="post" action="/membership/register/switch-account" class="mt-2">
-                            <input type="hidden" name="_token" :value="$page.props.csrf_token" />
-                            <button type="submit" class="font-bold text-[#668500] underline underline-offset-4">Keluar dari akun ini & masuk dengan akun member</button>
-                        </form>
+                        <button type="button" @click="switchToMemberLogin" class="mt-2 font-bold text-[#668500] underline underline-offset-4">Keluar dari akun ini & masuk dengan akun member</button>
                     </div>
                 </div>
 
