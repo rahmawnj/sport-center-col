@@ -9,6 +9,7 @@ class MemberTrainerPackage extends Model
 {
     protected $fillable = [
         'user_id',
+        'transaction_id',
         'trainer_package_id',
         'trainer_id',
         'facility_id',
