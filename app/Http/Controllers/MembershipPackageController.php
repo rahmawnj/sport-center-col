@@ -22,7 +22,7 @@ class MembershipPackageController extends Controller
         $packages = Package::query()
             ->where('type', 'membership')
             ->whereHas('facility', fn ($query) => $query->where('has_membership', true)->where('status', 'active'))
-            ->with(['facility:id,name', 'pricingRules'])
+            ->with(['facility:id,name', 'membershipPricingRules'])
             ->latest()
             ->paginate(10)
             ->through(fn (Package $package) => [
@@ -31,7 +31,7 @@ class MembershipPackageController extends Controller
                 'facility_id' => $package->facility_id,
                 'facility_name' => $package->facility?->name,
                 'duration_days' => $package->duration_days,
-                'pricing_rules' => $package->pricingRules->map(fn ($rule) => [
+                'pricing_rules' => $package->membershipPricingRules->map(fn ($rule) => [
                     'id' => $rule->id,
                     'day_type' => $rule->day_type,
                     'date_start' => $rule->date_start?->toDateString(),
@@ -74,7 +74,7 @@ class MembershipPackageController extends Controller
         try {
             DB::transaction(function () use ($data, $pricingRules) {
                 $package = Package::create($data);
-                $package->pricingRules()->createMany($pricingRules);
+                $package->membershipPricingRules()->createMany($pricingRules);
             });
         } catch (Throwable $exception) {
             Log::error('Gagal membuat paket membership.', [
@@ -113,7 +113,7 @@ class MembershipPackageController extends Controller
         try {
             DB::transaction(function () use ($package, $data, $pricingRules) {
                 $package->update($data);
-                $package->pricingRules()->delete();
+                $package->membershipPricingRules()->delete();
                 $package->pricingRules()->createMany($pricingRules);
             });
         } catch (Throwable $exception) {
