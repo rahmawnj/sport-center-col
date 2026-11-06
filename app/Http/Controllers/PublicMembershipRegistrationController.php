@@ -128,7 +128,7 @@ class PublicMembershipRegistrationController extends Controller
             return back()->withErrors(['trainer_id' => 'Trainer hanya dapat dipilih jika paket add-on dipilih.'])->withInput();
         }
 
-        $user = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer) {
+        $user = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer, $isExistingMember) {
             $user = $isExistingMember ? $request->user() : null;
 
             if (! $user) {
