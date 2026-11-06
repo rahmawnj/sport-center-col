@@ -123,7 +123,7 @@ class PublicMembershipRegistrationController extends Controller
             return back()->withErrors(['trainer_id' => 'Trainer hanya dapat dipilih jika paket add-on dipilih.'])->withInput();
         }
 
-        $user = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer, $isExistingMember) {
+        $result = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer, $isExistingMember) {
             $user = $isExistingMember ? $request->user() : null;
 
             if (! $user) {
@@ -170,7 +170,7 @@ class PublicMembershipRegistrationController extends Controller
                 ]);
             }
 
-            Transaction::create([
+            $transaction = Transaction::create([
                 'user_id' => $user->id,
                 'transactionable_type' => 'membership',
                 'guest_name' => $user->name,
@@ -179,15 +179,18 @@ class PublicMembershipRegistrationController extends Controller
                 'payment_status' => 'unpaid',
             ]);
 
-            return $user;
+            return ['user' => $user, 'transaction' => $transaction];
         });
+
+        $user = $result['user'];
+        $transaction = $result['transaction'];
 
         if (! $isExistingMember) {
             Auth::login($user);
             $request->session()->regenerate();
         }
 
-        return redirect()->route('member.payments')
+        return redirect()->route('member.payments.show', $transaction->id)
             ->with('success', 'Checkout berhasil dibuat. Membership dan add-on trainer tergabung dalam satu transaksi.');
     }
 
