@@ -86,7 +86,13 @@ const submit = () => {
                         </button>
                     </form>
 
-                    <p v-if="!currentUser" class="mt-6 text-center text-sm text-slate-500">Sudah punya akun? <Link href="/login" class="font-bold text-[#668500] underline underline-offset-4">Masuk di sini</Link>, lalu lanjutkan pilihanmu.</p>
+                    <div v-if="!currentUser" class="mt-6 rounded-2xl bg-slate-50 p-4 text-center text-sm text-slate-600">
+                        <p>Sudah punya akun member?</p>
+                        <form method="post" action="/membership/register/switch-account" class="mt-2">
+                            <input type="hidden" name="_token" :value="$page.props.csrf_token" />
+                            <button type="submit" class="font-bold text-[#668500] underline underline-offset-4">Keluar dari akun ini & masuk dengan akun member</button>
+                        </form>
+                    </div>
                 </div>
 
                 <aside class="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-8">
