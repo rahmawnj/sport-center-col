@@ -92,7 +92,6 @@ class TransactionController extends Controller
                 ->orderBy('name')
                 ->with([
                     'pricingRules' => fn ($rules) => $rules->orderByDesc('priority'),
-                    'pricingRules' => fn ($rules) => $rules->orderByDesc('priority'),
                 ])])
             ->orderBy('name')
             ->get()
@@ -105,7 +104,8 @@ class TransactionController extends Controller
                     'type' => $package->type,
                     'duration_minutes' => $package->duration_minutes,
                     'duration_days' => $package->duration_days,
-                    'pricing_rules' => ($package->type === 'membership' ? $package->pricingRules : $package->pricingRules)->map(fn ($rule) => [
+                    'price' => $package->type === 'membership' ? (float) $package->price : null,
+                    'pricing_rules' => ($package->type === 'membership' ? collect() : $package->pricingRules)->map(fn ($rule) => [
                         'id' => $rule->id,
                         'label' => $this->ruleLabel($rule),
                         'price' => (float) $rule->price,
@@ -196,7 +196,6 @@ class TransactionController extends Controller
         $data = $request->validate([
             'package_id' => ['required', 'integer', 'exists:packages,id'],
             'pricing_rule_id' => ['nullable', 'integer', 'exists:package_pricing_rules,id'],
-            'membership_pricing_rule_id' => ['nullable', 'integer', 'exists:package_pricing_rules,id'],
             'quantity' => ['required', 'integer', 'min:1'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
@@ -211,18 +210,7 @@ class TransactionController extends Controller
         $package = Package::findOrFail($data['package_id']);
 
         if ($package->type === 'membership') {
-            $ruleId = $data['membership_pricing_rule_id'] ?? null;
-            $rule = $ruleId
-                ? PackagePricingRule::query()->where('package_id', $package->id)->find($ruleId)
-                : null;
-
-            if (! $rule) {
-                throw ValidationException::withMessages([
-                    'membership_pricing_rule_id' => 'Pilih harga membership yang sesuai dengan paket.',
-                ]);
-            }
-
-            $data['amount'] = (float) $rule->price * (int) $data['quantity'];
+            $data['amount'] = (float) $package->price;
         } elseif ($package->type !== 'session') {
             $ruleId = $data['pricing_rule_id'] ?? null;
             $rule = $ruleId
