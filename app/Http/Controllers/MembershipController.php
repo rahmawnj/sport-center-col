@@ -18,25 +18,15 @@ class MembershipController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->input('search', ''));
-        $status = $request->input('status', 'all');
-
         $memberships = UserMembership::query()
             ->with(['user:id,name', 'package:id,name,duration_days'])
+            ->where('status', '!=', 'cancelled')
+            ->whereDate('start_date', '<=', today())
+            ->whereDate('end_date', '>=', today())
             ->when($search !== '', fn ($query) => $query->whereHas(
                 'user',
                 fn ($user) => $user->where('name', 'like', "%{$search}%")
             ))
-            ->when($status === 'active', fn ($query) => $query
-                ->where('status', '!=', 'cancelled')
-                ->whereDate('start_date', '<=', today())
-                ->whereDate('end_date', '>=', today()))
-            ->when($status === 'scheduled', fn ($query) => $query
-                ->where('status', '!=', 'cancelled')
-                ->whereDate('start_date', '>', today()))
-            ->when($status === 'expired', fn ($query) => $query
-                ->where('status', '!=', 'cancelled')
-                ->whereDate('end_date', '<', today()))
-            ->when($status === 'cancelled', fn ($query) => $query->where('status', 'cancelled'))
             ->latest()
             ->paginate(10)
             ->withQueryString()
@@ -44,7 +34,7 @@ class MembershipController extends Controller
 
         return Inertia::render('memberships/Index', [
             'memberships' => $memberships,
-            'filters' => ['search' => $search, 'status' => $status],
+            'filters' => ['search' => $search, 'status' => 'active'],
             'stats' => [
                 'active' => UserMembership::where('status', '!=', 'cancelled')
                     ->whereDate('start_date', '<=', today())
