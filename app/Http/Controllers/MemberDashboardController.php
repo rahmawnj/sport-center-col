@@ -315,9 +315,10 @@ class MemberDashboardController extends Controller
 
     private function membershipRow(UserMembership $membership): array
     {
+        $pending = $membership->status === 'pending';
         $cancelled = $membership->status === 'cancelled';
-        $scheduled = ! $cancelled && $membership->start_date && $membership->start_date->gt(today());
-        $expired = ! $cancelled && ! $scheduled && $membership->end_date && $membership->end_date->lt(today());
+        $scheduled = ! $pending && ! $cancelled && $membership->start_date && $membership->start_date->gt(today());
+        $expired = ! $pending && ! $cancelled && ! $scheduled && $membership->end_date && $membership->end_date->lt(today());
 
         return [
             'id' => $membership->id,
@@ -326,7 +327,7 @@ class MemberDashboardController extends Controller
             'start_date' => $membership->start_date?->toDateString(),
             'end_date' => $membership->end_date?->toDateString(),
             'duration_days' => $membership->package?->duration_days,
-            'status' => $cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active')),
+            'status' => $pending ? 'pending' : ($cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active'))),
             'scan_count' => (int) $membership->scan_count,
         ];
     }
