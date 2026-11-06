@@ -911,7 +911,7 @@ function promoRange(rule: PricingRule) {
                             {{ errors.duration_days }}
                         </p>
                     </div>
-                    <div v-if="form.type !== 'membership'" class="grid gap-3 sm:col-span-2 rounded-xl border p-4">
+                    <div v-if="form.type === 'session'" class="grid gap-3 sm:col-span-2 rounded-xl border p-4">
                         <div>
                             <Label>Trainer Add-on (opsional)</Label>
                             <p class="mt-1 text-xs text-muted-foreground">Pilih pelatih yang dapat ditambahkan saat booking. Harga berlaku satu kali per booking, bukan per jam.</p>
