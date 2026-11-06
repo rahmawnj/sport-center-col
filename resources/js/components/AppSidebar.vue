@@ -50,9 +50,9 @@ const items: (NavItem | NavGroup)[] = [
                 icon: MapPin,
             },
             {
-                title: 'Membership',
-                href: '/reports/membership',
-                icon: BadgeCheck,
+                title: 'Trainer',
+                href: '/reports/trainer',
+                icon: Dumbbell,
             },
         ],
     },

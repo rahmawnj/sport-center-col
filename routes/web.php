@@ -115,6 +115,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('memberships/{membership}', [MembershipController::class, 'update'])->name('memberships.update');
         Route::post('memberships/{membership}/renew', [MembershipController::class, 'renew'])->name('memberships.renew');
 
+        Route::redirect('reports/membership', '/reports/trainer', 301);
         Route::get('reports/{type?}', [ReportController::class, 'index'])->name('reports.index');
 
         Route::get('trainers', [TrainerController::class, 'index'])->name('trainers.index');

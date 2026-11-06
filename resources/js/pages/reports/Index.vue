@@ -24,6 +24,9 @@ type Transaction = {
     payment_method: string | null;
     payment_status: PaymentStatus;
     created_at: string | null;
+    trainer_name?: string;
+    package_name?: string;
+    facility_name?: string;
 };
 type LinkItem = { url: string | null; label: string; active: boolean };
 type Props = {
@@ -217,6 +220,9 @@ function formatDateTime(value: string | null) {
                             <th class="px-4 py-3 font-medium">Waktu</th>
                             <th class="px-4 py-3 font-medium">Invoice</th>
                             <th class="px-4 py-3 font-medium">Pelanggan</th>
+                            <th v-if="props.type === 'trainer'" class="px-4 py-3 font-medium">Trainer</th>
+                            <th v-if="props.type === 'trainer'" class="px-4 py-3 font-medium">Paket Trainer</th>
+                            <th v-if="props.type === 'trainer'" class="px-4 py-3 font-medium">Olahraga</th>
                             <th class="px-4 py-3 font-medium">Metode</th>
                             <th class="px-4 py-3 font-medium">Status</th>
                             <th class="px-4 py-3 text-right font-medium">
@@ -242,6 +248,9 @@ function formatDateTime(value: string | null) {
                             <td class="px-4 py-3">
                                 {{ row.customer_name || 'Umum' }}
                             </td>
+                            <td v-if="props.type === 'trainer'" class="px-4 py-3">{{ row.trainer_name || '—' }}</td>
+                            <td v-if="props.type === 'trainer'" class="px-4 py-3">{{ row.package_name || '—' }}</td>
+                            <td v-if="props.type === 'trainer'" class="px-4 py-3">{{ row.facility_name || '—' }}</td>
                             <td class="px-4 py-3">
                                 {{
                                     row.payment_method
@@ -287,7 +296,7 @@ function formatDateTime(value: string | null) {
                         </tr>
                         <tr v-if="!props.transactions.data.length">
                             <td
-                                colspan="7"
+                                :colspan="props.type === 'trainer' ? 10 : 7"
                                 class="px-4 py-12 text-center text-muted-foreground"
                             >
                                 <FileChartColumn

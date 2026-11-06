@@ -35,6 +35,11 @@ class MemberTrainerPackage extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class);
+    }
+
     public function trainerPackage(): BelongsTo
     {
         return $this->belongsTo(TrainerPackage::class);
