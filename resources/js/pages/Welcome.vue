@@ -322,59 +322,31 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                 </div>
             </section>
 
-            <section v-if="membershipPackages.length" id="membership" class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-28">
-                <div class="membership-banner relative overflow-hidden rounded-3xl px-7 py-10 sm:px-12 sm:py-14 lg:px-16">
-                    <div class="membership-decoration"></div>
-                    <div class="relative z-10 grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
-                        <div>
-                            <p class="section-kicker text-[#b6e52b]">Lebih rutin, lebih maksimal</p>
-                            <h2 class="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">Jadikan olahraga bagian dari harimu.</h2>
-                            <p class="mt-4 max-w-md leading-7 text-slate-300">Lihat pilihan paket keanggotaan yang tersedia dan temukan yang cocok untuk rutinitasmu.</p>
-                            <Link href="/membership" class="btn-lime mt-7 inline-flex items-center gap-3 rounded-full px-6 py-3.5 font-extrabold">Lihat pilihan paket <i class="fa-solid fa-arrow-right"></i></Link>
-                        </div>
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <Link v-for="(membership, index) in membershipPackages" :key="membership.id" :href="`/membership/${membership.id}`" class="membership-card group rounded-2xl p-5 transition hover:-translate-y-1 hover:border-[#a4da01]" :class="index === 0 ? 'membership-card-featured' : ''">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div><p class="text-xs font-bold text-[#b7e934]">{{ membership.facility || 'DreamSports' }}</p><h3 class="mt-1 font-extrabold">{{ membership.name }}</h3></div>
-                                    <span v-if="index === 0" class="rounded-full bg-[#a4da01] px-2.5 py-1 text-[10px] font-black uppercase text-[#001428]">Pilihan</span>
-                                </div>
-                                <p class="mt-5 text-2xl font-black">{{ membership.price !== null ? formatCurrency(membership.price) : 'Harga belum tersedia' }}</p>
-                                <p class="mt-1 text-xs text-slate-400">{{ membership.duration_days ? membership.duration_days + ' hari' : 'Durasi sesuai ketentuan' }}</p>
-                                <p v-if="membership.description" class="mt-4 text-sm leading-6 text-slate-300">{{ membership.description }}</p><span class="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#b7e934]">Detail paket <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-
-            <section v-if="trainerPackages.length" id="paket-trainer" class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
+            <section v-if="membershipPackages.length" id="membership" class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
                 <div class="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p class="section-kicker">Latihan lebih terarah</p>
-                        <h2 class="section-title">Pilih <span>paket trainer</span></h2>
-                        <p class="mt-3 max-w-xl text-slate-500">Paket sesi latihan bersama pelatih profesional untuk membantu mencapai target kebugaranmu.</p>
+                        <p class="section-kicker">Mulai perjalanan olahragamu</p>
+                        <h2 class="section-title">Pilih <span>paket membership</span></h2>
+                        <p class="mt-3 max-w-xl text-slate-500">Temukan paket keanggotaan sesuai olahraga dan durasi yang kamu butuhkan.</p>
                     </div>
-                    <Link href="#pelatih" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] hover:text-[#729700] sm:self-auto">Kenali pelatih <i class="fa-solid fa-arrow-right"></i></Link>
                 </div>
                 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                    <article v-for="(item, index) in trainerPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <article v-for="(item, index) in membershipPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                         <div class="flex items-start justify-between gap-3">
-                            <span class="rounded-full bg-[#f2f7df] px-3 py-1.5 text-xs font-extrabold text-[#6e9000]">{{ item.sports.length ? item.sports.join(' · ') : 'Personal training' }}</span>
-                            <span class="text-xs font-bold text-slate-400">0{{ index + 1 }}</span>
+                            <span class="rounded-full bg-[#f2f7df] px-3 py-1.5 text-xs font-extrabold text-[#6e9000]">{{ item.facility || 'Membership' }}</span>
+                            <span class="text-xs font-bold text-slate-400">{{ String(index + 1).padStart(2, '0') }}</span>
                         </div>
                         <h3 class="mt-5 text-xl font-extrabold text-[#001428]">{{ item.name }}</h3>
-                        <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ item.description || 'Program latihan bersama trainer untuk mendukung target kebugaranmu.' }}</p>
+                        <p class="mt-2 min-h-12 text-sm leading-6 text-slate-500">{{ item.description }}</p>
                         <div class="mt-5 grid grid-cols-2 gap-3">
-                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Total sesi</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.total_sessions }} sesi</p></div>
-                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa berlaku</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.duration_days }} hari</p></div>
+                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa aktif</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.duration_days }} hari</p></div>
+                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Jenis paket</p><p class="mt-1 font-extrabold text-[#001428]">Membership</p></div>
                         </div>
                         <div class="mt-5 border-t border-slate-100 pt-5">
                             <p class="text-xs font-semibold text-slate-500">Harga paket</p>
-                            <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price) }}</p>
-                            <p class="mt-2 text-xs text-slate-500">Trainer tersedia sebagai add-on membership</p>
-                            <a href="/membership#pilih-paket" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] focus:outline-none focus:ring-2 focus:ring-[#789900] focus:ring-offset-2">
-                                Pilih Membership & Trainer <i class="fa-solid fa-arrow-right"></i>
+                            <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price ?? 0) }}</p>
+                            <a :href="`/membership/register?package_id=${item.id}&payment_method=bank_transfer`" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] focus:outline-none focus:ring-2 focus:ring-[#789900] focus:ring-offset-2">
+                                Pilih Membership <i class="fa-solid fa-arrow-right"></i>
                             </a>
                         </div>
                     </article>
