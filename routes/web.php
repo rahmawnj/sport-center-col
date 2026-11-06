@@ -28,6 +28,13 @@ Route::get('pelatih/{trainer}', [PublicHomeController::class, 'showTrainer'])->n
 Route::get('membership', [PublicMembershipController::class, 'index'])->name('membership.index');
 Route::get('membership/register', [PublicMembershipRegistrationController::class, 'create'])->name('membership.register');
 Route::post('membership/register', [PublicMembershipRegistrationController::class, 'store'])->name('membership.register.store');
+Route::post('membership/register/switch-account', function (Request $request) {
+    Illuminate\Support\Facades\Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('login');
+})->name('membership.register.switch-account');
 Route::get('membership/{package}', [PublicMembershipController::class, 'show'])->whereNumber('package')->name('membership.show');
 
 Route::get('book', [PublicBookingController::class, 'index'])->name('booking.index');
