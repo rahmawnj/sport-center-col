@@ -11,6 +11,7 @@ defineProps<{
   bookings:Booking[];
   memberships:Membership[];
   currentMembership:{id:number;package:string;facility:string|null;start_date:string|null;end_date:string|null;duration_days:number|null}|null;
+  upcomingMemberships:{id:number;package:string;facility:string|null;start_date:string|null;end_date:string|null;duration_days:number|null}[];
   activeTrainerPackages:{id:number;package:string;trainer:string;specialty:string|null;facility:string|null;start_date:string|null;expires_at:string|null;total_sessions:number;used_sessions:number;remaining_sessions:number}[];
 }>();
 const currency=(value:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value);
@@ -45,7 +46,17 @@ const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;act
             <p class="mt-3 max-w-xl text-sm leading-6 text-slate-300">Membership yang sudah aktif akan tampil di sini, lengkap dengan tanggal mulai dan masa berlakunya.</p>
             <a href="/#membership" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#a4da01] px-5 py-3 text-sm font-bold text-[#001428] transition hover:-translate-y-0.5 hover:bg-[#b8ec24]">Lihat paket membership <ArrowUpRight class="size-4" /></a>
           </template>
-          <a href="/book" class="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"><Plus class="size-4" /> Buat booking</a>
+          <div v-if="upcomingMemberships.length" class="mt-5 max-w-lg space-y-2">
+            <p class="text-xs font-bold uppercase tracking-[.16em] text-slate-300">Membership berikutnya</p>
+            <article v-for="item in upcomingMemberships" :key="item.id" class="rounded-xl border border-sky-300/20 bg-sky-300/10 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div><p class="font-semibold text-white">{{ item.package }}</p><p class="mt-1 text-xs text-slate-300">{{ item.facility || 'Sport Center' }}</p></div>
+                <span class="rounded-full bg-sky-300/15 px-2.5 py-1 text-[11px] font-bold text-sky-200">AKAN AKTIF</span>
+              </div>
+              <p class="mt-3 text-xs text-slate-300">Mulai {{ dateLabel(item.start_date) }} · Berakhir {{ dateLabel(item.end_date) }}</p>
+            </article>
+          </div>
+                    <a href="/book" class="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"><Plus class="size-4" /> Buat booking</a>
         </div>
         <div class="rounded-2xl border border-white/10 bg-white/[.06] p-5 sm:p-6">
           <div class="flex items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-[.16em] text-[#b9ec35]">Personal trainer</p><h2 class="mt-2 text-lg font-bold text-white">Paket trainer aktif</h2></div><Trophy class="size-8 text-[#b9ec35]" /></div>
