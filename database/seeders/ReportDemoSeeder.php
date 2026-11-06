@@ -73,7 +73,7 @@ class ReportDemoSeeder extends Seeder
                 // Membership purchase
                 $membershipInvoice = sprintf('RPT-MEM-%03d', $index + 1);
 
-                if (! Transaction::query()->where('booking_code', $membershipInvoice)->exists()) {
+                if (! Transaction::query()->where('invoice_number', $membershipInvoice)->exists()) {
                     $package = $membershipPackages[$index % $membershipPackages->count()];
                     $startDate = $createdAt->toDateString();
                     $endDate = $createdAt->copy()->addDays(max(1, (int) $package->duration_days))->toDateString();
@@ -87,16 +87,13 @@ class ReportDemoSeeder extends Seeder
                     ]);
 
                     Transaction::query()->create([
-                        'booking_code' => $membershipInvoice,
-                        'transactionable_type' => UserMembership::class,
-                        'transactionable_id' => $membership->id,
+                        'invoice_number' => $membershipInvoice,
+                        'transactionable_type' => 'membership',
                         'user_id' => $member->id,
-                        'customer_type' => 'member',
                         'guest_name' => $member->name,
                         'total_amount' => $this->packagePrice($package),
                         'payment_method' => $sample['method'],
                         'payment_status' => $sample['status'],
-                        'booking_status' => 'approved',
                         'created_at' => $createdAt,
                         'updated_at' => $createdAt,
                     ]);
@@ -105,7 +102,7 @@ class ReportDemoSeeder extends Seeder
                 // Court booking
                 $bookingInvoice = sprintf('RPT-BKG-%03d', $index + 1);
 
-                if (! Transaction::query()->where('booking_code', $bookingInvoice)->exists()) {
+                if (! Transaction::query()->where('invoice_number', $bookingInvoice)->exists()) {
                     $package = $bookingPackages[$index % $bookingPackages->count()];
                     $court = Court::query()
                         ->where('facility_id', $package->facility_id)
@@ -131,9 +128,8 @@ class ReportDemoSeeder extends Seeder
                     ]);
 
                     Transaction::query()->create([
-                        'booking_code' => $bookingInvoice,
-                        'transactionable_type' => Booking::class,
-                        'transactionable_id' => $booking->id,
+                        'invoice_number' => $bookingInvoice,
+                        'transactionable_type' => 'booking',
                         'user_id' => $member->id,
                         'customer_type' => 'member',
                         'guest_name' => $member->name,
@@ -149,13 +145,12 @@ class ReportDemoSeeder extends Seeder
                 // Direct package sale (entry package)
                 $packageInvoice = sprintf('RPT-PKG-%03d', $index + 1);
 
-                if (! Transaction::query()->where('booking_code', $packageInvoice)->exists()) {
+                if (! Transaction::query()->where('invoice_number', $packageInvoice)->exists()) {
                     $package = $salePackages[$index % $salePackages->count()];
 
                     Transaction::query()->create([
-                        'booking_code' => $packageInvoice,
-                        'transactionable_type' => Package::class,
-                        'transactionable_id' => $package->id,
+                        'invoice_number' => $packageInvoice,
+                        'transactionable_type' => 'booking',
                         'user_id' => $member->id,
                         'customer_type' => 'member',
                         'guest_name' => $member->name,
