@@ -349,10 +349,20 @@ class TransactionController extends Controller
             // Lock member row to prevent two simultaneous purchases from receiving
             // the same start date.
             $member = User::query()->lockForUpdate()->findOrFail($data['user_id']);
+            $paid = $data['payment_status'] === 'paid';
+
+            $transaction = Transaction::create([
+                'user_id' => $member->id,
+                'transactionable_type' => 'membership',
+                'customer_name' => $data['customer_name'] ?? null,
+                'amount' => $data['amount'],
+                'payment_method' => $data['payment_method'],
+                'payment_status' => $paid ? 'fully_paid' : 'unpaid',
+            ]);
 
             $latestMembership = UserMembership::query()
                 ->where('user_id', $member->id)
-                ->where('status', '!=', 'cancelled')
+                ->where('status', 'active')
                 ->whereDate('end_date', '>=', today())
                 ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
                 ->orderByDesc('end_date')
@@ -364,23 +374,14 @@ class TransactionController extends Controller
                 : today();
 
             $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)) - 1);
-            $paid = $data['payment_status'] === 'paid';
 
-            $membership = UserMembership::create([
+            UserMembership::create([
                 'user_id' => $member->id,
+                'transaction_id' => $transaction->id,
                 'package_id' => $package->id,
                 'start_date' => $start->toDateString(),
                 'end_date' => $end->toDateString(),
-                'status' => 'active',
-            ]);
-
-            Transaction::create([
-                'user_id' => $member->id,
-                'transactionable_type' => 'membership',
-                'customer_name' => $data['customer_name'] ?? null,
-                'amount' => $data['amount'],
-                'payment_method' => $data['payment_method'],
-                'payment_status' => $paid ? 'fully_paid' : 'unpaid',
+                'status' => $paid ? 'active' : 'pending',
             ]);
         });
     }
