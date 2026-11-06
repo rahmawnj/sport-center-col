@@ -24,13 +24,7 @@ class PublicMembershipRegistrationController extends Controller
 {
     public function create(Request $request): Response
     {
-        if ($request->user()) {
-            abort_unless(
-                $request->user()->role?->name === 'Member' && $request->user()->memberProfile()->exists(),
-                403,
-                'Silakan gunakan akun member untuk melanjutkan pendaftaran.'
-            );
-        }
+
 
         $package = $this->availableMembershipPackages()
             ->whereKey($request->integer('package_id'))
@@ -79,7 +73,7 @@ class PublicMembershipRegistrationController extends Controller
                 ] : null,
                 'total' => (float) $package->price + (float) ($trainerPackage?->price ?? 0),
             ],
-            'currentUser' => $request->user() ? [
+            'currentUser' => $request->user()?->role?->name === 'Member' && $request->user()->memberProfile()->exists() ? [
                 'name' => $request->user()->name,
                 'email' => $request->user()->email,
             ] : null,
@@ -95,7 +89,10 @@ class PublicMembershipRegistrationController extends Controller
             'terms_accepted' => ['required', 'accepted'],
         ];
 
-        if (! $request->user()) {
+        $isExistingMember = $request->user()?->role?->name === 'Member'
+            && $request->user()->memberProfile()->exists();
+
+        if (! $isExistingMember) {
             $rules += [
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
@@ -106,9 +103,8 @@ class PublicMembershipRegistrationController extends Controller
 
         $data = $request->validate($rules);
 
-        if ($request->user()) {
-            abort_unless($request->user()->role?->name === 'Member', 403, 'Pendaftaran membership hanya tersedia untuk akun member.');
-            abort_unless($request->user()->memberProfile()->exists(), 403, 'Profil member belum tersedia pada akun ini.');
+        if ($isExistingMember) {
+            // Gunakan akun member yang sedang login.
         }
 
         $package = $this->availableMembershipPackages()->findOrFail($data['package_id']);
@@ -133,7 +129,7 @@ class PublicMembershipRegistrationController extends Controller
         }
 
         $user = DB::transaction(function () use ($request, $data, $package, $trainerPackage, $trainer) {
-            $user = $request->user();
+            $user = $isExistingMember ? $request->user() : null;
 
             if (! $user) {
                 $memberRole = Role::firstOrCreate(['name' => 'Member']);
@@ -205,7 +201,7 @@ class PublicMembershipRegistrationController extends Controller
             return $user;
         });
 
-        if (! $request->user()) {
+        if (! $isExistingMember) {
             Auth::login($user);
             $request->session()->regenerate();
         }
