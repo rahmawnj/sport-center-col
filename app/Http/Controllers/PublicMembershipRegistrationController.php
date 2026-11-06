@@ -24,6 +24,14 @@ class PublicMembershipRegistrationController extends Controller
 {
     public function create(Request $request): Response
     {
+        if ($request->user()) {
+            abort_unless(
+                $request->user()->role?->name === 'Member' && $request->user()->memberProfile()->exists(),
+                403,
+                'Silakan gunakan akun member untuk melanjutkan pendaftaran.'
+            );
+        }
+
         $package = $this->availableMembershipPackages()
             ->whereKey($request->integer('package_id'))
             ->firstOrFail();
