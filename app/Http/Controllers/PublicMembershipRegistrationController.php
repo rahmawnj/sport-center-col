@@ -166,6 +166,7 @@ class PublicMembershipRegistrationController extends Controller
                 'user_id' => $user->id,
                 'device_id' => Device::forFacility($package->facility_id)?->id,
                 'customer_type' => 'member',
+                'customer_name' => $user->name,
                 'transactionable_type' => UserMembership::class,
                 'transactionable_id' => $membership->id,
                 'total_amount' => (float) $package->price,
@@ -191,6 +192,8 @@ class PublicMembershipRegistrationController extends Controller
                 Transaction::create([
                     'user_id' => $user->id,
                     'customer_type' => 'member',
+                    'customer_name' => $user->name,
+                    'device_id' => Device::forFacility($package->facility_id)?->id,
                     'transactionable_type' => MemberTrainerPackage::class,
                     'transactionable_id' => $memberTrainerPackage->id,
                     'total_amount' => (float) $trainerPackage->price,
