@@ -7,9 +7,11 @@ use App\Models\MemberTrainerPackage;
 use App\Models\Transaction;
 use App\Models\UserMembership;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class MemberDashboardController extends Controller
 {
@@ -166,10 +168,29 @@ class MemberDashboardController extends Controller
                 'amount' => (float) $transaction->total_amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
+                'can_cancel' => $transaction->payment_status === 'unpaid',
                 'booking_status' => null,
                 'created_at' => $transaction->created_at?->toISOString(),
             ],
         ]);
+    }
+
+    public function cancelPayment(Request $request, Transaction $transaction): RedirectResponse
+    {
+        abort_unless($transaction->user_id === $request->user()->id, 404);
+
+        DB::transaction(function () use ($transaction) {
+            $locked = Transaction::query()->lockForUpdate()->findOrFail($transaction->id);
+            abort_unless($locked->payment_status === 'unpaid', 422, 'Hanya pembayaran yang masih pending yang bisa dibatalkan.');
+
+            $locked->update(['payment_status' => 'failed']);
+
+            UserMembership::query()->where('transaction_id', $locked->id)->update(['status' => 'cancelled']);
+            MemberTrainerPackage::query()->where('transaction_id', $locked->id)
+                ->where('status', 'pending')->update(['status' => 'cancelled']);
+        });
+
+        return redirect()->route('member.payments.show', $transaction->id)->with('success', 'Pembayaran berhasil dibatalkan.');
     }
 
     public function profile(Request $request): Response
