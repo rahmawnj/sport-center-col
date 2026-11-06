@@ -57,8 +57,8 @@ const formatCurrency = (amount: number) =>
             <section class="mx-auto max-w-5xl px-5 py-14 sm:py-20">
                 <div class="mb-8">
                     <p class="text-xs font-black uppercase tracking-[.2em] text-[#789900]">Paket latihan</p>
-                    <h2 class="mt-2 text-3xl font-black">Paket yang tersedia bersama {{ trainer.name }}</h2>
-                    <p class="mt-3 text-slate-500">Berikut paket yang memang di-assign kepada pelatih ini.</p>
+                    <h2 class="mt-2 text-3xl font-black">Paket dari fasilitas tempat {{ trainer.name }} terdaftar</h2>
+                    <p class="mt-3 text-slate-500">Kamu bisa memilih salah satu paket di fasilitas ini. Pelatih dipilih saat proses booking.</p>
                 </div>
                 <div v-if="packages.length" class="grid gap-5 md:grid-cols-2">
                     <article v-for="item in packages" :key="item.id" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
@@ -81,7 +81,7 @@ const formatCurrency = (amount: number) =>
                 </div>
                 <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
                     <i class="fa-solid fa-box-open text-3xl text-slate-300"></i>
-                    <p class="mt-4 font-bold">Belum ada paket yang di-assign ke pelatih ini.</p>
+                    <p class="mt-4 font-bold">Belum ada paket trainer aktif di fasilitas tempat pelatih ini terdaftar.</p>
                     <p class="mt-1 text-sm text-slate-500">Silakan cek kembali nanti.</p>
                 </div>
             </section>
