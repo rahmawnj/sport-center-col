@@ -65,7 +65,7 @@ class PackageController extends Controller
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'required_if:type,session'],
             'duration_days' => ['prohibited'],
             'pricing_rules' => ['required', 'array', 'min:1'],
-            'trainer_addons' => ['nullable', 'array'],
+            'trainer_addons' => ['nullable', 'array', 'prohibited_unless:type,session'],
             'trainer_addons.*.trainer_id' => ['required', 'integer', 'distinct', Rule::exists('trainers', 'id')->whereNull('deleted_at'), Rule::exists('facility_trainer', 'trainer_id')->where('facility_id', $facilityId)],
             'trainer_addons.*.price' => ['required', 'numeric', 'min:0'],
             'pricing_rules.*.day_type' => ['required', Rule::in(['weekday', 'weekend', 'all'])],
