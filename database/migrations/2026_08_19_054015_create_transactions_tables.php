@@ -11,6 +11,9 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->string('booking_code')->unique();
+            $table->string('transactionable_type')->nullable();
+            $table->unsignedBigInteger('transactionable_id')->nullable();
+            $table->index(['transactionable_type', 'transactionable_id'], 'transactions_transactionable_index');
             $table->enum('customer_type', ['member', 'general'])->default('general');
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->string('guest_name')->nullable();
