@@ -7,7 +7,11 @@ use App\Models\Package;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -61,16 +65,32 @@ class MembershipPackageController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate($this->membershipRules());
+        $data = $this->validatedData($request, 'create');
         $pricingRules = $data['pricing_rules'];
         unset($data['pricing_rules']);
         $data['type'] = 'membership';
         $data['duration_minutes'] = 0;
 
-        DB::transaction(function () use ($data, $pricingRules) {
-            $package = Package::create($data);
-            $package->pricingRules()->createMany($pricingRules);
-        });
+        try {
+            DB::transaction(function () use ($data, $pricingRules) {
+                $package = Package::create($data);
+                $package->pricingRules()->createMany($pricingRules);
+            });
+        } catch (Throwable $exception) {
+            Log::error('Gagal membuat paket membership.', [
+                'action' => 'create',
+                'package_name' => $data['name'] ?? null,
+                'facility_id' => $data['facility_id'] ?? null,
+                'duration_days' => $data['duration_days'] ?? null,
+                'pricing_rules' => $pricingRules,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            throw $exception;
+        }
 
         return back()->with('success', 'Paket membership berhasil ditambahkan.');
     }
@@ -79,7 +99,7 @@ class MembershipPackageController extends Controller
     {
         abort_unless($package->type === 'membership', 404);
 
-        $data = $request->validate($this->membershipRules());
+        $data = $this->validatedData($request, 'update', $package->id);
 
         if ($package->userMemberships()->exists() && (int) $data['facility_id'] !== (int) $package->facility_id) {
             return back()->with('error', 'Olahraga tidak dapat diubah karena paket ini sudah dimiliki member.');
@@ -90,11 +110,28 @@ class MembershipPackageController extends Controller
         $data['type'] = 'membership';
         $data['duration_minutes'] = 0;
 
-        DB::transaction(function () use ($package, $data, $pricingRules) {
-            $package->update($data);
-            $package->pricingRules()->delete();
-            $package->pricingRules()->createMany($pricingRules);
-        });
+        try {
+            DB::transaction(function () use ($package, $data, $pricingRules) {
+                $package->update($data);
+                $package->pricingRules()->delete();
+                $package->pricingRules()->createMany($pricingRules);
+            });
+        } catch (Throwable $exception) {
+            Log::error('Gagal memperbarui paket membership.', [
+                'action' => 'update',
+                'package_id' => $package->id,
+                'package_name' => $data['name'] ?? null,
+                'facility_id' => $data['facility_id'] ?? null,
+                'duration_days' => $data['duration_days'] ?? null,
+                'pricing_rules' => $pricingRules,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            throw $exception;
+        }
 
         return back()->with('success', 'Paket membership berhasil diperbarui.');
     }
@@ -111,6 +148,24 @@ class MembershipPackageController extends Controller
         $package->delete();
 
         return back()->with('success', 'Paket membership berhasil dihapus.');
+    }
+
+    private function validatedData(Request $request, string $action, ?int $packageId = null): array
+    {
+        $validator = Validator::make($request->all(), $this->membershipRules());
+
+        if ($validator->fails()) {
+            Log::warning('Validasi paket membership gagal.', [
+                'action' => $action,
+                'package_id' => $packageId,
+                'input' => $request->only(['name', 'facility_id', 'duration_days', 'pricing_rules']),
+                'errors' => $validator->errors()->toArray(),
+            ]);
+
+            throw new ValidationException($validator);
+        }
+
+        return $validator->validated();
     }
 
     private function membershipRules(): array
