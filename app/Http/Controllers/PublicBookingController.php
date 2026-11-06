@@ -32,7 +32,7 @@ class PublicBookingController extends Controller
         $facilities = Facility::query()
             ->where('status', 'active')
             ->where('is_bookable_online', true)
-            ->with(['packages' => fn ($query) => $query->where('type', 'session')->orderBy('name')->with(['pricingRules', 'trainerAddons'])])
+            ->with(['packages' => fn ($query) => $query->where('type', 'session')->orderBy('name')->with(['pricingRules', 'trainerAddons.facilities'])])
             ->orderBy('name')
             ->get()
             ->map(fn (Facility $facility) => [
@@ -44,7 +44,9 @@ class PublicBookingController extends Controller
                     'name' => $package->name,
                     'type' => $package->type,
                     'duration_minutes' => $package->duration_minutes,
-                    'trainer_addons' => $package->trainerAddons->map(fn ($trainer) => [
+                    'trainer_addons' => $package->trainerAddons
+                        ->filter(fn ($trainer) => $trainer->facilities->contains('id', $facility->id))
+                        ->map(fn ($trainer) => [
                         'id' => $trainer->id,
                         'name' => $trainer->name,
                         'specialty' => $trainer->specialty,
@@ -176,7 +178,7 @@ class PublicBookingController extends Controller
         $trainerAddon = null;
         if (! empty($data['trainer_id'])) {
             $trainerAddon = $package->trainerAddons->firstWhere('id', (int) $data['trainer_id']);
-            if (! $trainerAddon) {
+            if (! $trainerAddon || ! $trainerAddon->facilities()->whereKey($package->facility_id)->exists()) {
                 throw ValidationException::withMessages(['trainer_id' => 'Trainer tersebut tidak tersedia sebagai add-on untuk paket ini.']);
             }
         }
