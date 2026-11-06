@@ -33,6 +33,6 @@ class BookingTrainerAddon extends Model
 
     public function trainer(): BelongsTo
     {
-        return $this->belongsTo(Trainer::class);
+        return $this->belongsTo(Trainer::class)->withTrashed();
     }
 }
