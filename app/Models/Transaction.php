@@ -4,15 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Str;
 
 class Transaction extends Model
 {
     protected $fillable = [
         'user_id',
-        'customer_name',
         'guest_name',
+        'customer_name',
         'amount',
         'total_amount',
         'invoice_number',
@@ -21,7 +20,7 @@ class Transaction extends Model
         'payment_status',
         'booking_status',
         'transactionable_type',
-        'transactionable_id',
+        'handled_by',
     ];
 
     protected function casts(): array
@@ -69,10 +68,6 @@ class Transaction extends Model
         return $this->attributes['guest_name'] ?? null;
     }
 
-    /**
-     * Backward-compatible alias while older parts of the application
-     * still refer to booking_code as the invoice identifier.
-     */
     public function setBookingCodeAttribute(?string $value): void
     {
         $this->attributes['invoice_number'] = $value;
@@ -86,10 +81,5 @@ class Transaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function transactionable(): MorphTo
-    {
-        return $this->morphTo();
     }
 }
