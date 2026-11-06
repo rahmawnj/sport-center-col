@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Package extends Model
 {
@@ -34,6 +35,18 @@ class Package extends Model
     public function pricingRules(): HasMany
     {
         return $this->hasMany(PackagePricingRule::class);
+    }
+
+    public function trainerAddons(): BelongsToMany
+    {
+        return $this->belongsToMany(Trainer::class, 'package_trainer_addons')
+            ->withPivot('price')
+            ->withTimestamps();
+    }
+
+    public function bookingTrainerAddons(): HasMany
+    {
+        return $this->hasMany(BookingTrainerAddon::class);
     }
 
     public function userMemberships(): HasMany
