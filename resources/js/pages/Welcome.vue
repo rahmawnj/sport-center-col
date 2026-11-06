@@ -40,7 +40,6 @@ type TrainerPackageItem = {
     duration_days: number;
     price: number;
     description: string | null;
-    trainers: string[];
     sports: string[];
 };
 
@@ -347,7 +346,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         <div class="mt-5 border-t border-slate-100 pt-5">
                             <p class="text-xs font-semibold text-slate-500">Harga paket</p>
                             <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price) }}</p>
-                            <p class="mt-2 text-xs text-slate-500">{{ item.trainers.length ? 'Trainer: ' + item.trainers.join(', ') : 'Trainer akan ditentukan' }}</p>
+                            <p class="mt-2 text-xs text-slate-500">Trainer dipilih saat booking</p>
                             <a :href="'/trainer-packages/' + item.id" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] focus:outline-none focus:ring-2 focus:ring-[#789900] focus:ring-offset-2">
                                 Lihat Detail & Booking <i class="fa-solid fa-arrow-right"></i>
                             </a>
