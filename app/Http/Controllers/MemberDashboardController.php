@@ -83,7 +83,7 @@ class MemberDashboardController extends Controller
                 'remaining_sessions' => $item->remaining_sessions,
             ]);
 
-        $trainerSchedules = \\App\\Models\\TrainerSessionSchedule::query()
+        $trainerSchedules = \App\Models\TrainerSessionSchedule::query()
             ->with(['memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name'])
             ->whereHas('memberTrainerPackage', fn ($query) => $query->where('user_id', $user->id))
             ->latest('session_date')->latest('start_time')->limit(30)->get()
