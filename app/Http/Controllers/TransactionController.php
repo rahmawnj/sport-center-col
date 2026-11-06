@@ -7,6 +7,8 @@ use App\Models\Device;
 use App\Models\Facility;
 use App\Models\MemberTrainerPackage;
 use App\Models\Package;
+use App\Models\PackagePricingRule;
+use App\Models\MembershipPackagePricingRule;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\UserMembership;
@@ -208,6 +210,34 @@ class TransactionController extends Controller
         ]);
 
         $package = Package::findOrFail($data['package_id']);
+
+        if ($package->type === 'membership') {
+            $ruleId = $data['membership_pricing_rule_id'] ?? null;
+            $rule = $ruleId
+                ? MembershipPackagePricingRule::query()->where('package_id', $package->id)->find($ruleId)
+                : null;
+
+            if (! $rule) {
+                throw ValidationException::withMessages([
+                    'membership_pricing_rule_id' => 'Pilih harga membership yang sesuai dengan paket.',
+                ]);
+            }
+
+            $data['amount'] = (float) $rule->price * (int) $data['quantity'];
+        } elseif ($package->type !== 'session') {
+            $ruleId = $data['pricing_rule_id'] ?? null;
+            $rule = $ruleId
+                ? PackagePricingRule::query()->where('package_id', $package->id)->find($ruleId)
+                : null;
+
+            if (! $rule) {
+                throw ValidationException::withMessages([
+                    'pricing_rule_id' => 'Pilih aturan harga yang sesuai dengan paket.',
+                ]);
+            }
+
+            $data['amount'] = (float) $rule->price * (int) $data['quantity'];
+        }
 
         if ($package->type === 'session') {
             $this->storeBooking($package, $data);
