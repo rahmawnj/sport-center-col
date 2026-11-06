@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->timestamp('cancelled_at')->nullable()->after('payment_status');
+        });
+
         Schema::table('user_memberships', function (Blueprint $table) {
             $table->foreignId('transaction_id')->nullable()->after('user_id')->constrained('transactions')->nullOnDelete();
         });
@@ -19,6 +23,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->dropColumn('cancelled_at');
+        });
+
         Schema::table('member_trainer_packages', function (Blueprint $table) {
             $table->dropConstrainedForeignId('transaction_id');
         });
