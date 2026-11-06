@@ -119,7 +119,6 @@ class PublicHomeController extends Controller
                 ->where('has_membership', true))
             ->with('facility:id,name,slug')
             ->orderBy('duration_days')
-            ->limit(3)
             ->get()
             ->map(fn (Package $package) => [
                 'id' => $package->id,
