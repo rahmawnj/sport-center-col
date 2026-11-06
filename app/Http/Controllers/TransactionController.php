@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\MemberTrainerPackage;
 use App\Models\Device;
 use App\Models\Facility;
 use App\Models\Package;
