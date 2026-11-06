@@ -100,6 +100,98 @@ class TrainerPackageController extends Controller
         ]);
     }
 
+
+    public function membershipTrainers(Request $request): Response
+    {
+        $search = trim((string) $request->input('search', ''));
+
+        $activeTrainers = MemberTrainerPackage::query()
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', today())
+            ->whereDate('expires_at', '>=', today())
+            ->whereColumn('used_sessions', '<', 'total_sessions');
+
+        $rows = (clone $activeTrainers)
+            ->with([
+                'user:id,name',
+                'user.userMemberships' => fn ($query) => $query->with('package:id,name,facility_id'),
+                'trainer:id,name',
+                'trainerPackage:id,name',
+                'facility:id,name',
+            ])
+            ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
+                $q->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('trainer', fn ($trainer) => $trainer->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('trainerPackage', fn ($package) => $package->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('facility', fn ($facility) => $facility->where('name', 'like', "%{$search}%"));
+            }))
+            ->orderBy('expires_at')
+            ->paginate(15)
+            ->withQueryString()
+            ->through(function (MemberTrainerPackage $item) {
+                $membership = $item->user?->userMemberships
+                    ->filter(fn ($record) => (int) $record->package?->facility_id === (int) $item->facility_id)
+                    ->sortByDesc(fn ($record) => $record->end_date?->timestamp ?? 0)
+                    ->first();
+
+                $membershipStatus = 'none';
+                if ($membership) {
+                    if (
+                        $membership->status === 'active'
+                        && $membership->start_date?->lte(today())
+                        && $membership->end_date?->gte(today())
+                    ) {
+                        $membershipStatus = 'active';
+                    } elseif (
+                        $membership->status === 'active'
+                        && $membership->start_date?->gt(today())
+                    ) {
+                        $membershipStatus = 'upcoming';
+                    } else {
+                        $membershipStatus = 'expired';
+                    }
+                }
+
+                return [
+                    'id' => $item->id,
+                    'member_name' => $item->user?->name,
+                    'trainer_name' => $item->trainer?->name,
+                    'trainer_package' => $item->trainerPackage?->name,
+                    'facility_name' => $item->facility?->name,
+                    'trainer_start' => $item->start_date?->toDateString(),
+                    'trainer_end' => $item->expires_at?->toDateString(),
+                    'remaining_sessions' => $item->remaining_sessions,
+                    'total_sessions' => $item->total_sessions,
+                    'membership_package' => $membership?->package?->name,
+                    'membership_end' => $membership?->end_date?->toDateString(),
+                    'membership_status' => $membershipStatus,
+                ];
+            });
+
+        $withoutMembership = (clone $activeTrainers)
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('user_memberships')
+                    ->join('packages', 'packages.id', '=', 'user_memberships.package_id')
+                    ->whereColumn('user_memberships.user_id', 'member_trainer_packages.user_id')
+                    ->whereColumn('packages.facility_id', 'member_trainer_packages.facility_id')
+                    ->where('user_memberships.status', 'active')
+                    ->whereDate('user_memberships.start_date', '<=', today())
+                    ->whereDate('user_memberships.end_date', '>=', today());
+            })
+            ->count();
+
+        return Inertia::render('membership-trainers/Index', [
+            'rows' => $rows,
+            'filters' => ['search' => $search],
+            'stats' => [
+                'active_trainers' => (clone $activeTrainers)->count(),
+                'membership_ended' => $withoutMembership,
+                'membership_active' => (clone $activeTrainers)->count() - $withoutMembership,
+            ],
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
