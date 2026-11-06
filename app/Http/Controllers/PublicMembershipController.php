@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Package;
+use App\Models\TrainerPackage;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,6 +18,7 @@ class PublicMembershipController extends Controller
 
         return Inertia::render('membership/Index', [
             'packages' => $packages,
+            'trainerPackages' => $this->availableTrainerPackages(),
             'currentUser' => $request->user()
                 ? [
                     'name' => $request->user()->name,
@@ -49,10 +51,40 @@ class PublicMembershipController extends Controller
                 ->where('has_membership', true));
     }
 
+    private function availableTrainerPackages()
+    {
+        return TrainerPackage::query()
+            ->where('is_active', true)
+            ->whereHas('facility', fn ($query) => $query
+                ->where('status', 'active')
+                ->where('is_bookable_online', true)
+                ->where('has_membership', true))
+            ->with(['facility:id,name', 'facility.trainers:id,name,specialty'])
+            ->orderBy('price')
+            ->get()
+            ->map(fn (TrainerPackage $trainerPackage) => [
+                'id' => $trainerPackage->id,
+                'facility_id' => (int) $trainerPackage->facility_id,
+                'facility' => $trainerPackage->facility?->name,
+                'name' => $trainerPackage->name,
+                'total_sessions' => (int) $trainerPackage->total_sessions,
+                'duration_days' => (int) $trainerPackage->duration_days,
+                'price' => (float) $trainerPackage->price,
+                'description' => $trainerPackage->description,
+                'trainers' => $trainerPackage->facility?->trainers
+                    ->map(fn ($trainer) => [
+                        'id' => $trainer->id,
+                        'name' => $trainer->name,
+                        'specialty' => $trainer->specialty,
+                    ])->values() ?? collect(),
+            ])->values();
+    }
+
     private function packageData(Package $package): array
     {
         return [
             'id' => $package->id,
+            'facility_id' => (int) $package->facility_id,
             'name' => $package->name,
             'duration_days' => $package->duration_days,
             'facility' => $package->facility?->name,
