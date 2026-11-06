@@ -8,7 +8,7 @@ type Payment = {
   id: number;
   invoice_number: string | null;
   customer_name: string | null;
-  customer_type: string | null;
+  transaction_type: string | null;
   amount: number;
   payment_method: string | null;
   payment_status: string;
@@ -35,7 +35,7 @@ const methodLabel = (value: string | null) =>
   ({ cash: 'Tunai', bank_transfer: 'Transfer bank', qris: 'QRIS' }[value || ''] || value || 'Belum ditentukan');
 
 const typeLabel = (value: string | null) =>
-  value === 'member' ? 'Membership' : value || 'Transaksi umum';
+  value === 'membership' ? 'Membership + Personal Trainer' : value === 'booking' ? 'Booking' : 'Transaksi';
 </script>
 
 <template>
@@ -73,7 +73,7 @@ const typeLabel = (value: string | null) =>
         </div>
         <div class="flex flex-wrap justify-between gap-2 py-4">
           <span class="text-sm text-slate-500">Jenis transaksi</span>
-          <span class="text-sm font-semibold text-slate-900">{{ typeLabel(payment.customer_type) }}</span>
+          <span class="text-sm font-semibold text-slate-900">{{ typeLabel(payment.transaction_type) }}</span>
         </div>
         <div class="flex flex-wrap justify-between gap-2 py-4">
           <span class="text-sm text-slate-500">Nama pelanggan</span>
