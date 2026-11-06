@@ -23,6 +23,10 @@ defineProps<{
     status?: string;
     canResetPassword: boolean;
 }>();
+
+const clearTemporaryMembershipSelection = () => {
+    localStorage.removeItem('sport-center-membership-selection-v1');
+};
 </script>
 
 <template>
@@ -38,6 +42,7 @@ defineProps<{
     <Form
         v-bind="store.form()"
         :reset-on-success="['password']"
+        @success="clearTemporaryMembershipSelection"
         v-slot="{ errors, processing }"
         class="flex flex-col gap-6"
     >
