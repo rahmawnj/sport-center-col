@@ -38,7 +38,8 @@ const selectedPackage = ref<MembershipPackage | null>(null);
 const selectedTrainerPackage = ref<TrainerPackage | null>(null);
 const selectedTrainer = ref<Trainer | null>(null);
 const membershipModalOpen = ref(false);
-const modalStep = ref<1 | 2 | 3>(1);
+const modalStep = ref<1 | 2 | 3 | 4>(1);
+const paymentMethod = ref<'bank_transfer' | 'cash'>('bank_transfer');
 const readyPackages = computed(() => props.packages.filter((item) => item.price !== null));
 const availableTrainerPackages = computed(() => selectedPackage.value
     ? props.trainerPackages.filter((item) => item.facility_id === selectedPackage.value?.facility_id)
@@ -79,6 +80,7 @@ const selectMembership = (item: MembershipPackage) => {
     selectedTrainerPackage.value = null;
     selectedTrainer.value = null;
     modalStep.value = 1;
+    paymentMethod.value = 'bank_transfer';
     membershipModalOpen.value = true;
     saveSelection();
 };
@@ -102,11 +104,16 @@ const continueToTrainerSelection = () => {
     modalStep.value = 3;
 };
 
+const continueToPaymentMethod = () => {
+    if (!canContinue.value) return;
+    modalStep.value = 4;
+};
+
 const skipTrainer = () => {
     selectedTrainerPackage.value = null;
     selectedTrainer.value = null;
     saveSelection();
-    continueRegistration();
+    continueToPaymentMethod();
 };
 
 
@@ -119,7 +126,10 @@ const selectTrainer = (item: Trainer) => {
 const continueRegistration = () => {
     if (!canContinue.value || !selectedPackage.value) return;
 
-    const params: Record<string, number> = { package_id: selectedPackage.value.id };
+    const params: Record<string, number | string> = {
+        package_id: selectedPackage.value.id,
+        payment_method: paymentMethod.value,
+    };
     if (selectedTrainerPackage.value) params.trainer_package_id = selectedTrainerPackage.value.id;
     if (selectedTrainer.value) params.trainer_id = selectedTrainer.value.id;
 
@@ -239,7 +249,7 @@ onMounted(() => {
                             <div>
                                 <p class="text-[10px] font-black uppercase tracking-[.2em] text-[#789900]">Pendaftaran membership</p>
                                 <h2 id="membership-modal-title" class="mt-1 text-xl font-black text-[#001428]">
-                                    {{ modalStep === 1 ? 'Detail paket membership' : modalStep === 2 ? 'Paket personal trainer' : 'Pilih personal trainer' }}
+                                    {{ modalStep === 1 ? 'Detail paket membership' : modalStep === 2 ? 'Paket personal trainer' : modalStep === 3 ? 'Pilih personal trainer' : 'Metode pembayaran' }}
                                 </h2>
                             </div>
                             <button type="button" aria-label="Tutup modal" class="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200" @click="closeMembershipModal">
@@ -249,7 +259,7 @@ onMounted(() => {
 
                         <div class="max-h-[calc(92vh-170px)] overflow-y-auto px-6 py-6 sm:px-8">
                             <div class="mb-6 flex items-center gap-2">
-                                <span v-for="step in 3" :key="step" class="h-1.5 flex-1 rounded-full transition" :class="modalStep >= step ? 'bg-[#a4da01]' : 'bg-slate-100'"></span>
+                                <span v-for="step in 4" :key="step" class="h-1.5 flex-1 rounded-full transition" :class="modalStep >= step ? 'bg-[#a4da01]' : 'bg-slate-100'"></span>
                             </div>
 
                             <div v-if="modalStep === 1">
@@ -291,7 +301,7 @@ onMounted(() => {
                                 <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">Belum ada paket trainer aktif untuk fasilitas ini. Kamu bisa langsung melanjutkan tanpa add-on.</div>
                             </div>
 
-                            <div v-else>
+                            <div v-else-if="modalStep === 3">
                                 <p class="mb-5 text-sm leading-6 text-slate-500">Pilih trainer untuk paket <strong class="text-[#001428]">{{ selectedTrainerPackage?.name }}</strong>.</p>
                                 <div v-if="selectedTrainerPackage?.trainers.length" class="space-y-3">
                                     <button v-for="trainer in selectedTrainerPackage.trainers" :key="trainer.id" type="button" class="flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition" :class="selectedTrainer?.id === trainer.id ? 'border-[#a4da01] bg-[#f7fbe9] ring-1 ring-[#a4da01]' : 'border-slate-200 hover:border-slate-300'" @click="selectTrainer(trainer)">
@@ -304,6 +314,20 @@ onMounted(() => {
                                     </button>
                                 </div>
                                 <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">Belum ada trainer yang tersedia untuk paket ini.</div>
+                            </div>
+
+                            <div v-else class="space-y-4">
+                                <p class="text-sm leading-6 text-slate-500">Pilih cara pembayaran untuk menyelesaikan pendaftaran membership.</p>
+                                <button type="button" class="flex w-full items-center gap-4 rounded-2xl border p-5 text-left transition" :class="paymentMethod === 'bank_transfer' ? 'border-[#a4da01] bg-[#f7fbe9] ring-1 ring-[#a4da01]' : 'border-slate-200 hover:border-slate-300'" @click="paymentMethod = 'bank_transfer'">
+                                    <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-blue-50 text-xl text-blue-700"><i class="fa-solid fa-building-columns"></i></span>
+                                    <span class="min-w-0 flex-1"><span class="block font-extrabold text-[#001428]">Transfer bank</span><span class="mt-1 block text-sm leading-5 text-slate-500">Pilih pembayaran melalui transfer bank. Instruksi pembayaran dapat dilihat setelah pendaftaran.</span></span>
+                                    <i v-if="paymentMethod === 'bank_transfer'" class="fa-solid fa-circle-check text-xl text-[#789900]"></i>
+                                </button>
+                                <button type="button" class="flex w-full items-center gap-4 rounded-2xl border p-5 text-left transition" :class="paymentMethod === 'cash' ? 'border-[#a4da01] bg-[#f7fbe9] ring-1 ring-[#a4da01]' : 'border-slate-200 hover:border-slate-300'" @click="paymentMethod = 'cash'">
+                                    <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-emerald-50 text-xl text-emerald-700"><i class="fa-solid fa-cash-register"></i></span>
+                                    <span class="min-w-0 flex-1"><span class="block font-extrabold text-[#001428]">Bayar di kasir</span><span class="mt-1 block text-sm leading-5 text-slate-500">Selesaikan pembayaran langsung di kasir facility yang dipilih.</span></span>
+                                    <i v-if="paymentMethod === 'cash'" class="fa-solid fa-circle-check text-xl text-[#789900]"></i>
+                                </button>
                             </div>
 
                             <div class="mt-6 rounded-2xl bg-[#001428] p-5 text-white">
@@ -322,7 +346,7 @@ onMounted(() => {
                         </div>
 
                         <footer class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-                            <button v-if="modalStep > 1" type="button" class="rounded-full px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-[#001428]" @click="modalStep = modalStep === 3 ? 2 : 1">
+                            <button v-if="modalStep > 1" type="button" class="rounded-full px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-[#001428]" @click="modalStep = modalStep === 4 ? (selectedTrainerPackage ? 3 : 2) : modalStep === 3 ? 2 : 1">
                                 <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
                             </button>
                             <button v-else type="button" class="rounded-full px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-[#001428]" @click="closeMembershipModal">Nanti dulu</button>
@@ -336,7 +360,10 @@ onMounted(() => {
                                     Pilih trainer <i class="fa-solid fa-arrow-right ml-2"></i>
                                 </button>
                             </div>
-                            <button v-else type="button" :disabled="!selectedTrainer" class="rounded-full bg-[#a4da01] px-7 py-3.5 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-40" @click="continueRegistration">
+                            <button v-else-if="modalStep === 3" type="button" :disabled="!selectedTrainer" class="rounded-full bg-[#a4da01] px-7 py-3.5 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] disabled:cursor-not-allowed disabled:opacity-40" @click="continueToPaymentMethod">
+                                Lanjut ke pembayaran <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                            <button v-else type="button" class="rounded-full bg-[#a4da01] px-7 py-3.5 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]" @click="continueRegistration">
                                 Lanjut ke pendaftaran <i class="fa-solid fa-arrow-right ml-2"></i>
                             </button>
                         </footer>
