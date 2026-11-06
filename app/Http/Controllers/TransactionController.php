@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Device;
 use App\Models\Facility;
-use App\Models\MemberTrainerPackage;
 use App\Models\Package;
 use App\Models\PackagePricingRule;
 use App\Models\Transaction;
@@ -31,7 +30,6 @@ class TransactionController extends Controller
         $dbStatus = $statusMap[$status] ?? null;
 
         $transactions = Transaction::query()
-            ->with('transactionable')
             ->when($search !== '', fn ($query) => $query->where('guest_name', 'like', "%{$search}%"))
             ->when($dbStatus, fn ($query) => $query->where('payment_status', $dbStatus))
             ->latest()
@@ -45,9 +43,8 @@ class TransactionController extends Controller
                 'amount' => (float) $transaction->amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
-                'scan_count' => $transaction->transactionable && isset($transaction->transactionable->scan_count)
-                    ? (int) $transaction->transactionable->scan_count
-                    : null,
+                'type' => $transaction->transactionable_type,
+                'scan_count' => null,
                 'created_at' => $transaction->created_at?->toISOString(),
             ]);
 
@@ -160,14 +157,14 @@ class TransactionController extends Controller
         };
         $transaction->save();
 
-        if ($transaction->transactionable instanceof MemberTrainerPackage) {
-            $memberPackage = $transaction->transactionable;
-            $memberPackage->status = match ($transaction->payment_status) {
-                'fully_paid' => 'active',
-                'failed', 'refunded' => 'cancelled',
-                default => 'pending',
-            };
-            $memberPackage->save();
+        if ($transaction->transactionable_type === 'membership' && $transaction->user_id) {
+            MemberTrainerPackage::query()->where('user_id', $transaction->user_id)
+                ->where('status', 'pending')
+                ->latest()->limit(1)->update(['status' => match ($transaction->payment_status) {
+                    'fully_paid' => 'active',
+                    'failed', 'refunded' => 'cancelled',
+                    default => 'pending',
+                }]);
         }
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil diperbarui.');
@@ -239,9 +236,7 @@ class TransactionController extends Controller
             $this->storeMembership($package, $data);
         } else {
             Transaction::create([
-                'transactionable_type' => Package::class,
-                'transactionable_id' => $package->id,
-                'device_id' => Device::forFacility($package->facility_id)?->id,
+                'transactionable_type' => 'booking',
                 'customer_name' => $data['customer_name'] ?? null,
                 'amount' => $data['amount'],
                 'payment_method' => $data['payment_method'],
@@ -294,9 +289,7 @@ class TransactionController extends Controller
 
             Transaction::create([
                 'user_id' => $member->id,
-                'transactionable_type' => UserMembership::class,
-                'transactionable_id' => $membership->id,
-                'device_id' => Device::forFacility($package->facility_id)?->id,
+                'transactionable_type' => 'membership',
                 'customer_name' => $data['customer_name'] ?? null,
                 'amount' => $data['amount'],
                 'payment_method' => $data['payment_method'],
