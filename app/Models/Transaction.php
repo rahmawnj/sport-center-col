@@ -21,6 +21,7 @@ class Transaction extends Model
         'booking_status',
         'transactionable_type',
         'handled_by',
+        'cancelled_at',
     ];
 
     protected function casts(): array
