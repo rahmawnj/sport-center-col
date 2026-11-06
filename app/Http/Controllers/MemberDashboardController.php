@@ -83,6 +83,23 @@ class MemberDashboardController extends Controller
                 'remaining_sessions' => $item->remaining_sessions,
             ]);
 
+        $trainerSchedules = \\App\\Models\\TrainerSessionSchedule::query()
+            ->with(['memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name'])
+            ->whereHas('memberTrainerPackage', fn ($query) => $query->where('user_id', $user->id))
+            ->latest('session_date')->latest('start_time')->limit(30)->get()
+            ->map(fn ($schedule) => [
+                'id' => $schedule->id,
+                'trainer' => $schedule->memberTrainerPackage?->trainer?->name,
+                'package' => $schedule->memberTrainerPackage?->trainerPackage?->name,
+                'date' => $schedule->session_date?->toDateString(),
+                'start_time' => substr((string) $schedule->start_time, 0, 5),
+                'end_time' => substr((string) $schedule->end_time, 0, 5),
+                'member_attended' => (bool) $schedule->member_attended,
+                'trainer_attended' => (bool) $schedule->trainer_attended,
+                'status' => $schedule->status,
+                'can_confirm' => $schedule->status === 'scheduled' && now()->gte($schedule->session_date->toDateString().' '.$schedule->end_time),
+            ]);
+
         $transactions = Transaction::query()
             ->where('user_id', $user->id)
             ->latest()
@@ -116,6 +133,7 @@ class MemberDashboardController extends Controller
             ] : null,
             'upcomingMemberships' => $upcomingMemberships,
             'activeTrainerPackages' => $activeTrainerPackages,
+            'trainerSchedules' => $trainerSchedules,
         ]);
     }
 
