@@ -54,6 +54,8 @@ class FacilityController extends Controller
             'courts' => fn ($query) => $query->orderBy('name'),
             'packages' => fn ($query) => $query->orderBy('name'),
             'packages.pricingRules',
+            'packages.trainerAddons',
+            'trainers' => fn ($query) => $query->orderBy('name'),
             'devices' => fn ($query) => $query->with('court:id,name')->orderBy('name'),
         ]);
 
@@ -79,6 +81,11 @@ class FacilityController extends Controller
                     'type' => $package->type,
                     'duration_minutes' => $package->duration_minutes,
                     'duration_days' => $package->duration_days,
+                    'trainer_addons' => $package->trainerAddons->map(fn ($trainer) => [
+                        'trainer_id' => $trainer->id,
+                        'trainer_name' => $trainer->name,
+                        'price' => (float) $trainer->pivot->price,
+                    ])->values(),
                     'pricing_rules' => $package->pricingRules->map(fn ($rule) => [
                         'id' => $rule->id,
                         'day_type' => $rule->day_type,
@@ -89,6 +96,11 @@ class FacilityController extends Controller
                         'price' => (float) $rule->price,
                         'priority' => $rule->priority,
                     ])->values(),
+                ])->values(),
+                'trainers' => $facility->trainers->map(fn ($trainer) => [
+                    'id' => $trainer->id,
+                    'name' => $trainer->name,
+                    'specialty' => $trainer->specialty,
                 ])->values(),
                 'devices' => $facility->devices->map(fn ($device) => [
                     'id' => $device->id,
