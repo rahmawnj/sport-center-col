@@ -196,7 +196,7 @@ class PublicMembershipRegistrationController extends Controller
                 // masa membership aktif/terjadwal terakhir selesai.
                 $latestMembership = UserMembership::query()
                     ->where('user_id', $user->id)
-                    ->where('status', '!=', 'cancelled')
+                    ->where('status', 'active')
                     ->whereDate('end_date', '>=', today())
                     ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
                     ->orderByDesc('end_date')
