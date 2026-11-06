@@ -47,6 +47,7 @@ type TrainerPackageItem = {
 
 type MembershipPackage = {
     id: number;
+    facility_id: number;
     name: string;
     facility: string | null;
     price: number | null;
@@ -68,6 +69,35 @@ const props = defineProps<{
 }>();
 
 const featuredFacilities = computed(() => props.facilities);
+
+const selectedMembershipPackage = ref<MembershipPackage | null>(null);
+const selectedMembershipTrainerPackage = ref<TrainerPackageItem | null>(null);
+const selectedMembershipTrainer = ref<TrainerItem | null>(null);
+const membershipModalOpen = ref(false);
+const membershipPaymentMethod = ref<'bank_transfer' | 'cash'>('bank_transfer');
+
+const openMembershipCheckout = (item: MembershipPackage) => {
+    selectedMembershipPackage.value = item;
+    selectedMembershipTrainerPackage.value = null;
+    selectedMembershipTrainer.value = null;
+    membershipPaymentMethod.value = 'bank_transfer';
+    membershipModalOpen.value = true;
+};
+const closeMembershipCheckout = () => { membershipModalOpen.value = false; };
+const continueMembershipCheckout = () => {
+    if (!selectedMembershipPackage.value) return;
+    if (selectedMembershipTrainerPackage.value && !selectedMembershipTrainer.value) return;
+
+    const params = new URLSearchParams({
+        package_id: String(selectedMembershipPackage.value.id),
+        payment_method: membershipPaymentMethod.value,
+    });
+    if (selectedMembershipTrainerPackage.value) {
+        params.set('trainer_package_id', String(selectedMembershipTrainerPackage.value.id));
+        params.set('trainer_id', String(selectedMembershipTrainer.value!.id));
+    }
+    router.get(`/membership/register?${params.toString()}`);
+};
 
 const selectedTrainerPackage = ref<TrainerPackageItem | null>(null);
 const selectedTrainer = ref<TrainerItem | null>(null);
@@ -369,9 +399,9 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         <div class="mt-5 border-t border-slate-100 pt-5">
                             <p class="text-xs font-semibold text-slate-500">Harga paket</p>
                             <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price ?? 0) }}</p>
-                            <a :href="`/membership/register?package_id=${item.id}&payment_method=bank_transfer`" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] focus:outline-none focus:ring-2 focus:ring-[#789900] focus:ring-offset-2">
+                            <button type="button" @click="openMembershipCheckout(item)" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] focus:outline-none focus:ring-2 focus:ring-[#789900] focus:ring-offset-2">
                                 Pilih Membership <i class="fa-solid fa-arrow-right"></i>
-                            </a>
+                            </button>
                         </div>
                     </article>
                 </div>
@@ -408,6 +438,67 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     </div>
                 </div>
             </section>
+
+            <Transition name="membership-modal">
+                <div v-if="membershipModalOpen && selectedMembershipPackage" class="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-[#001428]/75 px-4 py-6 backdrop-blur-sm" @click.self="closeMembershipCheckout">
+                    <section role="dialog" aria-modal="true" aria-labelledby="membership-checkout-title" class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-black uppercase tracking-[.18em] text-[#789900]">Checkout membership</p>
+                                <h2 id="membership-checkout-title" class="mt-2 text-2xl font-black text-[#001428]">{{ selectedMembershipPackage.name }}</h2>
+                                <p class="mt-1 text-sm text-slate-500">{{ selectedMembershipPackage.facility }} · {{ selectedMembershipPackage.duration_days }} hari</p>
+                            </div>
+                            <button type="button" @click="closeMembershipCheckout" class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Tutup modal"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+
+                        <div class="mt-7">
+                            <div class="flex items-center justify-between gap-3">
+                                <h3 class="font-extrabold text-[#001428]">1. Tambahkan paket trainer (opsional)</h3>
+                                <span class="text-xs font-semibold text-slate-400">Boleh dilewati</span>
+                            </div>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                <button type="button" @click="selectedMembershipTrainerPackage = null; selectedMembershipTrainer = null" class="rounded-2xl border p-4 text-left transition" :class="!selectedMembershipTrainerPackage ? 'border-[#a4da01] bg-[#f7fbe9] ring-2 ring-[#a4da01]/30' : 'border-slate-200 hover:border-slate-300'">
+                                    <span class="font-extrabold text-[#001428]">Membership saja</span>
+                                    <span class="mt-1 block text-sm text-slate-500">Tanpa tambahan personal trainer</span>
+                                </button>
+                                <button v-for="trainerPackage in trainerPackages.filter((item) => item.facility_id === selectedMembershipPackage?.facility_id)" :key="trainerPackage.id" type="button" @click="selectedMembershipTrainerPackage = trainerPackage; selectedMembershipTrainer = null" class="rounded-2xl border p-4 text-left transition" :class="selectedMembershipTrainerPackage?.id === trainerPackage.id ? 'border-[#a4da01] bg-[#f7fbe9] ring-2 ring-[#a4da01]/30' : 'border-slate-200 hover:border-slate-300'">
+                                    <span class="font-extrabold text-[#001428]">{{ trainerPackage.name }}</span>
+                                    <span class="mt-1 block text-sm text-slate-500">{{ trainerPackage.total_sessions }} sesi · {{ trainerPackage.duration_days }} hari</span>
+                                    <span class="mt-2 block text-sm font-black text-[#668500]">{{ formatCurrency(trainerPackage.price) }}</span>
+                                </button>
+                            </div>
+                            <p v-if="!trainerPackages.some((item) => item.facility_id === selectedMembershipPackage?.facility_id)" class="mt-3 text-sm text-slate-500">Belum ada paket trainer untuk olahraga ini. Kamu tetap bisa membeli membership saja.</p>
+                        </div>
+
+                        <div v-if="selectedMembershipTrainerPackage" class="mt-7">
+                            <h3 class="font-extrabold text-[#001428]">2. Pilih trainer</h3>
+                            <div v-if="selectedMembershipTrainerPackage.trainers.length" class="mt-3 grid gap-3 sm:grid-cols-2">
+                                <button v-for="trainer in selectedMembershipTrainerPackage.trainers" :key="trainer.id" type="button" @click="selectedMembershipTrainer = trainer" class="rounded-2xl border p-4 text-left transition" :class="selectedMembershipTrainer?.id === trainer.id ? 'border-[#a4da01] bg-[#f7fbe9] ring-2 ring-[#a4da01]/30' : 'border-slate-200 hover:border-slate-300'">
+                                    <span class="font-extrabold text-[#001428]">{{ trainer.name }}</span>
+                                    <span class="mt-1 block text-sm text-slate-500">{{ trainer.specialty || 'Personal trainer' }}</span>
+                                </button>
+                            </div>
+                            <p v-else class="mt-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Belum ada trainer untuk paket ini. Pilih membership saja atau hubungi admin.</p>
+                        </div>
+
+                        <div class="mt-7">
+                            <h3 class="font-extrabold text-[#001428]">{{ selectedMembershipTrainerPackage ? '3.' : '2.' }} Metode pembayaran</h3>
+                            <div class="mt-3 grid grid-cols-2 gap-3">
+                                <button type="button" @click="membershipPaymentMethod = 'bank_transfer'" class="rounded-2xl border p-4 text-left" :class="membershipPaymentMethod === 'bank_transfer' ? 'border-[#a4da01] bg-[#f7fbe9]' : 'border-slate-200'"><i class="fa-solid fa-building-columns"></i><span class="mt-2 block text-sm font-bold">Transfer bank</span></button>
+                                <button type="button" @click="membershipPaymentMethod = 'cash'" class="rounded-2xl border p-4 text-left" :class="membershipPaymentMethod === 'cash' ? 'border-[#a4da01] bg-[#f7fbe9]' : 'border-slate-200'"><i class="fa-solid fa-cash-register"></i><span class="mt-2 block text-sm font-bold">Bayar di kasir</span></button>
+                            </div>
+                        </div>
+
+                        <div class="mt-7 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500">Total checkout</p>
+                                <p class="text-2xl font-black text-[#001428]">{{ formatCurrency(selectedMembershipPackage.price + (selectedMembershipTrainerPackage?.price || 0)) }}</p>
+                            </div>
+                            <button type="button" :disabled="!!selectedMembershipTrainerPackage && (!selectedMembershipTrainer || !selectedMembershipTrainerPackage.trainers.length)" @click="continueMembershipCheckout" class="rounded-full bg-[#a4da01] px-6 py-3 font-black text-[#001428] disabled:cursor-not-allowed disabled:opacity-40">Lanjut checkout <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                        </div>
+                    </section>
+                </div>
+            </Transition>
 
             <Transition name="membership-modal">
                 <div v-if="trainerModalOpen && selectedTrainerPackage" class="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-[#001428]/75 px-4 py-6 backdrop-blur-sm" @click.self="closeTrainerCheckout">
