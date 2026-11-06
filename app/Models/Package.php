@@ -34,11 +34,6 @@ class Package extends Model
         return $this->hasMany(PackagePricingRule::class);
     }
 
-    public function membershipPricingRules(): HasMany
-    {
-        return $this->hasMany(MembershipPackagePricingRule::class);
-    }
-
     public function userMemberships(): HasMany
     {
         return $this->hasMany(UserMembership::class);
