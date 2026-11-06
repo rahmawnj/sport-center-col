@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
 defineOptions({ layout: MemberDashboardLayout });
@@ -13,10 +13,16 @@ type Payment = {
   payment_method: string | null;
   payment_status: string;
   booking_status: string | null;
+  can_cancel: boolean;
   created_at: string | null;
 };
 
-defineProps<{ payment: Payment }>();
+const props = defineProps<{ payment: Payment }>();
+
+const cancelPayment = () => {
+  if (!window.confirm('Yakin ingin membatalkan pembayaran ini? Paket terkait juga akan dibatalkan.')) return;
+  router.post('/member/payments/' + props.payment.id + '/cancel');
+};
 
 const currency = (value: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
@@ -91,6 +97,13 @@ const typeLabel = (value: string | null) =>
           <span class="text-sm text-slate-500">Status booking</span>
           <span class="text-sm font-semibold text-slate-900">{{ statusLabel(payment.booking_status) }}</span>
         </div>
+      </div>
+
+      <div v-if="payment.can_cancel" class="border-t border-slate-100 bg-slate-50 px-6 py-5">
+        <p class="mb-3 text-sm text-slate-500">Belum ingin melanjutkan transaksi ini? Kamu bisa membatalkannya.</p>
+        <button type="button" @click="cancelPayment" class="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-white px-5 py-3 text-sm font-bold text-rose-700 transition hover:bg-rose-50">
+          Batalkan Pembayaran
+        </button>
       </div>
     </section>
   </div>
