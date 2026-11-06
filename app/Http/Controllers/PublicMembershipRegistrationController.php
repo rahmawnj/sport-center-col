@@ -186,6 +186,24 @@ class PublicMembershipRegistrationController extends Controller
             }
 
             $start = today();
+
+            if ($package) {
+                // Membership baru untuk fasilitas yang sama dimulai setelah
+                // masa membership aktif/terjadwal terakhir selesai.
+                $latestMembership = UserMembership::query()
+                    ->where('user_id', $user->id)
+                    ->where('status', '!=', 'cancelled')
+                    ->whereDate('end_date', '>=', today())
+                    ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
+                    ->orderByDesc('end_date')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($latestMembership?->end_date) {
+                    $start = $latestMembership->end_date->copy()->addDay();
+                }
+            }
+
             $transaction = Transaction::create([
                 'user_id' => $user->id,
                 'transactionable_type' => $package ? 'membership' : 'trainer_package',
