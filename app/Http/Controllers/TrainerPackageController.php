@@ -190,7 +190,7 @@ class TrainerPackageController extends Controller
             ])
             ->values();
 
-        $sessionSchedules = \\App\\Models\\TrainerSessionSchedule::query()
+        $sessionSchedules = \App\Models\TrainerSessionSchedule::query()
             ->with(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name'])
             ->latest('session_date')
             ->latest('start_time')
