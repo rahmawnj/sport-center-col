@@ -42,7 +42,7 @@ class PublicMembershipController extends Controller
         return Package::query()
             ->with([
                 'facility:id,name,slug,status,is_bookable_online,has_membership',
-                'pricingRules' => fn ($query) => $query
+                'membershipPricingRules' => fn ($query) => $query
                     ->where(fn ($rules) => $rules->whereNull('date_start')->orWhereDate('date_start', '<=', today()))
                     ->where(fn ($rules) => $rules->whereNull('date_end')->orWhereDate('date_end', '>=', today()))
                     ->orderBy('price'),
@@ -57,7 +57,7 @@ class PublicMembershipController extends Controller
 
     private function packageData(Package $package): array
     {
-        $prices = $package->pricingRules->pluck('price')->map(fn ($price) => (float) $price)->values();
+        $prices = $package->membershipPricingRules->pluck('price')->map(fn ($price) => (float) $price)->values();
 
         return [
             'id' => $package->id,
