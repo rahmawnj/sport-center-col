@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('facility_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->enum('type', ['session', 'membership', 'entry']);
+            $table->decimal('price', 12, 2)->default(0);
             $table->timestamps();
         });
     }
