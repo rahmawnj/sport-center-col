@@ -22,12 +22,14 @@ type PricingRule = {
     end_time: string | null;
     price: number;
 };
+type TrainerAddon = { id: number; name: string; specialty: string | null; price: number };
 type BookingPackage = {
     id: number;
     name: string;
     type: 'session' | 'membership' | 'entry';
     duration_minutes: number;
     pricing_rules: PricingRule[];
+    trainer_addons: TrainerAddon[];
 };
 type Facility = {
     id: number;
@@ -69,6 +71,7 @@ const termsAccepted = ref(false);
 
 const form = useForm({
     package_id: null as number | null,
+    trainer_id: null as number | null,
     court_id: null as number | null,
     date: '',
     start_time: '',
@@ -111,6 +114,8 @@ const packagePrice = computed(() => {
     return Math.min(...pkg.value.pricing_rules.map((rule) => rule.price));
 });
 
+const selectedTrainerAddon = computed(() => pkg.value?.trainer_addons.find((addon) => addon.id === form.trainer_id) ?? null);
+
 const selectedCourt = computed(
     () =>
         slot.value?.courts.find((court) => court.id === courtId.value) ?? null,
@@ -118,14 +123,14 @@ const selectedCourt = computed(
 
 const displayPrice = computed(() => {
     if (!hasTimedSession.value) {
-        return packagePrice.value;
+        return packagePrice.value === null ? null : packagePrice.value + (selectedTrainerAddon.value?.price ?? 0);
     }
 
     if (slot.value?.price == null) {
         return null;
     }
 
-    return slot.value.price + (selectedCourt.value?.price_adjustment ?? 0);
+    return slot.value.price + (selectedCourt.value?.price_adjustment ?? 0) + (selectedTrainerAddon.value?.price ?? 0);
 });
 
 const visibleSteps = computed(() => {
@@ -200,6 +205,7 @@ function chooseFacility(item: Facility) {
 
 function choosePackage(item: BookingPackage) {
     pkg.value = item;
+    form.trainer_id = null;
     date.value = '';
     slots.value = [];
     slot.value = null;
@@ -308,6 +314,7 @@ function back() {
 function submit() {
     form.terms_accepted = termsAccepted.value;
     form.package_id = pkg.value?.id ?? null;
+    form.trainer_id = selectedTrainerAddon.value?.id ?? null;
 
     if (isSession.value) {
         form.date = date.value;
@@ -716,6 +723,15 @@ function formatDuration(minutes: number) {
                     <div><h2 class="text-xl font-bold">Order confirmation</h2><p class="mt-1 text-sm text-slate-500">Periksa kembali detail pesanan dan data pemesan.</p></div>
                     <div class="rounded-2xl border border-slate-200 p-5">
                         <div class="border-b border-slate-100 pb-4"><p class="font-semibold">{{ facility?.name }}</p><p class="mt-1 text-sm text-slate-500">{{ pkg?.name }}</p></div>
+                        <div v-if="pkg?.trainer_addons.length" class="border-b border-slate-100 py-4">
+                            <label for="trainer-addon" class="block text-sm font-semibold">Tambahkan pelatih (opsional)</label>
+                            <p class="mt-1 text-xs text-slate-500">Biaya pelatih ditambahkan satu kali untuk booking ini.</p>
+                            <select id="trainer-addon" v-model.number="form.trainer_id" class="mt-3 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
+                                <option :value="null">Tanpa pelatih</option>
+                                <option v-for="addon in pkg.trainer_addons" :key="addon.id" :value="addon.id">{{ addon.name }}{{ addon.specialty ? ' · ' + addon.specialty : '' }} — {{ formatIDR(addon.price) }}</option>
+                            </select>
+                            <p v-if="form.errors.trainer_id" class="mt-1 text-xs text-destructive">{{ form.errors.trainer_id }}</p>
+                        </div>
                         <div class="grid gap-4 py-4 sm:grid-cols-2">
                             <div><p class="text-sm text-slate-500">Nama pemesan</p><p class="mt-1 font-semibold">{{ props.currentUser?.name || form.guest_name }}</p></div>
                             <div><p class="text-sm text-slate-500">Email</p><p class="mt-1 font-semibold break-all">{{ props.currentUser?.email || form.guest_email }}</p></div>
@@ -723,7 +739,8 @@ function formatDuration(minutes: number) {
                             <div v-if="isSession"><p class="text-sm text-slate-500">{{ hasTimedSession ? 'Tanggal & waktu' : 'Tanggal sesi' }}</p><p class="mt-1 font-semibold">{{ date }}<template v-if="hasTimedSession"> · {{ slot?.start_time }}–{{ slot?.end_time }}</template></p></div>
                             <div v-if="hasTimedSession"><p class="text-sm text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || '—' }}</p></div>
                         </div>
-                        <div class="flex items-center justify-between border-t border-slate-200 pt-4"><div><p class="font-semibold">Total pesanan</p><p class="mt-1 text-xs text-slate-500">Sesuai paket dan jadwal yang dipilih</p></div><p class="text-2xl font-bold">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
+                        <div v-if="selectedTrainerAddon" class="flex items-center justify-between border-t border-slate-100 py-3 text-sm"><span class="text-slate-500">Trainer add-on · {{ selectedTrainerAddon.name }}</span><span class="font-medium">{{ formatIDR(selectedTrainerAddon.price) }}</span></div>
+                        <div class="flex items-center justify-between border-t border-slate-200 pt-4"><div><p class="font-semibold">Total pesanan</p><p class="mt-1 text-xs text-slate-500">Sesuai paket, jadwal, dan add-on yang dipilih</p></div><p class="text-2xl font-bold">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
                     </div>
                 </section>
 
@@ -740,7 +757,7 @@ function formatDuration(minutes: number) {
                         <span class="text-sm leading-6 text-slate-700">Saya telah memeriksa detail pesanan dan menyetujui syarat serta ketentuan booking olahraga.</span>
                     </label>
                     <p v-if="!termsAccepted" class="text-xs text-slate-500">Centang persetujuan untuk mengaktifkan tombol konfirmasi.</p>
-                    <p v-if="form.errors.start_time || form.errors.court_id || form.errors.package_id" class="text-sm text-destructive">{{ form.errors.start_time || form.errors.court_id || form.errors.package_id }}</p>
+                    <p v-if="form.errors.start_time || form.errors.court_id || form.errors.package_id || form.errors.trainer_id" class="text-sm text-destructive">{{ form.errors.start_time || form.errors.court_id || form.errors.package_id || form.errors.trainer_id }}</p>
                 </section>
 
                 <div
