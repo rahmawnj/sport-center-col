@@ -670,6 +670,13 @@ function promoRange(rule: PricingRule) {
                         </DropdownMenu>
                     </div>
 
+                    <div v-if="pkg.trainer_addons.length" class="space-y-1.5 rounded-xl bg-primary/5 p-3">
+                        <div class="text-xs font-semibold text-primary">Trainer Add-on</div>
+                        <div v-for="addon in pkg.trainer_addons" :key="addon.trainer_id" class="flex items-center justify-between gap-2 text-sm">
+                            <span>{{ addon.trainer_name }}</span>
+                            <span class="font-medium">{{ formatIDR(addon.price) }}</span>
+                        </div>
+                    </div>
                     <div class="mt-auto space-y-1.5 border-t pt-3">
                         <div class="text-xs text-muted-foreground">
                             Aturan harga
