@@ -14,6 +14,7 @@ type Payment = {
   payment_status: string;
   booking_status: string | null;
   can_cancel: boolean;
+  cancelled_at: string | null;
   created_at: string | null;
 };
 
@@ -68,7 +69,7 @@ const typeLabel = (value: string | null) =>
             'bg-amber-100 text-amber-800': ['unpaid', 'pending', 'dp_paid'].includes(payment.payment_status),
             'bg-rose-100 text-rose-800': ['failed', 'expired', 'cancelled'].includes(payment.payment_status),
           }">
-          {{ statusLabel(payment.payment_status) }}
+          {{ payment.cancelled_at ? 'Dibatalkan' : statusLabel(payment.payment_status) }}
         </span>
       </div>
 
