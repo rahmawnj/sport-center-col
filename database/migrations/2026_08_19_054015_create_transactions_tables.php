@@ -11,9 +11,7 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->string('invoice_number')->unique();
-            $table->string('transactionable_type')->nullable();
-            $table->unsignedBigInteger('transactionable_id')->nullable();
-            $table->index(['transactionable_type', 'transactionable_id'], 'transactions_transactionable_index');
+            $table->enum('transactionable_type', ['membership', 'booking'])->default('booking');
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('guest_name')->nullable();
             $table->enum('payment_method', ['cash', 'bank_transfer']);
