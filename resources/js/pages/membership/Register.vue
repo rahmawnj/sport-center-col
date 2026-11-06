@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
 type Selection = {
