@@ -183,19 +183,10 @@ class TransactionController extends Controller
                         // Paid future memberships remain in the queue.
                         User::query()->lockForUpdate()->findOrFail($locked->user_id);
 
-                        $latestPaidMembership = UserMembership::query()
-                            ->where('user_id', $locked->user_id)
-                            ->where('id', '!=', $membership->id)
-                            ->where('status', 'active')
-                            ->whereDate('end_date', '>=', today())
-                            ->whereHas('package', fn ($query) => $query->where('facility_id', $membership->package?->facility_id))
-                            ->orderByDesc('end_date')
-                            ->lockForUpdate()
-                            ->first();
-
-                        $start = $latestPaidMembership
-                            ? $latestPaidMembership->end_date->copy()->addDay()
-                            : today();
+                        // Gunakan antrean global: membership maupun trainer,
+                        // dari fasilitas mana pun, tidak boleh berjalan bersamaan.
+                        $purchaseStart = $this->nextPurchaseStartDate($locked->user_id, $membership->id);
+                        $start = $purchaseStart;
                         $end = $start->copy()->addDays(max(1, (int) ($membership->package?->duration_days ?? 30)) - 1);
 
                         $membership->update([
@@ -217,7 +208,7 @@ class TransactionController extends Controller
 
                 if ($trainerPurchase) {
                     if ($childStatus === 'active' && $trainerPurchase->status === 'pending') {
-                        $trainerStart = today();
+                        $trainerStart = $purchaseStart ?? $this->nextPurchaseStartDate($locked->user_id, null, $trainerPurchase->id);
                         $trainerEnd = $trainerStart->copy()->addDays(max(1, (int) ($trainerPurchase->trainerPackage?->duration_days ?? 30)) - 1);
 
                         $trainerPurchase->update([
@@ -239,7 +230,7 @@ class TransactionController extends Controller
 
                 if ($trainerPurchase) {
                     if ($childStatus === 'active') {
-                        $trainerStart = today();
+                        $trainerStart = $this->nextPurchaseStartDate($locked->user_id, null, $trainerPurchase->id);
                         $trainerEnd = $trainerStart->copy()->addDays(max(1, (int) ($trainerPurchase->trainerPackage?->duration_days ?? 30)) - 1);
 
                         $trainerPurchase->update([
@@ -360,18 +351,8 @@ class TransactionController extends Controller
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
             ]);
 
-            $latestMembership = UserMembership::query()
-                ->where('user_id', $member->id)
-                ->where('status', 'active')
-                ->whereDate('end_date', '>=', today())
-                ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
-                ->orderByDesc('end_date')
-                ->lockForUpdate()
-                ->first();
-
-            $start = $latestMembership
-                ? $latestMembership->end_date->copy()->addDay()
-                : today();
+            // Pembelian manual juga mengikuti antrean global member.
+            $start = $this->nextPurchaseStartDate($member->id);
 
             $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)) - 1);
 
@@ -384,6 +365,37 @@ class TransactionController extends Controller
                 'status' => $paid ? 'active' : 'pending',
             ]);
         });
+    }
+
+    /**
+     * Ambil tanggal mulai berikutnya dari antrean global membership + trainer.
+     * Semua paket aktif milik member diperhitungkan, lintas fasilitas.
+     */
+    private function nextPurchaseStartDate(int $userId, ?int $excludeMembershipId = null, ?int $excludeTrainerPurchaseId = null): Carbon
+    {
+        $membershipEnd = UserMembership::query()
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->whereDate('end_date', '>=', today())
+            ->when($excludeMembershipId, fn ($query) => $query->where('id', '!=', $excludeMembershipId))
+            ->lockForUpdate()
+            ->max('end_date');
+
+        $trainerEnd = MemberTrainerPackage::query()
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->whereDate('expires_at', '>=', today())
+            ->when($excludeTrainerPurchaseId, fn ($query) => $query->where('id', '!=', $excludeTrainerPurchaseId))
+            ->lockForUpdate()
+            ->max('expires_at');
+
+        $latestEnd = collect([$membershipEnd, $trainerEnd])
+            ->filter()
+            ->map(fn ($date) => Carbon::parse($date))
+            ->sort()
+            ->last();
+
+        return $latestEnd ? $latestEnd->copy()->addDay() : today();
     }
 
     /**
