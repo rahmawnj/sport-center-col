@@ -9,7 +9,6 @@ type MembershipPackage = {
     duration_days: number;
     facility: string | null;
     facility_slug: string | null;
-    prices: number[];
     price: number | null;
     description: string;
 };
