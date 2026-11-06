@@ -36,6 +36,37 @@ class MemberDashboardController extends Controller
             ->get()
             ->map(fn (UserMembership $membership) => $this->membershipRow($membership));
 
+        $currentMembership = UserMembership::query()
+            ->with(['package:id,name,duration_days,facility_id', 'package.facility:id,name'])
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->latest('start_date')
+            ->first();
+
+        $activeTrainerPackages = MemberTrainerPackage::query()
+            ->with(['trainerPackage:id,name,total_sessions,duration_days', 'trainer:id,name,specialty', 'facility:id,name'])
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('expires_at', '>=', $today)
+            ->whereColumn('used_sessions', '<', 'total_sessions')
+            ->latest('start_date')
+            ->get()
+            ->map(fn (MemberTrainerPackage $item) => [
+                'id' => $item->id,
+                'package' => $item->trainerPackage?->name ?? 'Paket personal trainer',
+                'trainer' => $item->trainer?->name ?? 'Trainer belum ditentukan',
+                'specialty' => $item->trainer?->specialty,
+                'facility' => $item->facility?->name,
+                'start_date' => $item->start_date?->toDateString(),
+                'expires_at' => $item->expires_at?->toDateString(),
+                'total_sessions' => (int) $item->total_sessions,
+                'used_sessions' => (int) $item->used_sessions,
+                'remaining_sessions' => $item->remaining_sessions,
+            ]);
+
         $transactions = Transaction::query()
             ->where('user_id', $user->id)
             ->latest()
@@ -51,7 +82,7 @@ class MemberDashboardController extends Controller
                 'completed_bookings' => Booking::where('user_id', $user->id)
                     ->where('status', 'completed')->count(),
                 'active_memberships' => UserMembership::where('user_id', $user->id)
-                    ->where('status', '!=', 'cancelled')
+                    ->where('status', 'active')
                     ->whereDate('start_date', '<=', $today)
                     ->whereDate('end_date', '>=', $today)->count(),
                 'payments_count' => $transactions->count(),
@@ -59,6 +90,15 @@ class MemberDashboardController extends Controller
             ],
             'bookings' => $bookings,
             'memberships' => $memberships,
+            'currentMembership' => $currentMembership ? [
+                'id' => $currentMembership->id,
+                'package' => $currentMembership->package?->name ?? 'Membership',
+                'facility' => $currentMembership->package?->facility?->name,
+                'start_date' => $currentMembership->start_date?->toDateString(),
+                'end_date' => $currentMembership->end_date?->toDateString(),
+                'duration_days' => $currentMembership->package?->duration_days,
+            ] : null,
+            'activeTrainerPackages' => $activeTrainerPackages,
         ]);
     }
 
