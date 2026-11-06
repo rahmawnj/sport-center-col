@@ -17,6 +17,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\TrainerDashboardController;
 use App\Http\Controllers\TrainerPackageController;
+use App\Http\Controllers\TrainerSessionController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VerifyController;
 use App\Http\Middleware\EnsureUserRole;
@@ -63,7 +64,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('member.dashboard');
 
     Route::prefix('member')->name('member.')->middleware(EnsureUserRole::class.':Member')->group(function () {
-        Route::get('bookings', [MemberDashboardController::class, 'bookings'])->name('bookings');\n        Route::post('trainer-schedules/{schedule}/confirm-attendance', [TrainerSessionController::class, 'confirmMember'])->name('trainer-schedules.confirm-attendance');
+        Route::get('bookings', [MemberDashboardController::class, 'bookings'])->name('bookings');
+        Route::post('trainer-schedules/{schedule}/confirm-attendance', [TrainerSessionController::class, 'confirmMember'])->name('trainer-schedules.confirm-attendance');
         Route::get('membership', [MemberDashboardController::class, 'membership'])->name('membership');
         Route::get('membership/{membership}', [MemberDashboardController::class, 'membershipShow'])->name('membership.show');
         Route::get('payments', [MemberDashboardController::class, 'payments'])->name('payments');
@@ -75,7 +77,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('trainer')->name('trainer.')->middleware(EnsureUserRole::class.':Trainer')->group(function () {
         Route::get('dashboard', [TrainerDashboardController::class, 'index'])->name('dashboard');
-        Route::get('members', [TrainerDashboardController::class, 'members'])->name('members');\n        Route::post('schedules/{schedule}/confirm-attendance', [TrainerSessionController::class, 'confirmTrainer'])->name('schedules.confirm-attendance');
+        Route::get('members', [TrainerDashboardController::class, 'members'])->name('members');
+        Route::post('schedules/{schedule}/confirm-attendance', [TrainerSessionController::class, 'confirmTrainer'])->name('schedules.confirm-attendance');
         Route::get('profile', [TrainerDashboardController::class, 'profile'])->name('profile');
     });
 
@@ -125,7 +128,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('trainers/{trainer}', [TrainerController::class, 'destroy'])->name('trainers.destroy');
 
         Route::get('trainer-packages', [TrainerPackageController::class, 'index'])->name('trainer-packages.index');
-        Route::get('membership-trainers', [TrainerPackageController::class, 'membershipTrainers'])->name('membership-trainers.index');\n        Route::post('membership-trainers/schedules', [TrainerSessionController::class, 'store'])->name('membership-trainers.schedules.store');
+        Route::get('membership-trainers', [TrainerPackageController::class, 'membershipTrainers'])->name('membership-trainers.index');
+        Route::post('membership-trainers/schedules', [TrainerSessionController::class, 'store'])->name('membership-trainers.schedules.store');
         Route::post('trainer-packages', [TrainerPackageController::class, 'store'])->name('trainer-packages.store');
         Route::put('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'update'])->name('trainer-packages.update');
         Route::delete('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'destroy'])->name('trainer-packages.destroy');
