@@ -242,6 +242,17 @@ function openEdit(pkg: Package) {
     showForm.value = true;
 }
 
+function handleTrainerAddonToggle(trainerId: number, event: Event) {
+    toggleTrainerAddon(trainerId, (event.target as HTMLInputElement).checked);
+}
+
+function updateTrainerAddonPrice(trainerId: number, event: Event) {
+    const addon = form.value.trainer_addons.find((item) => item.trainer_id === trainerId);
+    if (addon) {
+        addon.price = (event.target as HTMLInputElement).value;
+    }
+}
+
 function toggleTrainerAddon(trainerId: number, checked: boolean) {
     if (checked) {
         if (!form.value.trainer_addons.some((addon) => addon.trainer_id === trainerId)) {
@@ -922,20 +933,22 @@ function promoRange(rule: PricingRule) {
                                     <input
                                         type="checkbox"
                                         :checked="form.trainer_addons.some((addon) => addon.trainer_id === trainer.id)"
-                                        @change="toggleTrainerAddon(trainer.id, ($event.target as HTMLInputElement).checked)"
+                                        @change="handleTrainerAddonToggle(trainer.id, $event)"
                                     />
                                     {{ trainer.name }}
                                     <span v-if="trainer.specialty" class="text-xs font-normal text-muted-foreground">· {{ trainer.specialty }}</span>
                                 </label>
                                 <div v-if="form.trainer_addons.some((addon) => addon.trainer_id === trainer.id)" class="mt-2 grid gap-1">
                                     <Label :for="`trainer-addon-price-${trainer.id}`" class="text-xs">Biaya add-on per booking</Label>
-                                    <Input
+                                    <input
                                         :id="`trainer-addon-price-${trainer.id}`"
                                         type="number"
                                         min="0"
                                         step="1000"
+                                        class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                                         :name="`trainer_addons[${form.trainer_addons.findIndex((addon) => addon.trainer_id === trainer.id)}][price]`"
-                                        v-model="form.trainer_addons.find((addon) => addon.trainer_id === trainer.id)!.price"
+                                        :value="form.trainer_addons.find((addon) => addon.trainer_id === trainer.id)?.price ?? '0'"
+                                        @input="updateTrainerAddonPrice(trainer.id, $event)"
                                     />
                                     <input
                                         type="hidden"
