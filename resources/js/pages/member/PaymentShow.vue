@@ -35,7 +35,7 @@ const methodLabel = (value: string | null) =>
   ({ cash: 'Tunai', bank_transfer: 'Transfer bank', qris: 'QRIS' }[value || ''] || value || 'Belum ditentukan');
 
 const typeLabel = (value: string | null) =>
-  value === 'membership' ? 'Membership + Personal Trainer' : value === 'booking' ? 'Booking' : 'Transaksi';
+  value === 'membership' ? 'Membership + Personal Trainer' : value === 'trainer_package' ? 'Personal Trainer' : value === 'booking' ? 'Booking' : 'Transaksi';
 </script>
 
 <template>
