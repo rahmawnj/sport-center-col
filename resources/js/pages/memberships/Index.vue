@@ -52,14 +52,8 @@ type Props = {
 const props = defineProps<Props>();
 
 const search = ref(props.filters.search ?? '');
-const status = ref(props.filters.status ?? 'all');
-const statusOptions = [
-    { value: 'all', label: 'Semua status' },
-    { value: 'active', label: 'Aktif' },
-    { value: 'scheduled', label: 'Menunggu giliran' },
-    { value: 'expired', label: 'Kedaluwarsa' },
-    { value: 'cancelled', label: 'Dibatalkan' },
-];
+const status = ref('active');
+const statusOptions = [{ value: 'active', label: 'Aktif' }];
 const methodOptions = [
     { value: 'cash', label: 'Tunai' },
     { value: 'bank_transfer', label: 'Transfer Bank' },
@@ -184,7 +178,7 @@ function filter() {
 
 function reset() {
     search.value = '';
-    status.value = 'all';
+    status.value = 'active';
     filter();
 }
 
