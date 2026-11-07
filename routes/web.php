@@ -129,7 +129,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('trainer-packages', [TrainerPackageController::class, 'index'])->name('trainer-packages.index');
         Route::get('membership-trainers', [TrainerPackageController::class, 'membershipTrainers'])->name('membership-trainers.index');
-        Route::post('membership-trainers/schedules', [TrainerSessionController::class, 'store'])->name('membership-trainers.schedules.store');
+        Route::get('membership-trainers/{memberTrainerPackage}', [TrainerPackageController::class, 'membershipTrainerShow'])->name('membership-trainers.show');
+        Route::post('membership-trainers/{memberTrainerPackage}/schedules', [TrainerSessionController::class, 'store'])->name('membership-trainers.schedules.store');
         Route::post('trainer-packages', [TrainerPackageController::class, 'store'])->name('trainer-packages.store');
         Route::put('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'update'])->name('trainer-packages.update');
         Route::delete('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'destroy'])->name('trainer-packages.destroy');
