@@ -6,6 +6,7 @@ use App\Models\Facility;
 use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
 use App\Models\TrainerPackage;
+use App\Models\TrainerSessionSchedule;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -196,7 +197,7 @@ class TrainerPackageController extends Controller
     {
         $memberTrainerPackage->load(['user:id,name,email', 'trainer:id,name', 'trainerPackage:id,name,total_sessions,duration_days,price', 'facility:id,name']);
 
-        $schedules = \\App\\Models\\TrainerSessionSchedule::query()
+        $schedules = TrainerSessionSchedule::query()
             ->where('member_trainer_package_id', $memberTrainerPackage->id)
             ->orderByDesc('session_date')
             ->orderByDesc('start_time')
