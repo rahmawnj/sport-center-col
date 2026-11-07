@@ -53,6 +53,7 @@ class TrainerSessionController extends Controller
             }
 
             TrainerSessionSchedule::create([
+                'member_trainer_package_id' => $package->id,
                 ...$data,
                 'status' => 'scheduled',
                 'member_attended' => false,
