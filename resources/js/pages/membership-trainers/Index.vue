@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { AlertTriangle, BadgeCheck, CalendarDays, Dumbbell, Search, Users } from '@lucide/vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { AlertTriangle, BadgeCheck, Dumbbell, Search, Users, Eye } from '@lucide/vue';
 import { ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
@@ -30,8 +30,6 @@ const props = defineProps<{
         total: number;
         links: LinkItem[];
     };
-    schedulePackages: { id: number; label: string }[];
-    sessionSchedules: { id:number; member:string|null; trainer:string|null; package:string|null; date:string; start_time:string; end_time:string; member_attended:boolean; trainer_attended:boolean; status:string }[];
     filters: { search: string };
     stats: {
         active_trainers: number;
@@ -41,9 +39,6 @@ const props = defineProps<{
 }>();
 
 const search = ref(props.filters.search ?? '');
-const scheduleForm = useForm({ member_trainer_package_id: '', session_date: '', start_time: '09:00', end_time: '10:00' });
-function createSchedule() { scheduleForm.post('/membership-trainers/schedules', { onSuccess: () => scheduleForm.reset('session_date') }); }
-
 function filter() {
     router.get('/membership-trainers', { search: search.value || undefined }, {
         preserveState: true,
@@ -95,48 +90,6 @@ const membershipMeta: Record<MembershipStatus, { label: string; className: strin
             description="Pantau member yang paket personal trainernya masih aktif dan bandingkan dengan masa membership pada olahraga yang sama."
         />
 
-        <section class="grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
-            <form class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm" @submit.prevent="createSchedule">
-                <div>
-                    <h2 class="font-semibold">Buat jadwal sesi</h2>
-                    <p class="mt-1 text-sm text-muted-foreground">Pilih paket trainer aktif, lalu tentukan tanggal dan jam latihan.</p>
-                </div>
-                <div class="space-y-1.5">
-                    <label class="text-sm font-medium">Member · Trainer · Paket</label>
-                    <select v-model="scheduleForm.member_trainer_package_id" required class="w-full rounded-md border bg-background px-3 py-2 text-sm">
-                        <option value="" disabled>Pilih paket trainer</option>
-                        <option v-for="item in schedulePackages" :key="item.id" :value="String(item.id)">{{ item.label }}</option>
-                    </select>
-                    <p v-if="scheduleForm.errors.member_trainer_package_id" class="text-xs text-destructive">{{ scheduleForm.errors.member_trainer_package_id }}</p>
-                </div>
-                <div class="space-y-1.5">
-                    <label class="text-sm font-medium">Tanggal sesi</label>
-                    <input v-model="scheduleForm.session_date" type="date" required class="w-full rounded-md border bg-background px-3 py-2 text-sm" />
-                    <p v-if="scheduleForm.errors.session_date" class="text-xs text-destructive">{{ scheduleForm.errors.session_date }}</p>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-1.5"><label class="text-sm font-medium">Mulai</label><input v-model="scheduleForm.start_time" type="time" required class="w-full rounded-md border bg-background px-3 py-2 text-sm" /></div>
-                    <div class="space-y-1.5"><label class="text-sm font-medium">Selesai</label><input v-model="scheduleForm.end_time" type="time" required class="w-full rounded-md border bg-background px-3 py-2 text-sm" /></div>
-                </div>
-                <p v-if="scheduleForm.errors.start_time || scheduleForm.errors.end_time" class="text-xs text-destructive">{{ scheduleForm.errors.start_time || scheduleForm.errors.end_time }}</p>
-                <Button type="submit" :disabled="scheduleForm.processing || !schedulePackages.length" class="w-full">Simpan jadwal</Button>
-                <p v-if="!schedulePackages.length" class="text-xs text-muted-foreground">Belum ada paket trainer aktif yang bisa dijadwalkan.</p>
-            </form>
-            <div class="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                <div class="border-b px-5 py-4"><h2 class="font-semibold">Jadwal sesi terbaru</h2><p class="mt-1 text-xs text-muted-foreground">Kuota baru berkurang setelah member dan trainer sama-sama mengonfirmasi hadir.</p></div>
-                <div v-if="sessionSchedules.length" class="divide-y">
-                    <article v-for="item in sessionSchedules" :key="item.id" class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                        <div><p class="font-semibold">{{ item.member || 'Member' }} <span class="font-normal text-muted-foreground">· {{ item.trainer || 'Trainer' }}</span></p><p class="mt-1 text-xs text-muted-foreground">{{ item.package }} · {{ formatDate(item.date) }} · {{ item.start_time }}–{{ item.end_time }}</p></div>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <span class="rounded-full px-2.5 py-1" :class="item.member_attended ? 'bg-emerald-500/10 text-emerald-700' : 'bg-muted text-muted-foreground'">Member {{ item.member_attended ? 'hadir' : 'belum' }}</span>
-                            <span class="rounded-full px-2.5 py-1" :class="item.trainer_attended ? 'bg-emerald-500/10 text-emerald-700' : 'bg-muted text-muted-foreground'">Trainer {{ item.trainer_attended ? 'hadir' : 'belum' }}</span>
-                            <span class="rounded-full bg-muted px-2.5 py-1 capitalize">{{ item.status === 'completed' ? 'Selesai' : item.status === 'scheduled' ? 'Terjadwal' : item.status }}</span>
-                        </div>
-                    </article>
-                </div>
-                <div v-else class="p-8 text-center text-sm text-muted-foreground">Belum ada jadwal sesi yang dibuat.</div>
-            </div>
-        </section>
 
         <div class="grid gap-4 sm:grid-cols-3">
             <div class="rounded-2xl border bg-card p-5 shadow-sm">
@@ -217,6 +170,7 @@ const membershipMeta: Record<MembershipStatus, { label: string; className: strin
                             <th class="px-4 py-3 font-medium">Sisa Sesi</th>
                             <th class="px-4 py-3 font-medium">Membership</th>
                             <th class="px-4 py-3 font-medium">Status Membership</th>
+                            <th class="px-4 py-3 text-right font-medium">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -248,9 +202,10 @@ const membershipMeta: Record<MembershipStatus, { label: string; className: strin
                                     {{ membershipMeta[row.membership_status].label }}
                                 </span>
                             </td>
+                            <td class="px-4 py-3 text-right"><Button size="sm" variant="outline" as-child><Link :href="'/membership-trainers/' + row.id"><Eye class="mr-2 size-4"/>Detail</Link></Button></td>
                         </tr>
                         <tr v-if="!rows.data.length">
-                            <td colspan="7" class="px-4 py-12 text-center text-muted-foreground">
+                            <td colspan="8" class="px-4 py-12 text-center text-muted-foreground">
                                 <Users class="mx-auto size-9 opacity-40" />
                                 <p class="mt-3 font-medium">Tidak ada paket trainer aktif</p>
                                 <p class="mt-1 text-xs">Data akan muncul ketika member memiliki paket trainer yang sedang berjalan.</p>
