@@ -1,14 +1,14 @@
 <?php
 
-namespace Database\\Seeders;
+namespace Database\Seeders;
 
-use App\\Models\\Facility;
-use App\\Models\\MemberTrainerPackage;
-use App\\Models\\Trainer;
-use App\\Models\\TrainerPackage;
-use App\\Models\\TrainerSessionSchedule;
-use App\\Models\\User;
-use Illuminate\\Database\\Seeder;
+use App\Models\Facility;
+use App\Models\MemberTrainerPackage;
+use App\Models\Trainer;
+use App\Models\TrainerPackage;
+use App\Models\TrainerSessionSchedule;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class ActiveMemberTrainerSeeder extends Seeder
 {
