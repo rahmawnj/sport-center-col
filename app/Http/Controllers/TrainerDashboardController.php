@@ -124,7 +124,7 @@ class TrainerDashboardController extends Controller
             'facility:id,name',
         ]);
 
-        $schedules = \\App\\Models\\TrainerSessionSchedule::query()
+        $schedules = \App\Models\TrainerSessionSchedule::query()
             ->where('member_trainer_package_id', $memberTrainerPackage->id)
             ->orderByDesc('session_date')
             ->orderByDesc('start_time')
