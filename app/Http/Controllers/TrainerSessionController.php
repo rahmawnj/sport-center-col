@@ -20,7 +20,7 @@ class TrainerSessionController extends Controller
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
         ]);
 
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($data, $memberTrainerPackage) {
             $package = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($memberTrainerPackage->id);
             abort_unless($package->isActive(), 422, 'Paket trainer tidak sedang aktif atau kuotanya habis.');
             abort_unless($data['session_date'] >= $package->start_date->toDateString() && $data['session_date'] <= $package->expires_at->toDateString(), 422, 'Tanggal sesi harus berada dalam periode paket trainer.');
