@@ -111,6 +111,50 @@ class TrainerDashboardController extends Controller
         ]);
     }
 
+
+    public function memberShow(Request $request, MemberTrainerPackage $memberTrainerPackage): Response
+    {
+        $trainer = $this->trainerFor($request);
+
+        abort_unless((int) $memberTrainerPackage->trainer_id === (int) $trainer->id, 404);
+
+        $memberTrainerPackage->load([
+            'user:id,name,email',
+            'trainerPackage:id,name,total_sessions,duration_days,price',
+            'facility:id,name',
+        ]);
+
+        $schedules = \\App\\Models\\TrainerSessionSchedule::query()
+            ->where('member_trainer_package_id', $memberTrainerPackage->id)
+            ->orderByDesc('session_date')
+            ->orderByDesc('start_time')
+            ->get()
+            ->map(fn ($schedule) => [
+                'id' => $schedule->id,
+                'date' => $schedule->session_date?->toDateString(),
+                'start_time' => substr((string) $schedule->start_time, 0, 5),
+                'end_time' => substr((string) $schedule->end_time, 0, 5),
+                'status' => $schedule->status,
+            ]);
+
+        return Inertia::render('trainer/MemberShow', [
+            'item' => [
+                'id' => $memberTrainerPackage->id,
+                'member' => $memberTrainerPackage->user?->name ?? 'Member',
+                'email' => $memberTrainerPackage->user?->email,
+                'package' => $memberTrainerPackage->trainerPackage?->name ?? 'Paket Trainer',
+                'facility' => $memberTrainerPackage->facility?->name,
+                'start_date' => $memberTrainerPackage->start_date?->toDateString(),
+                'expires_at' => $memberTrainerPackage->expires_at?->toDateString(),
+                'total_sessions' => $memberTrainerPackage->total_sessions,
+                'used_sessions' => $memberTrainerPackage->used_sessions,
+                'remaining_sessions' => $memberTrainerPackage->remaining_sessions,
+                'status' => $this->packageStatus($memberTrainerPackage),
+            ],
+            'schedules' => $schedules,
+        ]);
+    }
+
     public function profile(Request $request): Response
     {
         $trainer = $this->trainerFor($request)->load(['user:id,name,email', 'facilities:id,name']);
