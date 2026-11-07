@@ -1,14 +1,15 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\\Seeders;
 
-use App\Models\Facility;
-use App\Models\MemberTrainerPackage;
-use App\Models\Trainer;
-use App\Models\TrainerPackage;
-use App\Models\TrainerSessionSchedule;
-use App\Models\User;
-use Illuminate\Database\Seeder;
+use App\\Models\\MemberTrainerPackage;
+use App\\Models\\Package;
+use App\\Models\\Trainer;
+use App\\Models\\TrainerPackage;
+use App\\Models\\TrainerSessionSchedule;
+use App\\Models\\User;
+use App\\Models\\UserMembership;
+use Illuminate\\Database\\Seeder;
 
 class ActiveMemberTrainerSeeder extends Seeder
 {
@@ -29,7 +30,7 @@ class ActiveMemberTrainerSeeder extends Seeder
             ->orderBy('id')
             ->get();
 
-        $packages = TrainerPackage::query()
+        $trainerPackages = TrainerPackage::query()
             ->where('is_active', true)
             ->whereHas('facility', fn ($query) => $query
                 ->where('status', 'active')
@@ -38,19 +39,70 @@ class ActiveMemberTrainerSeeder extends Seeder
             ->orderBy('id')
             ->get();
 
-        if ($members->isEmpty() || $packages->isEmpty()) {
+        if ($members->isEmpty() || $trainerPackages->isEmpty()) {
             $this->command?->warn('ActiveMemberTrainerSeeder dilewati: demo member atau paket trainer aktif belum tersedia.');
 
             return;
         }
 
-        $created = 0;
+        $createdMemberships = 0;
+        $createdTrainerPackages = 0;
+        $createdSchedules = 0;
+        $sessionDate = $today->copy()->addDays(2);
 
         foreach ($members as $index => $member) {
-            $package = $packages[$index % $packages->count()];
+            $trainerPackage = $trainerPackages[$index % $trainerPackages->count()];
+
+            // Membership harus berasal dari fasilitas yang sama dengan paket trainer.
+            // UserMembership.package_id mengarah ke tabel packages, bukan membership_packages.
+            $membershipPackage = Package::query()
+                ->where('type', 'membership')
+                ->where('facility_id', $trainerPackage->facility_id)
+                ->whereNotNull('duration_days')
+                ->orderBy('id')
+                ->first();
+
+            if (! $membershipPackage) {
+                $this->command?->warn("Tidak ada paket membership untuk fasilitas {$trainerPackage->facility_id}; data trainer untuk {$member->email} dilewati.");
+
+                continue;
+            }
+
+            // Jangan membuat membership duplikat jika member sudah memiliki membership
+            // aktif pada fasilitas yang sama dan berlaku hari ini.
+            $membership = UserMembership::query()
+                ->where('user_id', $member->id)
+                ->where('status', 'active')
+                ->whereDate('start_date', '<=', $today->toDateString())
+                ->whereDate('end_date', '>=', $today->toDateString())
+                ->whereHas('package', fn ($query) => $query->where('facility_id', $trainerPackage->facility_id))
+                ->orderByDesc('end_date')
+                ->first();
+
+            if (! $membership) {
+                $membership = UserMembership::firstOrCreate(
+                    [
+                        'user_id' => $member->id,
+                        'package_id' => $membershipPackage->id,
+                        'start_date' => $today->toDateString(),
+                    ],
+                    [
+                        'transaction_id' => null,
+                        'device_id' => null,
+                        'end_date' => $today->copy()
+                            ->addDays(max(1, (int) $membershipPackage->duration_days) - 1)
+                            ->toDateString(),
+                        'status' => 'active',
+                    ]
+                );
+
+                if ($membership->wasRecentlyCreated) {
+                    $createdMemberships++;
+                }
+            }
 
             $trainer = Trainer::query()
-                ->whereHas('facilities', fn ($query) => $query->whereKey($package->facility_id))
+                ->whereHas('facilities', fn ($query) => $query->whereKey($trainerPackage->facility_id))
                 ->orderBy('id')
                 ->first();
 
@@ -58,37 +110,44 @@ class ActiveMemberTrainerSeeder extends Seeder
                 continue;
             }
 
-            $memberPackage = MemberTrainerPackage::firstOrCreate(
+            $memberTrainerPackage = MemberTrainerPackage::firstOrCreate(
                 [
                     'user_id' => $member->id,
-                    'trainer_package_id' => $package->id,
+                    'trainer_package_id' => $trainerPackage->id,
                     'trainer_id' => $trainer->id,
                     'start_date' => $today->toDateString(),
                 ],
                 [
                     'transaction_id' => null,
-                    'facility_id' => $package->facility_id,
-                    'expires_at' => $today->copy()->addDays(max(1, $package->duration_days) - 1)->toDateString(),
-                    'total_sessions' => $package->total_sessions,
+                    'facility_id' => $trainerPackage->facility_id,
+                    'expires_at' => $today->copy()
+                        ->addDays(max(1, (int) $trainerPackage->duration_days) - 1)
+                        ->toDateString(),
+                    'total_sessions' => $trainerPackage->total_sessions,
                     'used_sessions' => 0,
                     'status' => 'active',
                 ]
             );
 
-            if ($memberPackage->wasRecentlyCreated) {
-                $created++;
+            if ($memberTrainerPackage->wasRecentlyCreated) {
+                $createdTrainerPackages++;
             }
 
-            // Satu jadwal demo mendatang agar riwayat sesi terlihat di halaman detail.
-            // Jam dibuat berbeda agar jadwal antar-member tidak saling bentrok pada trainer yang sama.
-            $sessionDate = $today->copy()->addDays(2)->toDateString();
+            // Buat sesi demo hanya jika membership dan paket trainer masih berlaku
+            // pada tanggal sesi yang akan datang.
+            if ($membership->end_date->lt($sessionDate)
+                || $memberTrainerPackage->expires_at->lt($sessionDate)) {
+                continue;
+            }
+
+            // Jam dibuat berbeda agar jadwal antar-member tidak saling bentrok.
             $startTime = sprintf('%02d:00:00', 8 + $index);
             $endTime = sprintf('%02d:00:00', 9 + $index);
 
-            TrainerSessionSchedule::firstOrCreate(
+            $schedule = TrainerSessionSchedule::firstOrCreate(
                 [
-                    'member_trainer_package_id' => $memberPackage->id,
-                    'session_date' => $sessionDate,
+                    'member_trainer_package_id' => $memberTrainerPackage->id,
+                    'session_date' => $sessionDate->toDateString(),
                     'start_time' => $startTime,
                 ],
                 [
@@ -98,8 +157,17 @@ class ActiveMemberTrainerSeeder extends Seeder
                     'trainer_attended' => false,
                 ]
             );
+
+            if ($schedule->wasRecentlyCreated) {
+                $createdSchedules++;
+            }
         }
 
-        $this->command?->info("Data pembelian personal trainer aktif hari ini siap. {$created} data pembelian baru dibuat.");
+        $this->command?->info(
+            "Seeder membership dan personal trainer aktif selesai. "
+            . "{$createdMemberships} membership baru, "
+            . "{$createdTrainerPackages} pembelian trainer baru, "
+            . "{$createdSchedules} jadwal sesi baru."
+        );
     }
 }
