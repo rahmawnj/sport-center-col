@@ -77,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('trainer')->name('trainer.')->middleware(EnsureUserRole::class.':Trainer')->group(function () {
         Route::get('dashboard', [TrainerDashboardController::class, 'index'])->name('dashboard');
         Route::get('members', [TrainerDashboardController::class, 'members'])->name('members');
+        Route::get('members/{memberTrainerPackage}', [TrainerDashboardController::class, 'memberShow'])->name('members.show');
         Route::get('profile', [TrainerDashboardController::class, 'profile'])->name('profile');
     });
 
