@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\MemberTrainerPackage;
-use App\Models\Trainer;
 use App\Models\TrainerSessionSchedule;
 use App\Models\UserMembership;
 use Illuminate\Http\RedirectResponse;
@@ -25,32 +24,8 @@ class TrainerSessionController extends Controller
             $package = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($memberTrainerPackage->id);
             abort_unless($package->isActive(), 422, 'Paket trainer tidak sedang aktif atau kuotanya habis.');
 
-            $membershipActive = UserMembership::query()
-                ->where('user_id', $package->user_id)
-                ->where('status', 'active')
-                ->whereDate('start_date', '<=', today())
-                ->whereDate('end_date', '>=', today())
-                ->whereDate('start_date', '<=', $data['session_date'])
-                ->whereDate('end_date', '>=', $data['session_date'])
-                ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
-                ->exists();
-
-            abort_unless($membershipActive, 422, 'Member harus memiliki membership aktif pada fasilitas yang sama hingga tanggal sesi untuk membuat jadwal personal trainer.');
-            abort_unless($data['session_date'] >= $package->start_date->toDateString() && $data['session_date'] <= $package->expires_at->toDateString(), 422, 'Tanggal sesi harus berada dalam periode paket trainer.');
-
-            $overlap = TrainerSessionSchedule::query()
-                ->where('session_date', $data['session_date'])
-                ->whereIn('status', ['scheduled', 'completed'])
-                ->where('start_time', '<', $data['end_time'])
-                ->where('end_time', '>', $data['start_time'])
-                ->whereHas('memberTrainerPackage', fn ($q) => $q->where(function ($sub) use ($package) {
-                    $sub->where('trainer_id', $package->trainer_id)->orWhere('user_id', $package->user_id);
-                }))
-                ->exists();
-
-            if ($overlap) {
-                throw ValidationException::withMessages(['start_time' => 'Jadwal bertabrakan dengan sesi member atau trainer lain.']);
-            }
+            $this->ensureMembershipCoversDate($package, $data['session_date']);
+            $this->ensureNoScheduleOverlap($package, $data);
 
             TrainerSessionSchedule::create([
                 'member_trainer_package_id' => $package->id,
@@ -61,49 +36,60 @@ class TrainerSessionController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Jadwal sesi berhasil dibuat. Member dan trainer dapat melihat serta mengonfirmasi kehadiran setelah sesi berakhir.');
+        return back()->with('success', 'Jadwal sesi berhasil dibuat.');
     }
 
-    public function confirmMember(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
+    public function update(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
     {
-        $this->confirm($request, $schedule, 'member');
-        return back()->with('success', 'Konfirmasi kehadiran member tersimpan.');
+        $data = $request->validate([
+            'session_date' => ['required', 'date', 'after_or_equal:today'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+        ]);
+
+        DB::transaction(function () use ($data, $schedule) {
+            $locked = TrainerSessionSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
+            abort_unless($locked->status === 'scheduled', 422, 'Hanya jadwal yang belum ditutup yang bisa diedit.');
+
+            $package = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($locked->member_trainer_package_id);
+            abort_unless(
+                $data['session_date'] >= $package->start_date->toDateString()
+                && $data['session_date'] <= $package->expires_at->toDateString(),
+                422,
+                'Tanggal sesi harus berada dalam periode paket trainer.'
+            );
+
+            $this->ensureMembershipCoversDate($package, $data['session_date']);
+            $this->ensureNoScheduleOverlap($package, $data, $locked->id);
+
+            $locked->update($data);
+        });
+
+        return back()->with('success', 'Jadwal sesi berhasil diperbarui.');
     }
 
-    public function confirmTrainer(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
+    public function setResult(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
     {
-        $this->confirm($request, $schedule, 'trainer');
-        return back()->with('success', 'Konfirmasi kehadiran trainer tersimpan.');
-    }
+        $data = $request->validate([
+            'result' => ['required', 'in:completed,failed'],
+        ]);
 
-    private function confirm(Request $request, TrainerSessionSchedule $schedule, string $role): void
-    {
-        DB::transaction(function () use ($request, $schedule, $role) {
-            $locked = TrainerSessionSchedule::query()->with('memberTrainerPackage.trainer')->lockForUpdate()->findOrFail($schedule->id);
-            $package = $locked->memberTrainerPackage;
+        DB::transaction(function () use ($data, $schedule) {
+            $locked = TrainerSessionSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
+            abort_unless($locked->status === 'scheduled', 422, 'Hasil sesi ini sudah ditetapkan sebelumnya.');
 
-            if ($role === 'member') {
-                abort_unless((int) $package->user_id === (int) $request->user()->id, 403);
-            } else {
-                abort_unless((int) $package->trainer?->user_id === (int) $request->user()->id, 403);
-            }
-
-            abort_unless($locked->status === 'scheduled', 422, 'Jadwal ini tidak lagi menunggu konfirmasi.');
             $sessionEndsAt = $locked->session_date->toDateString().' '.$locked->end_time;
-            abort_unless(now()->gte($sessionEndsAt), 422, 'Konfirmasi kehadiran hanya tersedia setelah jadwal sesi berakhir.');
+            abort_unless(now()->gte($sessionEndsAt), 422, 'Hasil sesi hanya bisa ditetapkan setelah jadwal berakhir.');
 
-            if ($role === 'member') {
-                $locked->member_attended = true;
-                $locked->member_confirmed_at = now();
-            } else {
-                $locked->trainer_attended = true;
-                $locked->trainer_confirmed_at = now();
-            }
+            $package = MemberTrainerPackage::query()
+                ->lockForUpdate()
+                ->findOrFail($locked->member_trainer_package_id);
 
-            if ($locked->member_attended && $locked->trainer_attended) {
-                $package = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($package->id);
+            if ($data['result'] === 'completed') {
                 if ($package->used_sessions >= $package->total_sessions) {
-                    throw ValidationException::withMessages(['schedule' => 'Kuota sesi paket sudah habis.']);
+                    throw ValidationException::withMessages([
+                        'result' => 'Kuota sesi paket sudah habis sehingga sesi tidak dapat ditandai berhasil.',
+                    ]);
                 }
 
                 $package->used_sessions++;
@@ -111,10 +97,57 @@ class TrainerSessionController extends Controller
                     $package->status = 'completed';
                 }
                 $package->save();
-                $locked->status = 'completed';
             }
 
+            $locked->status = $data['result'];
             $locked->save();
         });
+
+        return back()->with(
+            'success',
+            $data['result'] === 'completed'
+                ? 'Sesi ditandai berhasil. Sisa sesi telah dikurangi satu.'
+                : 'Sesi ditandai tidak berhasil. Sisa sesi tidak berubah.'
+        );
+    }
+
+    private function ensureMembershipCoversDate(MemberTrainerPackage $package, string $date): void
+    {
+        $membershipActive = UserMembership::query()
+            ->where('user_id', $package->user_id)
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', today())
+            ->whereDate('end_date', '>=', today())
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
+            ->exists();
+
+        abort_unless(
+            $membershipActive,
+            422,
+            'Member harus memiliki membership aktif pada fasilitas yang sama hingga tanggal sesi.'
+        );
+    }
+
+    private function ensureNoScheduleOverlap(MemberTrainerPackage $package, array $data, ?int $ignoreId = null): void
+    {
+        $overlap = TrainerSessionSchedule::query()
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->where('session_date', $data['session_date'])
+            ->whereIn('status', ['scheduled', 'completed'])
+            ->where('start_time', '<', $data['end_time'])
+            ->where('end_time', '>', $data['start_time'])
+            ->whereHas('memberTrainerPackage', fn ($query) => $query->where(function ($sub) use ($package) {
+                $sub->where('trainer_id', $package->trainer_id)
+                    ->orWhere('user_id', $package->user_id);
+            }))
+            ->exists();
+
+        if ($overlap) {
+            throw ValidationException::withMessages([
+                'start_time' => 'Jadwal bertabrakan dengan sesi member atau trainer lain.',
+            ]);
+        }
     }
 }
