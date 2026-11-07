@@ -80,16 +80,19 @@ class ActiveMemberTrainerSeeder extends Seeder
             }
 
             // Satu jadwal demo mendatang agar riwayat sesi terlihat di halaman detail.
+            // Jam dibuat berbeda agar jadwal antar-member tidak saling bentrok pada trainer yang sama.
             $sessionDate = $today->copy()->addDays(2)->toDateString();
+            $startTime = sprintf('%02d:00:00', 8 + $index);
+            $endTime = sprintf('%02d:00:00', 9 + $index);
 
             TrainerSessionSchedule::firstOrCreate(
                 [
                     'member_trainer_package_id' => $memberPackage->id,
                     'session_date' => $sessionDate,
-                    'start_time' => '09:00:00',
+                    'start_time' => $startTime,
                 ],
                 [
-                    'end_time' => '10:00:00',
+                    'end_time' => $endTime,
                     'status' => 'scheduled',
                     'member_attended' => false,
                     'trainer_attended' => false,
