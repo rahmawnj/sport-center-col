@@ -133,7 +133,7 @@ class TrainerSessionController extends Controller
     private function ensureNoScheduleOverlap(MemberTrainerPackage $package, array $data, ?int $ignoreId = null): void
     {
         $overlap = TrainerSessionSchedule::query()
-            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->where('session_date', $data['session_date'])
             ->whereIn('status', ['scheduled', 'completed'])
             ->where('start_time', '<', $data['end_time'])
