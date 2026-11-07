@@ -65,7 +65,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('member')->name('member.')->middleware(EnsureUserRole::class.':Member')->group(function () {
         Route::get('bookings', [MemberDashboardController::class, 'bookings'])->name('bookings');
-        Route::post('trainer-schedules/{schedule}/confirm-attendance', [TrainerSessionController::class, 'confirmMember'])->name('trainer-schedules.confirm-attendance');
         Route::get('membership', [MemberDashboardController::class, 'membership'])->name('membership');
         Route::get('membership/{membership}', [MemberDashboardController::class, 'membershipShow'])->name('membership.show');
         Route::get('payments', [MemberDashboardController::class, 'payments'])->name('payments');
@@ -78,7 +77,6 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('trainer')->name('trainer.')->middleware(EnsureUserRole::class.':Trainer')->group(function () {
         Route::get('dashboard', [TrainerDashboardController::class, 'index'])->name('dashboard');
         Route::get('members', [TrainerDashboardController::class, 'members'])->name('members');
-        Route::post('schedules/{schedule}/confirm-attendance', [TrainerSessionController::class, 'confirmTrainer'])->name('schedules.confirm-attendance');
         Route::get('profile', [TrainerDashboardController::class, 'profile'])->name('profile');
     });
 
@@ -131,6 +129,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('membership-trainers', [TrainerPackageController::class, 'membershipTrainers'])->name('membership-trainers.index');
         Route::get('membership-trainers/{memberTrainerPackage}', [TrainerPackageController::class, 'membershipTrainerShow'])->name('membership-trainers.show');
         Route::post('membership-trainers/{memberTrainerPackage}/schedules', [TrainerSessionController::class, 'store'])->name('membership-trainers.schedules.store');
+        Route::put('trainer-session-schedules/{schedule}', [TrainerSessionController::class, 'update'])->name('trainer-session-schedules.update');
+        Route::post('trainer-session-schedules/{schedule}/result', [TrainerSessionController::class, 'setResult'])->name('trainer-session-schedules.result');
         Route::post('trainer-packages', [TrainerPackageController::class, 'store'])->name('trainer-packages.store');
         Route::put('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'update'])->name('trainer-packages.update');
         Route::delete('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'destroy'])->name('trainer-packages.destroy');
