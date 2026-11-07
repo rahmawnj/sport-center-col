@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
             MembershipPackageSeeder::class,
             TrainerSeeder::class,
             TrainerPackageSeeder::class,
-            ActiveMemberTrainerSeeder::class,
         ]);
 
         // This project uses its own roles table (name only) and users.role_id.
@@ -96,6 +95,7 @@ class DatabaseSeeder extends Seeder
             $profile->save();
         }
 
+        $this->call(ActiveMemberTrainerSeeder::class);
         $this->call(ReportDemoSeeder::class);
     }
 }
