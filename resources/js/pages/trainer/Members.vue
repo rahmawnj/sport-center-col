@@ -51,7 +51,7 @@ const date = (value: string | null) =>
 
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 <div v-if="members.data.length" class="divide-y divide-slate-100">
-                    <article v-for="item in members.data" :key="item.id" class="grid gap-4 p-5 md:grid-cols-[1.3fr_1fr_1fr_auto] md:items-center">
+                    <Link v-for="item in members.data" :key="item.id" :href="`/trainer/members/${item.id}`" class="group grid gap-4 p-5 transition hover:bg-lime-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lime-600 md:grid-cols-[1.3fr_1fr_1fr_auto] md:items-center">
                         <div>
                             <p class="font-semibold">{{ item.member }}</p>
                             <p class="mt-1 text-xs text-slate-500">{{ item.email || 'Email tidak tersedia' }}</p>
@@ -69,7 +69,8 @@ const date = (value: string | null) =>
                         <span class="w-fit rounded-full px-3 py-1.5 text-xs font-bold capitalize" :class="{ 'bg-emerald-50 text-emerald-700': item.status === 'active', 'bg-sky-50 text-sky-700': item.status === 'scheduled', 'bg-amber-50 text-amber-700': item.status === 'pending', 'bg-slate-100 text-slate-600': !['active', 'scheduled', 'pending'].includes(item.status) }">
                             {{ item.status === 'scheduled' ? 'Menunggu giliran' : item.status }}
                         </span>
-                    </article>
+                        <span class="flex items-center gap-1 text-sm font-semibold text-lime-700 md:justify-self-end">Detail <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span></span>
+                    </Link>
                 </div>
                 <div v-else class="p-12 text-center">
                     <h3 class="font-bold">Belum ada member binaan</h3>
