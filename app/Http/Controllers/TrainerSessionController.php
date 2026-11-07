@@ -12,17 +12,16 @@ use Illuminate\Validation\ValidationException;
 
 class TrainerSessionController extends Controller
 {
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, MemberTrainerPackage $memberTrainerPackage): RedirectResponse
     {
         $data = $request->validate([
-            'member_trainer_package_id' => ['required', 'integer', 'exists:member_trainer_packages,id'],
             'session_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
         ]);
 
         DB::transaction(function () use ($data) {
-            $package = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($data['member_trainer_package_id']);
+            $package = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($memberTrainerPackage->id);
             abort_unless($package->isActive(), 422, 'Paket trainer tidak sedang aktif atau kuotanya habis.');
             abort_unless($data['session_date'] >= $package->start_date->toDateString() && $data['session_date'] <= $package->expires_at->toDateString(), 422, 'Tanggal sesi harus berada dalam periode paket trainer.');
 
