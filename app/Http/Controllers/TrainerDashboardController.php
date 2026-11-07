@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
-use App\Models\TrainerPackage;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -88,22 +87,6 @@ class TrainerDashboardController extends Controller
     {
         $trainer = $this->trainerFor($request);
 
-        $trainerFacilityIds = $trainer->facilities()->pluck('facilities.id');
-
-        $assignedPackages = TrainerPackage::with('facility:id,name')
-            ->whereIn('facility_id', $trainerFacilityIds)
-            ->orderBy('name')
-            ->get()
-            ->map(fn ($package) => [
-                'id' => $package->id,
-                'name' => $package->name,
-                'sports' => $package->facility ? [$package->facility->name] : [],
-                'total_sessions' => $package->total_sessions,
-                'duration_days' => $package->duration_days,
-                'price' => (float) $package->price,
-                'is_active' => $package->is_active,
-            ]);
-
         $members = MemberTrainerPackage::with(['user:id,name,email', 'trainerPackage:id,name', 'facility:id,name'])
             ->where('trainer_id', $trainer->id)
             ->latest()
@@ -125,7 +108,6 @@ class TrainerDashboardController extends Controller
 
         return Inertia::render('trainer/Members', [
             'members' => $members,
-            'assignedPackages' => $assignedPackages,
         ]);
     }
 
