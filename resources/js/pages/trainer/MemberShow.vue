@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import TrainerDashboardLayout from '@/layouts/trainer/TrainerDashboardLayout.vue';
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, Dumbbell, UserRound } from 'lucide-vue-next';
+import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, Dumbbell, UserRound } from '@lucide/vue';
 
 defineOptions({ layout: TrainerDashboardLayout });
 
