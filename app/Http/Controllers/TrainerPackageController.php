@@ -181,26 +181,28 @@ class TrainerPackageController extends Controller
             })
             ->count();
 
-        $schedulePackages = (clone $activeTrainers)
-            ->with(['user:id,name', 'trainer:id,name', 'trainerPackage:id,name', 'facility:id,name'])
-            ->get()
-            ->map(fn (MemberTrainerPackage $item) => [
-                'id' => $item->id,
-                'label' => ($item->user?->name ?? 'Member').' — '.($item->trainer?->name ?? 'Trainer').' — '.($item->trainerPackage?->name ?? 'Paket').' ('.$item->remaining_sessions.' sesi)',
-            ])
-            ->values();
+        return Inertia::render('membership-trainers/Index', [
+            'rows' => $rows,
+            'filters' => ['search' => $search],
+            'stats' => [
+                'active_trainers' => (clone $activeTrainers)->count(),
+                'membership_ended' => $withoutMembership,
+                'membership_active' => (clone $activeTrainers)->count() - $withoutMembership,
+            ],
+        ]);
+    }
 
-        $sessionSchedules = \App\Models\TrainerSessionSchedule::query()
-            ->with(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name'])
-            ->latest('session_date')
-            ->latest('start_time')
-            ->limit(100)
+    public function membershipTrainerShow(MemberTrainerPackage $memberTrainerPackage): Response
+    {
+        $memberTrainerPackage->load(['user:id,name,email', 'trainer:id,name', 'trainerPackage:id,name,total_sessions,duration_days,price', 'facility:id,name']);
+
+        $schedules = \\App\\Models\\TrainerSessionSchedule::query()
+            ->where('member_trainer_package_id', $memberTrainerPackage->id)
+            ->orderByDesc('session_date')
+            ->orderByDesc('start_time')
             ->get()
             ->map(fn ($schedule) => [
                 'id' => $schedule->id,
-                'member' => $schedule->memberTrainerPackage?->user?->name,
-                'trainer' => $schedule->memberTrainerPackage?->trainer?->name,
-                'package' => $schedule->memberTrainerPackage?->trainerPackage?->name,
                 'date' => $schedule->session_date?->toDateString(),
                 'start_time' => substr((string) $schedule->start_time, 0, 5),
                 'end_time' => substr((string) $schedule->end_time, 0, 5),
@@ -209,16 +211,22 @@ class TrainerPackageController extends Controller
                 'status' => $schedule->status,
             ]);
 
-        return Inertia::render('membership-trainers/Index', [
-            'rows' => $rows,
-            'schedulePackages' => $schedulePackages,
-            'sessionSchedules' => $sessionSchedules,
-            'filters' => ['search' => $search],
-            'stats' => [
-                'active_trainers' => (clone $activeTrainers)->count(),
-                'membership_ended' => $withoutMembership,
-                'membership_active' => (clone $activeTrainers)->count() - $withoutMembership,
+        return Inertia::render('membership-trainers/Show', [
+            'item' => [
+                'id' => $memberTrainerPackage->id,
+                'member_name' => $memberTrainerPackage->user?->name,
+                'member_email' => $memberTrainerPackage->user?->email,
+                'trainer_name' => $memberTrainerPackage->trainer?->name,
+                'package_name' => $memberTrainerPackage->trainerPackage?->name,
+                'facility_name' => $memberTrainerPackage->facility?->name,
+                'start_date' => $memberTrainerPackage->start_date?->toDateString(),
+                'expires_at' => $memberTrainerPackage->expires_at?->toDateString(),
+                'total_sessions' => $memberTrainerPackage->total_sessions,
+                'used_sessions' => $memberTrainerPackage->used_sessions,
+                'remaining_sessions' => $memberTrainerPackage->remaining_sessions,
+                'status' => $memberTrainerPackage->status,
             ],
+            'schedules' => $schedules,
         ]);
     }
 
