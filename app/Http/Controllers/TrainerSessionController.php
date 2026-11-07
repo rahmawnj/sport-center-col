@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
 use App\Models\TrainerSessionSchedule;
+use App\Models\UserMembership;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,18 @@ class TrainerSessionController extends Controller
         DB::transaction(function () use ($data, $memberTrainerPackage) {
             $package = MemberTrainerPackage::query()->lockForUpdate()->findOrFail($memberTrainerPackage->id);
             abort_unless($package->isActive(), 422, 'Paket trainer tidak sedang aktif atau kuotanya habis.');
+
+            $membershipActive = UserMembership::query()
+                ->where('user_id', $package->user_id)
+                ->where('status', 'active')
+                ->whereDate('start_date', '<=', today())
+                ->whereDate('end_date', '>=', today())
+                ->whereDate('start_date', '<=', $data['session_date'])
+                ->whereDate('end_date', '>=', $data['session_date'])
+                ->whereHas('package', fn ($query) => $query->where('facility_id', $package->facility_id))
+                ->exists();
+
+            abort_unless($membershipActive, 422, 'Member harus memiliki membership aktif pada fasilitas yang sama hingga tanggal sesi untuk membuat jadwal personal trainer.');
             abort_unless($data['session_date'] >= $package->start_date->toDateString() && $data['session_date'] <= $package->expires_at->toDateString(), 422, 'Tanggal sesi harus berada dalam periode paket trainer.');
 
             $overlap = TrainerSessionSchedule::query()
