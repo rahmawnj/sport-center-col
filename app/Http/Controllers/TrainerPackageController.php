@@ -9,6 +9,7 @@ use App\Models\TrainerPackage;
 use App\Models\TrainerSessionSchedule;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\UserMembership;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -197,6 +198,18 @@ class TrainerPackageController extends Controller
     {
         $memberTrainerPackage->load(['user:id,name,email', 'trainer:id,name', 'trainerPackage:id,name,total_sessions,duration_days,price', 'facility:id,name']);
 
+        $membership = UserMembership::query()
+            ->with('package:id,name,facility_id')
+            ->where('user_id', $memberTrainerPackage->user_id)
+            ->whereHas('package', fn ($query) => $query->where('facility_id', $memberTrainerPackage->facility_id))
+            ->orderByDesc('end_date')
+            ->first();
+
+        $membershipActive = $membership
+            && $membership->status === 'active'
+            && $membership->start_date?->lte(today())
+            && $membership->end_date?->gte(today());
+
         $schedules = TrainerSessionSchedule::query()
             ->where('member_trainer_package_id', $memberTrainerPackage->id)
             ->orderByDesc('session_date')
@@ -226,6 +239,12 @@ class TrainerPackageController extends Controller
                 'used_sessions' => $memberTrainerPackage->used_sessions,
                 'remaining_sessions' => $memberTrainerPackage->remaining_sessions,
                 'status' => $memberTrainerPackage->status,
+                'membership_active' => (bool) $membershipActive,
+                'membership_package' => $membership?->package?->name,
+                'membership_end' => $membership?->end_date?->toDateString(),
+                'membership_status' => ! $membership
+                    ? 'none'
+                    : ($membershipActive ? 'active' : ($membership->status === 'active' && $membership->start_date?->gt(today()) ? 'upcoming' : 'expired')),
             ],
             'schedules' => $schedules,
         ]);
