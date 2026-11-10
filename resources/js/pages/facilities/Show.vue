@@ -80,7 +80,7 @@ type Package = {
     pricing_rules: PricingRule[];
     trainer_addons: TrainerAddon[];
 };
-type BookingTimeSlot = { id: number; start_time: string; end_time: string; is_active: boolean };
+type BookingTimeSlot = { id: number; day_type: DayType; start_time: string; end_time: string; is_active: boolean };
 type Props = {
     facility: {
         id: number;
@@ -104,12 +104,15 @@ const showBookingSlotForm = ref(false);
 const bookingSlotEditing = ref<BookingTimeSlot | null>(null);
 const bookingSlotTitle = computed(() => bookingSlotEditing.value ? 'Edit jam booking' : 'Tambah jam booking');
 const bookingSlotForm = useForm({
+    day_type: 'all' as DayType,
     start_time: '07:00',
     end_time: '22:00',
     is_active: true,
 });
 function openBookingSlotCreate() {
     bookingSlotEditing.value = null;
+    bookingSlotForm.day_type = 'all';
+    bookingSlotForm.day_type = 'all';
     bookingSlotForm.start_time = '07:00';
     bookingSlotForm.end_time = '22:00';
     bookingSlotForm.is_active = true;
@@ -119,6 +122,7 @@ function openBookingSlotCreate() {
 function editBookingSlot(slot: BookingTimeSlot) {
     bookingSlotEditing.value = slot;
     showBookingSlotForm.value = true;
+    bookingSlotForm.day_type = slot.day_type;
     bookingSlotForm.start_time = slot.start_time;
     bookingSlotForm.end_time = slot.end_time;
     bookingSlotForm.is_active = slot.is_active;
@@ -564,6 +568,7 @@ function promoRange(rule: PricingRule) {
                 <div v-for="slot in props.facility.booking_time_slots" :key="slot.id" class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm">
                     <div class="min-w-0">
                         <div class="font-medium tabular-nums">{{ slot.start_time }} – {{ slot.end_time }}</div>
+                        <div class="mt-1 text-xs text-muted-foreground">{{ slot.day_type === 'all' ? 'Semua hari' : slot.day_type === 'weekday' ? 'Senin–Jumat' : 'Sabtu–Minggu' }}</div>
                         <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium" :class="slot.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">
                             {{ slot.is_active ? 'Aktif' : 'Nonaktif' }}
                         </span>
@@ -1235,6 +1240,15 @@ function promoRange(rule: PricingRule) {
             </div>
             <form class="space-y-5 p-5" @submit.prevent="submitBookingSlot">
                 <div class="grid gap-4">
+                    <div class="grid gap-2">
+                        <Label for="booking-day-type">Berlaku pada hari</Label>
+                        <select id="booking-day-type" v-model="bookingSlotForm.day_type" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                            <option value="all">Semua hari (Senin–Minggu)</option>
+                            <option value="weekday">Weekday (Senin–Jumat)</option>
+                            <option value="weekend">Weekend (Sabtu–Minggu)</option>
+                        </select>
+                        <p v-if="bookingSlotForm.errors.day_type" class="text-xs text-destructive">{{ bookingSlotForm.errors.day_type }}</p>
+                    </div>
                     <div class="grid gap-2">
                         <Label for="booking-start">Jam mulai</Label>
                         <Input id="booking-start" v-model="bookingSlotForm.start_time" type="time" required />
