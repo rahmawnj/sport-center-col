@@ -252,7 +252,16 @@ class TransactionController extends Controller
                     ->lockForUpdate()
                     ->get();
 
-                if ($childStatus === 'active' && $participants->contains(fn (SessionParticipant $participant) => $participant->schedule?->status !== 'scheduled')) {
+                $hasCancelledParticipant = SessionParticipant::query()
+                    ->where('transaction_id', $locked->id)
+                    ->where('status', 'cancelled')
+                    ->exists();
+
+                if ($childStatus === 'active' && (
+                    $participants->isEmpty()
+                    || $hasCancelledParticipant
+                    || $participants->contains(fn (SessionParticipant $participant) => $participant->schedule?->status !== 'scheduled')
+                )) {
                     throw ValidationException::withMessages([
                         'payment_status' => 'Jadwal kelas sudah dibatalkan atau selesai. Pembayaran tidak dapat dikonfirmasi.',
                     ]);
