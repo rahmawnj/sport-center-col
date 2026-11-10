@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, Pencil, X, Save, Check, Ban } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 type Item = { id:number; member_name:string|null; member_email:string|null; trainer_name:string|null; package_name:string|null; facility_name:string|null; start_date:string|null; expires_at:string|null; total_sessions:number; used_sessions:number; remaining_sessions:number; status:string; membership_active:boolean; membership_package:string|null; membership_end:string|null; membership_status:string };
-type Schedule = { id:number; date:string; start_time:string; end_time:string; member_attended:boolean; trainer_attended:boolean; status:string };
+type Schedule = { id:number; date:string; start_time:string; end_time:string; member_attended:boolean; trainer_attended:boolean; member_confirmed_at:string|null; trainer_confirmed_at:string|null; status:string };
 const props = defineProps<{ item:Item; schedules:Schedule[] }>();
 const form = useForm({ session_date:'', start_time:'09:00', end_time:'10:00' });
 const editingId = ref<number|null>(null);
@@ -14,6 +14,7 @@ function beginEdit(schedule:Schedule){ editingId.value=schedule.id; editForm.cle
 function cancelEdit(){ editingId.value=null; editForm.reset(); editForm.clearErrors(); }
 function saveEdit(id:number){ editForm.put('/trainer-session-schedules/'+id,{onSuccess:cancelEdit}); }
 function setResult(id:number,result:'completed'|'failed'){ const label=result==='completed'?'BERHASIL':'TIDAK BERHASIL'; if(window.confirm('Tandai sesi ini '+label+'? '+(result==='completed'?'Sisa sesi akan berkurang satu.':'Sisa sesi tidak akan berkurang.'))) router.post('/trainer-session-schedules/'+id+'/result',{result}); }
+function attendanceLabel(confirmedAt:string|null,attended:boolean){ return !confirmedAt ? 'Belum dikonfirmasi' : (attended ? 'Hadir' : 'Tidak hadir'); }
 function statusLabel(status:string){ return ({scheduled:'Menunggu hasil',completed:'Berhasil',failed:'Tidak berhasil'} as Record<string,string>)[status] || status; }
 function formatDate(value:string|null){ return value ? new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(value)) : '—'; }
 </script>
@@ -43,11 +44,17 @@ function formatDate(value:string|null){ return value ? new Intl.DateTimeFormat('
 </div>
 <template v-else>
 <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="font-medium">{{formatDate(schedule.date)}}</p><p class="mt-1 text-sm text-muted-foreground">{{schedule.start_time}}–{{schedule.end_time}}</p></div><span class="rounded-full px-3 py-1 text-xs font-semibold" :class="schedule.status==='completed'?'bg-emerald-500/10 text-emerald-700':schedule.status==='failed'?'bg-rose-500/10 text-rose-700':'bg-muted text-muted-foreground'">{{statusLabel(schedule.status)}}</span></div>
+<div class="grid gap-2 rounded-xl bg-muted/40 p-3 sm:grid-cols-2">
+<div><p class="text-xs text-muted-foreground">Konfirmasi member</p><p class="mt-1 text-sm font-semibold" :class="schedule.member_confirmed_at ? (schedule.member_attended?'text-emerald-700':'text-rose-700') : 'text-amber-700'">{{attendanceLabel(schedule.member_confirmed_at,schedule.member_attended)}}</p></div>
+<div><p class="text-xs text-muted-foreground">Konfirmasi trainer</p><p class="mt-1 text-sm font-semibold" :class="schedule.trainer_confirmed_at ? (schedule.trainer_attended?'text-emerald-700':'text-rose-700') : 'text-amber-700'">{{attendanceLabel(schedule.trainer_confirmed_at,schedule.trainer_attended)}}</p></div>
+</div>
 <div v-if="schedule.status==='scheduled'" class="flex flex-wrap gap-2">
 <Button size="sm" variant="outline" @click="beginEdit(schedule)"><Pencil class="mr-1 size-3.5"/>Edit jadwal</Button>
-<Button size="sm" :disabled="new Date(schedule.date+'T'+schedule.end_time) > new Date()" @click="setResult(schedule.id,'completed')"><Check class="mr-1 size-3.5"/>Berhasil</Button>
+<Button size="sm" :disabled="new Date(schedule.date+'T'+schedule.end_time) > new Date() || !schedule.member_confirmed_at || !schedule.trainer_confirmed_at || !schedule.member_attended || !schedule.trainer_attended" @click="setResult(schedule.id,'completed')"><Check class="mr-1 size-3.5"/>Berhasil</Button>
 <Button size="sm" variant="destructive" :disabled="new Date(schedule.date+'T'+schedule.end_time) > new Date()" @click="setResult(schedule.id,'failed')"><Ban class="mr-1 size-3.5"/>Tidak berhasil</Button>
-<p v-if="new Date(schedule.date+'T'+schedule.end_time) > new Date()" class="w-full text-xs text-muted-foreground">Hasil sesi baru bisa ditentukan setelah jam sesi berakhir.</p>
+<p v-if="!schedule.member_confirmed_at || !schedule.trainer_confirmed_at" class="w-full text-xs text-amber-700">Menunggu konfirmasi dari {{!schedule.member_confirmed_at && !schedule.trainer_confirmed_at ? 'member dan trainer' : (!schedule.member_confirmed_at ? 'member' : 'trainer')}}.</p>
+<p v-else-if="!schedule.member_attended || !schedule.trainer_attended" class="w-full text-xs text-rose-700">Sesi tidak dapat ditandai berhasil karena salah satu pihak mengonfirmasi tidak hadir.</p>
+<p v-if="new Date(schedule.date+'T'+schedule.end_time) > new Date()" class="w-full text-xs text-muted-foreground">Konfirmasi dan hasil sesi baru bisa dilakukan setelah jam sesi berakhir.</p>
 </div>
 <p v-else class="text-xs text-muted-foreground">{{schedule.status==='completed'?'Kuota sudah dikurangi satu sesi.':'Sesi ditutup tanpa mengurangi kuota.'}}</p>
 </template>
