@@ -117,6 +117,12 @@ const bookingDays: { value: BookingDay; label: string }[] = [
     { value: 'friday', label: 'Jumat' }, { value: 'saturday', label: 'Sabtu' },
     { value: 'sunday', label: 'Minggu' },
 ];
+const bookingSlotsByDay = computed(() => bookingDays.map((day) => ({
+    ...day,
+    slots: props.facility.booking_time_slots
+        .filter((slot) => slot.day === day.value)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time)),
+})));
 function getBookingSlotSuggestion(day: BookingDay): { startTime: string | null; previousEnd: string | null } {
     const latestSlot = props.facility.booking_time_slots.filter((slot) => slot.is_active && slot.day === day).sort((a, b) => b.end_time.localeCompare(a.end_time))[0];
     if (!latestSlot) return { startTime: '07:00', previousEnd: null };
@@ -576,29 +582,48 @@ function promoRange(rule: PricingRule) {
             <p class="text-sm text-muted-foreground">
                 Jam operasional untuk booking online dan kasir. Jeda antar-slot mengikuti pengaturan fasilitas ({{ props.facility.turnaround_minutes }} menit).
             </p>
-            <div v-if="props.facility.booking_time_slots.length" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <div v-for="slot in props.facility.booking_time_slots" :key="slot.id" class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm">
-                    <div class="min-w-0">
-                        <div class="font-medium tabular-nums">{{ slot.start_time }} – {{ slot.end_time }}</div>
-                        <div class="mt-1 text-xs text-muted-foreground">{{ bookingDays.find((day) => day.value === slot.day)?.label ?? slot.day }} · {{ formatIDR(slot.price) }}/jam</div>
-                        <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium" :class="slot.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">
-                            {{ slot.is_active ? 'Aktif' : 'Nonaktif' }}
-                        </span>
+            <div class="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                <div v-for="(day, index) in bookingSlotsByDay" :key="day.value" class="border-b last:border-b-0">
+                    <div class="flex items-center justify-between gap-3 bg-muted/30 px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold">{{ day.label }}</span>
+                            <span class="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">{{ day.slots.length }} rentang</span>
+                        </div>
+                        <Button size="sm" variant="outline" @click="bookingSlotForm.day = day.value; openBookingSlotCreate(); bookingSlotForm.day = day.value">
+                            <Plus class="mr-1 size-3.5" />Tambah
+                        </Button>
                     </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger as-child>
-                            <Button variant="ghost" size="icon"><EllipsisVertical class="size-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem @click="editBookingSlot(slot)"><Pencil class="mr-2 size-4" />Edit</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem class="text-destructive focus:text-destructive" @click="removeBookingSlot(slot)"><Trash2 class="mr-2 size-4" />Hapus</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div v-if="day.slots.length" class="divide-y">
+                        <div v-for="slot in day.slots" :key="slot.id" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2">
+                                <div class="min-w-[130px]">
+                                    <div class="text-xs text-muted-foreground">Jam operasional</div>
+                                    <div class="font-medium tabular-nums">{{ slot.start_time }} – {{ slot.end_time }}</div>
+                                </div>
+                                <div class="min-w-[130px]">
+                                    <div class="text-xs text-muted-foreground">Harga per jam</div>
+                                    <div class="font-semibold tabular-nums">{{ formatIDR(slot.price) }}</div>
+                                </div>
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="slot.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">
+                                    {{ slot.is_active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="ghost" size="icon"><EllipsisVertical class="size-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem @click="editBookingSlot(slot)"><Pencil class="mr-2 size-4" />Edit</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem class="text-destructive focus:text-destructive" @click="removeBookingSlot(slot)"><Trash2 class="mr-2 size-4" />Hapus</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                    <div v-else class="px-4 py-4 text-sm text-muted-foreground">
+                        Belum ada jam operasional untuk hari {{ day.label }}.
+                    </div>
                 </div>
-            </div>
-            <div v-else class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm">
-                Belum ada jam booking. Tambahkan rentang jam operasional agar fasilitas ini bisa menerima booking.
             </div>
         </section>
 
