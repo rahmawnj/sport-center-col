@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassSchedule;
 use App\Models\SessionParticipant;
-use App\Models\SportClass;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,35 +19,54 @@ class MemberClassController extends Controller
     {
         $schedules = ClassSchedule::query()
             ->with(['sportClass.facility:id,name', 'trainer:id,name,specialty'])
-            ->withCount(['participants as registered_count' => fn ($query) => $query->whereIn('status', ['pending', 'confirmed'])])
-            ->where('status', 'scheduled')
-            ->where(function ($query) {
-                $query->whereDate('session_date', '>', today())
-                    ->orWhere(function ($todayQuery) {
-                        $todayQuery->whereDate('session_date', today())
-                            ->whereTime('start_time', '>', now()->format('H:i:s'));
-                    });
-            })
+            ->where('is_active', true)
             ->whereHas('sportClass', fn ($query) => $query->where('is_active', true)
                 ->whereHas('facility', fn ($facility) => $facility->where('status', 'active')))
-            ->orderBy('session_date')
+            ->orderBy('day')
             ->orderBy('start_time')
             ->get()
-            ->map(fn (ClassSchedule $schedule) => [
-                'id' => $schedule->id,
-                'class_name' => $schedule->sportClass?->name,
-                'description' => $schedule->sportClass?->description,
-                'facility' => $schedule->sportClass?->facility?->name,
-                'trainer' => $schedule->trainer?->name,
-                'trainer_specialty' => $schedule->trainer?->specialty,
-                'date' => $schedule->session_date?->toDateString(),
-                'start_time' => substr((string) $schedule->start_time, 0, 5),
-                'end_time' => substr((string) $schedule->end_time, 0, 5),
-                'capacity' => (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1),
-                'registered_count' => (int) $schedule->registered_count,
-                'available_count' => max(0, (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1) - (int) $schedule->registered_count),
-                'price' => (float) $schedule->price,
-            ]);
+            ->flatMap(function (ClassSchedule $schedule) {
+                $dates = collect();
+                $today = today();
+                $dayNumber = Carbon::parse('next '.$schedule->day)->dayOfWeekIso;
+                $offset = ($dayNumber - $today->dayOfWeekIso + 7) % 7;
+                $firstDate = $today->copy()->addDays($offset);
+
+                if ($offset === 0 && $schedule->start_time <= now()->format('H:i:s')) {
+                    $firstDate->addWeek();
+                }
+
+                for ($week = 0; $week < 6; $week++) {
+                    $date = $firstDate->copy()->addWeeks($week);
+                    $registered = SessionParticipant::query()
+                        ->where('class_schedule_id', $schedule->id)
+                        ->whereDate('session_date', $date->toDateString())
+                        ->whereIn('status', ['pending', 'confirmed'])
+                        ->count();
+                    $capacity = (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1);
+
+                    $dates->push([
+                        'id' => $schedule->id,
+                        'session_date' => $date->toDateString(),
+                        'class_name' => $schedule->sportClass?->name,
+                        'description' => $schedule->sportClass?->description,
+                        'facility' => $schedule->sportClass?->facility?->name,
+                        'trainer' => $schedule->trainer?->name,
+                        'trainer_specialty' => $schedule->trainer?->specialty,
+                        'day' => $schedule->day,
+                        'start_time' => substr((string) $schedule->start_time, 0, 5),
+                        'end_time' => substr((string) $schedule->end_time, 0, 5),
+                        'capacity' => $capacity,
+                        'registered_count' => $registered,
+                        'available_count' => max(0, $capacity - $registered),
+                        'price' => (float) $schedule->price,
+                    ]);
+                }
+
+                return $dates;
+            })
+            ->sortBy(fn ($item) => $item['session_date'].' '.$item['start_time'])
+            ->values();
 
         return Inertia::render('member/Classes', ['schedules' => $schedules]);
     }
@@ -56,6 +75,7 @@ class MemberClassController extends Controller
     {
         $data = $request->validate([
             'payment_method' => ['required', 'in:cash,bank_transfer'],
+            'session_date' => ['required', 'date', 'after_or_equal:today'],
         ]);
 
         $transaction = DB::transaction(function () use ($request, $schedule, $data) {
@@ -64,42 +84,41 @@ class MemberClassController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($schedule->id);
 
-            abort_unless($lockedSchedule->status === 'scheduled', 422, 'Jadwal kelas tidak menerima pendaftaran.');
+            abort_unless($lockedSchedule->is_active, 422, 'Jadwal kelas sedang tidak aktif.');
             abort_unless($lockedSchedule->sportClass?->is_active && $lockedSchedule->sportClass?->facility?->status === 'active', 422, 'Kelas atau fasilitas sedang tidak aktif.');
-            abort_if(
-                $lockedSchedule->session_date->lt(today()) ||
-                ($lockedSchedule->session_date->isToday() && $lockedSchedule->start_time <= now()->format('H:i:s')),
-                422,
-                'Pendaftaran untuk jadwal yang sudah lewat tidak tersedia.'
-            );
+
+            $sessionDate = Carbon::parse($data['session_date'])->startOfDay();
+            abort_unless(strtolower($sessionDate->englishDayOfWeek) === $lockedSchedule->day, 422, 'Tanggal tidak sesuai dengan hari jadwal kelas.');
+            abort_if($sessionDate->isToday() && $lockedSchedule->start_time <= now()->format('H:i:s'), 422, 'Pendaftaran untuk sesi yang sudah lewat tidak tersedia.');
 
             $participant = SessionParticipant::query()
                 ->where('class_schedule_id', $lockedSchedule->id)
+                ->where('session_date', $sessionDate->toDateString())
                 ->where('user_id', $request->user()->id)
                 ->lockForUpdate()
                 ->first();
 
             if ($participant && $participant->status !== 'cancelled') {
                 throw ValidationException::withMessages([
-                    'schedule' => 'Kamu sudah terdaftar atau memiliki pendaftaran yang menunggu pembayaran untuk kelas ini.',
+                    'schedule' => 'Kamu sudah terdaftar atau memiliki pendaftaran yang menunggu pembayaran untuk sesi ini.',
                 ]);
             }
 
             $capacity = (int) ($lockedSchedule->capacity ?? $lockedSchedule->sportClass->default_capacity ?? 1);
             $registered = SessionParticipant::query()
                 ->where('class_schedule_id', $lockedSchedule->id)
+                ->where('session_date', $sessionDate->toDateString())
                 ->whereIn('status', ['pending', 'confirmed'])
                 ->count();
 
             if ($registered >= $capacity) {
                 throw ValidationException::withMessages([
-                    'schedule' => 'Kuota kelas sudah penuh. Silakan pilih jadwal lain.',
+                    'schedule' => 'Kuota sesi kelas sudah penuh. Silakan pilih tanggal lain.',
                 ]);
             }
 
             $user = $request->user();
             $price = (float) $lockedSchedule->price;
-
             $transaction = Transaction::query()->create([
                 'user_id' => $user->id,
                 'guest_name' => $user->name,
@@ -110,6 +129,7 @@ class MemberClassController extends Controller
             ]);
 
             $participantData = [
+                'session_date' => $sessionDate->toDateString(),
                 'transaction_id' => $transaction->id,
                 'price' => $price,
                 'status' => 'pending',
