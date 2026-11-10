@@ -19,7 +19,7 @@ return new class extends Migration
             $day = strtolower(date('l', strtotime($schedule->session_date)));
             DB::table('class_schedules')->where('id', $schedule->id)->update([
                 'day' => $day,
-                'is_active' => $schedule->status === 'cancelled' ? false : true,
+                'is_active' => $schedule->status === 'scheduled',
             ]);
         }
 
