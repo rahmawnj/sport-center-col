@@ -104,6 +104,16 @@ class FacilityController extends Controller
                     'name' => $trainer->name,
                     'specialty' => $trainer->specialty,
                 ])->values(),
+                'booking_time_slots' => BookingTimeSlot::query()
+                    ->where('facility_id', $facility->id)
+                    ->orderBy('start_time')
+                    ->get()
+                    ->map(fn (BookingTimeSlot $slot) => [
+                        'id' => $slot->id,
+                        'start_time' => substr((string) $slot->start_time, 0, 5),
+                        'end_time' => substr((string) $slot->end_time, 0, 5),
+                        'is_active' => (bool) $slot->is_active,
+                    ])->values(),
                 'devices' => $facility->devices->map(fn ($device) => [
                     'id' => $device->id,
                     'name' => $device->name,
