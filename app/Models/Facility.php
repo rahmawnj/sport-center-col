@@ -36,6 +36,11 @@ class Facility extends Model
         return $this->hasMany(Package::class);
     }
 
+    public function classes(): HasMany
+    {
+        return $this->hasMany(SportClass::class);
+    }
+
     public function trainers(): BelongsToMany
     {
         return $this->belongsToMany(Trainer::class)->withTimestamps();
