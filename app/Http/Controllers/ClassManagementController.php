@@ -165,7 +165,36 @@ class ClassManagementController extends Controller
             throw ValidationException::withMessages(['status' => 'Jadwal yang belum berlangsung tidak bisa ditandai selesai.']);
         }
 
-        $schedule->update(['status' => $data['status']]);
+        DB::transaction(function () use ($schedule, $data) {
+            $lockedSchedule = ClassSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
+
+            if ($data['status'] === 'cancelled') {
+                $unresolvedPaidParticipants = $lockedSchedule->participants()
+                    ->whereIn('status', ['pending', 'confirmed'])
+                    ->whereHas('transaction', fn ($query) => $query->whereNotIn('payment_status', ['unpaid', 'failed', 'refunded']))
+                    ->exists();
+
+                if ($unresolvedPaidParticipants) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Ada peserta yang sudah membayar atau membayar DP. Tandai transaksinya sebagai refunded terlebih dahulu sebelum membatalkan kelas.',
+                    ]);
+                }
+
+                $pendingParticipants = $lockedSchedule->participants()
+                    ->where('status', 'pending')
+                    ->with('transaction')
+                    ->get();
+
+                foreach ($pendingParticipants as $participant) {
+                    if ($participant->transaction?->payment_status === 'unpaid') {
+                        $participant->transaction->update(['payment_status' => 'failed']);
+                    }
+                    $participant->update(['status' => 'cancelled']);
+                }
+            }
+
+            $lockedSchedule->update(['status' => $data['status']]);
+        });
 
         return back()->with('success', 'Status jadwal berhasil diperbarui.');
     }
