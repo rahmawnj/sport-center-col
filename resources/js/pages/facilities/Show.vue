@@ -109,11 +109,42 @@ const bookingSlotForm = useForm({
     end_time: '22:00',
     is_active: true,
 });
+function getBookingSlotSuggestion(dayType: DayType): { startTime: string | null; previousEnd: string | null } {
+    const relevantTypes: DayType[] = dayType === 'all'
+        ? ['all', 'weekday', 'weekend']
+        : ['all', dayType];
+
+    const latestSlot = props.facility.booking_time_slots
+        .filter((slot) => slot.is_active && relevantTypes.includes(slot.day_type))
+        .sort((a, b) => b.end_time.localeCompare(a.end_time))[0];
+
+    if (!latestSlot) {
+        return { startTime: '07:00', previousEnd: null };
+    }
+
+    const [hours, minutes] = latestSlot.end_time.split(':').map(Number);
+    const totalMinutes = (hours * 60) + minutes + Math.max(0, props.facility.turnaround_minutes);
+    if (totalMinutes >= 24 * 60) {
+        return { startTime: null, previousEnd: latestSlot.end_time.slice(0, 5) };
+    }
+
+    const suggestedHours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+    const suggestedMinutes = (totalMinutes % 60).toString().padStart(2, '0');
+
+    return {
+        startTime: `${suggestedHours}:${suggestedMinutes}`,
+        previousEnd: latestSlot.end_time.slice(0, 5),
+    };
+}
+
+function applyBookingSlotSuggestion() {
+    bookingSlotForm.start_time = getBookingSlotSuggestion(bookingSlotForm.day_type).startTime ?? '';
+}
+
 function openBookingSlotCreate() {
     bookingSlotEditing.value = null;
     bookingSlotForm.day_type = 'all';
-    bookingSlotForm.day_type = 'all';
-    bookingSlotForm.start_time = '07:00';
+    bookingSlotForm.start_time = getBookingSlotSuggestion('all').startTime ?? '';
     bookingSlotForm.end_time = '22:00';
     bookingSlotForm.is_active = true;
     bookingSlotForm.clearErrors();
@@ -1242,12 +1273,20 @@ function promoRange(rule: PricingRule) {
                 <div class="grid gap-4">
                     <div class="grid gap-2">
                         <Label for="booking-day-type">Berlaku pada hari</Label>
-                        <select id="booking-day-type" v-model="bookingSlotForm.day_type" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <select id="booking-day-type" v-model="bookingSlotForm.day_type" @change="applyBookingSlotSuggestion" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
                             <option value="all">Semua hari (Senin–Minggu)</option>
                             <option value="weekday">Weekday (Senin–Jumat)</option>
                             <option value="weekend">Weekend (Sabtu–Minggu)</option>
                         </select>
                         <p v-if="bookingSlotForm.errors.day_type" class="text-xs text-destructive">{{ bookingSlotForm.errors.day_type }}</p>
+                        <p class="text-xs text-muted-foreground">
+                            <template v-if="getBookingSlotSuggestion(bookingSlotForm.day_type).previousEnd">
+                                Saran otomatis: {{ getBookingSlotSuggestion(bookingSlotForm.day_type).startTime ?? 'Tidak tersedia' }} ({{ getBookingSlotSuggestion(bookingSlotForm.day_type).previousEnd }} + jeda {{ props.facility.turnaround_minutes }} menit).
+                            </template>
+                            <template v-else>
+                                Belum ada rentang aktif untuk jenis hari ini. Saran awal: 07:00.
+                            </template>
+                        </p>
                     </div>
                     <div class="grid gap-2">
                         <Label for="booking-start">Jam mulai</Label>
