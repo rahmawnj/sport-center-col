@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { Form, Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     Building2,
@@ -80,6 +80,7 @@ type Package = {
     pricing_rules: PricingRule[];
     trainer_addons: TrainerAddon[];
 };
+type BookingTimeSlot = { id: number; start_time: string; end_time: string; is_active: boolean };
 type Props = {
     facility: {
         id: number;
@@ -93,10 +94,46 @@ type Props = {
         packages: Package[];
         trainers: Trainer[];
         devices: Device[];
+        booking_time_slots: BookingTimeSlot[];
     };
 };
 
 const props = defineProps<Props>();
+
+const bookingSlotEditing = ref<BookingTimeSlot | null>(null);
+const bookingSlotForm = useForm({
+    start_time: '07:00',
+    end_time: '22:00',
+    is_active: true,
+});
+function editBookingSlot(slot: BookingTimeSlot) {
+    bookingSlotEditing.value = slot;
+    bookingSlotForm.start_time = slot.start_time;
+    bookingSlotForm.end_time = slot.end_time;
+    bookingSlotForm.is_active = slot.is_active;
+    bookingSlotForm.clearErrors();
+}
+function resetBookingSlotForm() {
+    bookingSlotEditing.value = null;
+    bookingSlotForm.reset();
+    bookingSlotForm.clearErrors();
+    bookingSlotForm.start_time = '07:00';
+    bookingSlotForm.end_time = '22:00';
+    bookingSlotForm.is_active = true;
+}
+function submitBookingSlot() {
+    const url = `/facilities/${props.facility.id}/booking-time-slots`;
+    const options = { preserveScroll: true, onSuccess: resetBookingSlotForm };
+    if (bookingSlotEditing.value) {
+        bookingSlotForm.put(`${url}/${bookingSlotEditing.value.id}`, options);
+    } else {
+        bookingSlotForm.post(url, options);
+    }
+}
+function removeBookingSlot(slot: BookingTimeSlot) {
+    if (!window.confirm(`Hapus rentang jam ${slot.start_time}–${slot.end_time}?`)) return;
+    router.delete(`/facilities/${props.facility.id}/booking-time-slots/${slot.id}`, { preserveScroll: true });
+}
 
 const statusMeta: Record<
     FacilityStatus,
@@ -489,6 +526,72 @@ function promoRange(rule: PricingRule) {
                 <div class="mt-2 font-medium">{{ item.value }}</div>
             </div>
         </div>
+
+
+        <section class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Clock class="size-5" />
+                    </div>
+                    <div>
+                        <h2 class="font-semibold">Master Jam Booking</h2>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Atur jam operasional fasilitas ini. Booking online dan kasir memakai jadwal yang sama.
+                            Jeda antar-slot mengikuti pengaturan fasilitas: {{ props.facility.turnaround_minutes }} menit.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form class="grid gap-3 rounded-xl border bg-muted/20 p-4 md:grid-cols-[1fr_1fr_auto_auto]" @submit.prevent="submitBookingSlot">
+                <div class="grid gap-1.5">
+                    <Label for="booking-start">Jam mulai</Label>
+                    <Input id="booking-start" v-model="bookingSlotForm.start_time" type="time" required />
+                    <p v-if="bookingSlotForm.errors.start_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.start_time }}</p>
+                </div>
+                <div class="grid gap-1.5">
+                    <Label for="booking-end">Jam selesai</Label>
+                    <Input id="booking-end" v-model="bookingSlotForm.end_time" type="time" required />
+                    <p v-if="bookingSlotForm.errors.end_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.end_time }}</p>
+                </div>
+                <label class="flex items-center gap-2 self-end pb-2 text-sm">
+                    <input v-model="bookingSlotForm.is_active" type="checkbox" class="size-4 rounded border" />
+                    Aktif
+                </label>
+                <div class="flex items-end gap-2">
+                    <Button type="submit" size="sm" :disabled="bookingSlotForm.processing">
+                        {{ bookingSlotForm.processing ? 'Menyimpan...' : bookingSlotEditing ? 'Simpan' : 'Tambah jam' }}
+                    </Button>
+                    <Button v-if="bookingSlotEditing" type="button" size="sm" variant="outline" @click="resetBookingSlotForm">Batal</Button>
+                </div>
+            </form>
+
+            <div v-if="props.facility.booking_time_slots.length" class="divide-y rounded-xl border">
+                <div v-for="slot in props.facility.booking_time_slots" :key="slot.id" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <div class="font-medium tabular-nums">{{ slot.start_time }} – {{ slot.end_time }}</div>
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="slot.is_active ? 'bg-emerald-500/10 text-emerald-700' : 'bg-muted text-muted-foreground'">
+                            {{ slot.is_active ? 'Aktif' : 'Nonaktif' }}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <Button type="button" size="sm" variant="ghost" @click="editBookingSlot(slot)">
+                            <Pencil class="mr-1.5 size-3.5" /> Edit
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" class="text-destructive" @click="removeBookingSlot(slot)">
+                            <Trash2 class="mr-1.5 size-3.5" /> Hapus
+                        </Button>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+                Belum ada jam booking. Tambahkan rentang jam operasional agar fasilitas ini bisa menerima booking.
+            </div>
+            <p class="text-xs text-muted-foreground">
+                Slot booking akan dibuat otomatis berdasarkan durasi paket. Rentang aktif tidak boleh tumpang tindih atau terlalu berdekatan.
+            </p>
+        </section>
 
         <section class="space-y-3">
             <div class="flex items-center justify-between gap-2">
