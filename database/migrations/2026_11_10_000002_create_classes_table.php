@@ -15,7 +15,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->unsignedSmallInteger('duration_minutes');
             $table->unsignedSmallInteger('default_capacity')->default(1);
-            $table->decimal('price', 12, 2)->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
