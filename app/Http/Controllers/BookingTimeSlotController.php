@@ -13,6 +13,7 @@ class BookingTimeSlotController extends Controller
     public function store(Request $request, Facility $facility): RedirectResponse
     {
         $data = $request->validate([
+            'day_type' => ['required', 'in:all,weekday,weekend'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'is_active' => ['required', 'boolean'],
@@ -62,8 +63,9 @@ class BookingTimeSlotController extends Controller
         $conflict = BookingTimeSlot::query()
             ->where('facility_id', $data['facility_id'])
             ->where('is_active', true)
+            ->whereIn('day_type', $data['day_type'] === 'all' ? ['all', 'weekday', 'weekend'] : ['all', $data['day_type']])
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
-            ->get(['start_time', 'end_time'])
+            ->get(['day_type', 'start_time', 'end_time'])
             ->contains(function (BookingTimeSlot $slot) use ($start, $end, $turnaround) {
                 $otherStart = $this->toMinutes((string) $slot->start_time);
                 $otherEnd = $this->toMinutes((string) $slot->end_time);
