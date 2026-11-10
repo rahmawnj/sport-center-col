@@ -9,6 +9,7 @@ type Payment = {
   invoice_number: string | null;
   customer_name: string | null;
   transaction_type: string | null;
+  class_details: {name:string|null;facility:string|null;trainer:string|null;date:string|null;start_time:string;end_time:string} | null;
   amount: number;
   payment_method: string | null;
   payment_status: string;
@@ -21,7 +22,7 @@ type Payment = {
 const props = defineProps<{ payment: Payment }>();
 
 const cancelPayment = () => {
-  if (!window.confirm('Yakin ingin membatalkan pembayaran ini? Paket terkait juga akan dibatalkan.')) return;
+  if (!window.confirm('Yakin ingin membatalkan pembayaran ini? Pendaftaran kelas atau paket terkait juga akan dibatalkan.')) return;
   router.post('/member/payments/' + props.payment.id + '/cancel');
 };
 
@@ -42,7 +43,7 @@ const methodLabel = (value: string | null) =>
   ({ cash: 'Tunai', bank_transfer: 'Transfer bank', qris: 'QRIS' }[value || ''] || value || 'Belum ditentukan');
 
 const typeLabel = (value: string | null) =>
-  value === 'membership' ? 'Membership + Personal Trainer' : value === 'trainer_package' ? 'Personal Trainer' : value === 'booking' ? 'Booking' : 'Transaksi';
+  value === 'membership' ? 'Membership + Personal Trainer' : value === 'trainer_package' ? 'Personal Trainer' : value === 'booking' ? 'Booking' : value === 'class' ? 'Kelas' : 'Transaksi';
 </script>
 
 <template>
@@ -72,6 +73,8 @@ const typeLabel = (value: string | null) =>
           {{ payment.cancelled_at ? 'Dibatalkan' : statusLabel(payment.payment_status) }}
         </span>
       </div>
+
+      <div v-if="payment.class_details" class="border-b border-slate-100 bg-lime-50/50 px-6 py-4"><p class="text-xs font-bold uppercase tracking-wider text-lime-800">Detail kelas</p><p class="mt-2 font-bold text-slate-900">{{ payment.class_details.name }}</p><p class="mt-1 text-sm text-slate-600">{{ payment.class_details.facility }} · {{ payment.class_details.trainer || 'Trainer belum ditentukan' }}</p><p class="mt-1 text-sm text-slate-600">{{ payment.class_details.date ? new Date(payment.class_details.date + 'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) : '—' }} · {{ payment.class_details.start_time }}–{{ payment.class_details.end_time }}</p></div>
 
       <div class="divide-y divide-slate-100 px-6">
         <div class="flex flex-wrap justify-between gap-2 py-4">
