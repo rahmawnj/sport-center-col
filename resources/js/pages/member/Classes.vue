@@ -15,7 +15,7 @@ function register(s:Schedule,payment_method:'cash'|'bank_transfer'){if(busy.valu
 <div class="space-y-6">
 <header><p class="text-xs font-bold uppercase tracking-[.18em] text-lime-700">Aktivitas olahraga</p><h1 class="mt-2 text-2xl font-bold text-slate-900">Kelas & Jadwal</h1><p class="mt-1 text-sm text-slate-500">Temukan kelas yang tersedia dan amankan tempatmu.</p></header>
 <div v-if="schedules.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-<article v-for="s in schedules" :key="s.id" class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+<article v-for="s in schedules" :key="s.id + '-' + s.session_date" class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 <div class="flex items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-wider text-lime-700">{{s.facility||'Sport Center'}}</p><h2 class="mt-1 text-xl font-bold text-slate-900">{{s.class_name}}</h2></div><span class="rounded-full bg-lime-50 px-3 py-1 text-xs font-bold text-lime-800">{{s.available_count}} slot</span></div>
 <p v-if="s.description" class="mt-3 line-clamp-2 text-sm text-slate-500">{{s.description}}</p>
 <div class="mt-4 space-y-2 text-sm text-slate-600"><p>📅 {{dateLabel(s.session_date)}}</p><p>🕒 {{s.start_time}}–{{s.end_time}}</p><p>🏋️ {{s.trainer||'Trainer akan diumumkan'}}</p><p>👥 {{s.registered_count}} dari {{s.capacity}} peserta</p></div>
