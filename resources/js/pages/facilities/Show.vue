@@ -80,7 +80,8 @@ type Package = {
     pricing_rules: PricingRule[];
     trainer_addons: TrainerAddon[];
 };
-type BookingTimeSlot = { id: number; day_type: DayType; start_time: string; end_time: string; is_active: boolean };
+type BookingDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+type BookingTimeSlot = { id: number; day: BookingDay; start_time: string; end_time: string; price: number; is_active: boolean };
 type Props = {
     facility: {
         id: number;
@@ -104,60 +105,38 @@ const showBookingSlotForm = ref(false);
 const bookingSlotEditing = ref<BookingTimeSlot | null>(null);
 const bookingSlotTitle = computed(() => bookingSlotEditing.value ? 'Edit jam booking' : 'Tambah jam booking');
 const bookingSlotForm = useForm({
-    day_type: 'all' as DayType,
+    day: 'monday' as BookingDay,
     start_time: '07:00',
-    end_time: '22:00',
+    end_time: '12:00',
+    price: '50000',
     is_active: true,
 });
-function getBookingSlotSuggestion(dayType: DayType): { startTime: string | null; previousEnd: string | null } {
-    const relevantTypes: DayType[] = dayType === 'all'
-        ? ['all', 'weekday', 'weekend']
-        : ['all', dayType];
-
-    const latestSlot = props.facility.booking_time_slots
-        .filter((slot) => slot.is_active && relevantTypes.includes(slot.day_type))
-        .sort((a, b) => b.end_time.localeCompare(a.end_time))[0];
-
-    if (!latestSlot) {
-        return { startTime: '07:00', previousEnd: null };
-    }
-
+const bookingDays: { value: BookingDay; label: string }[] = [
+    { value: 'monday', label: 'Senin' }, { value: 'tuesday', label: 'Selasa' },
+    { value: 'wednesday', label: 'Rabu' }, { value: 'thursday', label: 'Kamis' },
+    { value: 'friday', label: 'Jumat' }, { value: 'saturday', label: 'Sabtu' },
+    { value: 'sunday', label: 'Minggu' },
+];
+function getBookingSlotSuggestion(day: BookingDay): { startTime: string | null; previousEnd: string | null } {
+    const latestSlot = props.facility.booking_time_slots.filter((slot) => slot.is_active && slot.day === day).sort((a, b) => b.end_time.localeCompare(a.end_time))[0];
+    if (!latestSlot) return { startTime: '07:00', previousEnd: null };
     const [hours, minutes] = latestSlot.end_time.split(':').map(Number);
-    const totalMinutes = (hours * 60) + minutes + Math.max(0, props.facility.turnaround_minutes);
-    if (totalMinutes >= 24 * 60) {
-        return { startTime: null, previousEnd: latestSlot.end_time.slice(0, 5) };
-    }
-
-    const suggestedHours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
-    const suggestedMinutes = (totalMinutes % 60).toString().padStart(2, '0');
-
-    return {
-        startTime: `${suggestedHours}:${suggestedMinutes}`,
-        previousEnd: latestSlot.end_time.slice(0, 5),
-    };
+    const total = hours * 60 + minutes + Math.max(0, props.facility.turnaround_minutes);
+    if (total >= 1440) return { startTime: null, previousEnd: latestSlot.end_time.slice(0, 5) };
+    return { startTime: String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0'), previousEnd: latestSlot.end_time.slice(0, 5) };
 }
-
-function applyBookingSlotSuggestion() {
-    bookingSlotForm.start_time = getBookingSlotSuggestion(bookingSlotForm.day_type).startTime ?? '';
-}
-
+function applyBookingSlotSuggestion() { bookingSlotForm.start_time = getBookingSlotSuggestion(bookingSlotForm.day).startTime ?? ''; }
 function openBookingSlotCreate() {
-    bookingSlotEditing.value = null;
-    bookingSlotForm.day_type = 'all';
-    bookingSlotForm.start_time = getBookingSlotSuggestion('all').startTime ?? '';
-    bookingSlotForm.end_time = '22:00';
-    bookingSlotForm.is_active = true;
-    bookingSlotForm.clearErrors();
-    showBookingSlotForm.value = true;
+    bookingSlotEditing.value = null; bookingSlotForm.day = 'monday';
+    bookingSlotForm.start_time = getBookingSlotSuggestion('monday').startTime ?? '';
+    bookingSlotForm.end_time = '12:00'; bookingSlotForm.price = '50000';
+    bookingSlotForm.is_active = true; bookingSlotForm.clearErrors(); showBookingSlotForm.value = true;
 }
 function editBookingSlot(slot: BookingTimeSlot) {
-    bookingSlotEditing.value = slot;
-    showBookingSlotForm.value = true;
-    bookingSlotForm.day_type = slot.day_type;
-    bookingSlotForm.start_time = slot.start_time;
-    bookingSlotForm.end_time = slot.end_time;
-    bookingSlotForm.is_active = slot.is_active;
-    bookingSlotForm.clearErrors();
+    bookingSlotEditing.value = slot; showBookingSlotForm.value = true;
+    bookingSlotForm.day = slot.day; bookingSlotForm.start_time = slot.start_time;
+    bookingSlotForm.end_time = slot.end_time; bookingSlotForm.price = String(slot.price);
+    bookingSlotForm.is_active = slot.is_active; bookingSlotForm.clearErrors();
 }
 function closeBookingSlotForm() {
     showBookingSlotForm.value = false;
@@ -169,8 +148,10 @@ function resetBookingSlotForm() {
     bookingSlotEditing.value = null;
     bookingSlotForm.reset();
     bookingSlotForm.clearErrors();
+    bookingSlotForm.day = 'monday';
     bookingSlotForm.start_time = '07:00';
-    bookingSlotForm.end_time = '22:00';
+    bookingSlotForm.end_time = '12:00';
+    bookingSlotForm.price = '50000';
     bookingSlotForm.is_active = true;
 }
 function submitBookingSlot() {
@@ -599,7 +580,7 @@ function promoRange(rule: PricingRule) {
                 <div v-for="slot in props.facility.booking_time_slots" :key="slot.id" class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm">
                     <div class="min-w-0">
                         <div class="font-medium tabular-nums">{{ slot.start_time }} – {{ slot.end_time }}</div>
-                        <div class="mt-1 text-xs text-muted-foreground">{{ slot.day_type === 'all' ? 'Semua hari' : slot.day_type === 'weekday' ? 'Senin–Jumat' : 'Sabtu–Minggu' }}</div>
+                        <div class="mt-1 text-xs text-muted-foreground">{{ bookingDays.find((day) => day.value === slot.day)?.label ?? slot.day }} · {{ formatIDR(slot.price) }}/jam</div>
                         <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium" :class="slot.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">
                             {{ slot.is_active ? 'Aktif' : 'Nonaktif' }}
                         </span>
@@ -1272,20 +1253,16 @@ function promoRange(rule: PricingRule) {
             <form class="space-y-5 p-5" @submit.prevent="submitBookingSlot">
                 <div class="grid gap-4">
                     <div class="grid gap-2">
-                        <Label for="booking-day-type">Berlaku pada hari</Label>
-                        <select id="booking-day-type" v-model="bookingSlotForm.day_type" @change="applyBookingSlotSuggestion" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-                            <option value="all">Semua hari (Senin–Minggu)</option>
-                            <option value="weekday">Weekday (Senin–Jumat)</option>
-                            <option value="weekend">Weekend (Sabtu–Minggu)</option>
+                        <Label for="booking-day">Hari</Label>
+                        <select id="booking-day" v-model="bookingSlotForm.day" @change="applyBookingSlotSuggestion" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                            <option v-for="day in bookingDays" :key="day.value" :value="day.value">{{ day.label }}</option>
                         </select>
-                        <p v-if="bookingSlotForm.errors.day_type" class="text-xs text-destructive">{{ bookingSlotForm.errors.day_type }}</p>
+                        <p v-if="bookingSlotForm.errors.day" class="text-xs text-destructive">{{ bookingSlotForm.errors.day }}</p>
                         <p class="text-xs text-muted-foreground">
-                            <template v-if="getBookingSlotSuggestion(bookingSlotForm.day_type).previousEnd">
-                                Saran otomatis: {{ getBookingSlotSuggestion(bookingSlotForm.day_type).startTime ?? 'Tidak tersedia' }} ({{ getBookingSlotSuggestion(bookingSlotForm.day_type).previousEnd }} + jeda {{ props.facility.turnaround_minutes }} menit).
+                            <template v-if="getBookingSlotSuggestion(bookingSlotForm.day).previousEnd">
+                                Saran otomatis: {{ getBookingSlotSuggestion(bookingSlotForm.day).startTime ?? 'Tidak tersedia' }} ({{ getBookingSlotSuggestion(bookingSlotForm.day).previousEnd }} + jeda {{ props.facility.turnaround_minutes }} menit).
                             </template>
-                            <template v-else>
-                                Belum ada rentang aktif untuk jenis hari ini. Saran awal: 07:00.
-                            </template>
+                            <template v-else>Belum ada rentang aktif untuk hari ini. Saran awal: 07:00.</template>
                         </p>
                     </div>
                     <div class="grid gap-2">
@@ -1302,6 +1279,11 @@ function promoRange(rule: PricingRule) {
                             required
                         />
                         <p v-if="bookingSlotForm.errors.start_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.start_time }}</p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="booking-price">Harga per jam (Rp)</Label>
+                        <Input id="booking-price" v-model="bookingSlotForm.price" type="number" min="0" step="1000" placeholder="50000" required />
+                        <p v-if="bookingSlotForm.errors.price" class="text-xs text-destructive">{{ bookingSlotForm.errors.price }}</p>
                     </div>
                     <div class="grid gap-2">
                         <Label for="booking-end">Jam selesai</Label>
