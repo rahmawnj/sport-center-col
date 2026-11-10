@@ -354,7 +354,7 @@ class PublicBookingController extends Controller
         $endMinutes = $startMinutes + $durationMinutes;
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
 
-        if (! $this->isMasterSlotStart($package->facility_id, $startMinutes, $durationMinutes)) {
+        if (! $this->isMasterSlotStart($package->facility_id, $date, $startMinutes, $durationMinutes)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih tidak sesuai Master Jam Booking. Silakan pilih slot yang tersedia.']);
         }
 
@@ -494,6 +494,7 @@ class PublicBookingController extends Controller
         $windows = BookingTimeSlot::query()
             ->where('facility_id', $package->facility_id)
             ->where('is_active', true)
+            ->whereIn('day_type', $date->isWeekday() ? ['all', 'weekday'] : ['all', 'weekend'])
             ->orderBy('start_time')
             ->get();
 
@@ -545,7 +546,7 @@ class PublicBookingController extends Controller
         return $slots;
     }
 
-    private function isMasterSlotStart(int $facilityId, int $startMinutes, int $durationMinutes): bool
+    private function isMasterSlotStart(int $facilityId, Carbon $date, int $startMinutes, int $durationMinutes): bool
     {
         $turnaround = max(0, (int) Facility::query()->whereKey($facilityId)->value('turnaround_minutes'));
         $step = max(1, $durationMinutes) + $turnaround;
@@ -553,6 +554,7 @@ class PublicBookingController extends Controller
         return BookingTimeSlot::query()
             ->where('facility_id', $facilityId)
             ->where('is_active', true)
+            ->whereIn('day_type', $date->isWeekday() ? ['all', 'weekday'] : ['all', 'weekend'])
             ->get(['start_time', 'end_time'])
             ->contains(function (BookingTimeSlot $window) use ($startMinutes, $durationMinutes, $step) {
                 $windowStart = $this->toMinutes((string) $window->start_time);
