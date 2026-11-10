@@ -95,6 +95,7 @@ class MemberClassController extends Controller
                 ->where('class_schedule_id', $lockedSchedule->id)
                 ->where('session_date', $sessionDate->toDateString())
                 ->where('user_id', $request->user()->id)
+                ->whereIn('status', ['pending', 'confirmed', 'attended', 'no_show'])
                 ->lockForUpdate()
                 ->first();
 
@@ -128,22 +129,14 @@ class MemberClassController extends Controller
                 'payment_status' => 'unpaid',
             ]);
 
-            $participantData = [
+            SessionParticipant::query()->create([
+                'class_schedule_id' => $lockedSchedule->id,
                 'session_date' => $sessionDate->toDateString(),
+                'user_id' => $user->id,
                 'transaction_id' => $transaction->id,
                 'price' => $price,
                 'status' => 'pending',
-            ];
-
-            if ($participant) {
-                $participant->update($participantData);
-            } else {
-                SessionParticipant::query()->create([
-                    'class_schedule_id' => $lockedSchedule->id,
-                    'user_id' => $user->id,
-                    ...$participantData,
-                ]);
-            }
+            ]);
 
             return $transaction;
         });
