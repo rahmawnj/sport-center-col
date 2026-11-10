@@ -65,7 +65,7 @@ class MemberClassController extends Controller
 
             abort_unless($lockedSchedule->status === 'scheduled', 422, 'Jadwal kelas tidak menerima pendaftaran.');
             abort_if(
-                $lockedSchedule->session_date->isPast() ||
+                $lockedSchedule->session_date->lt(today()) ||
                 ($lockedSchedule->session_date->isToday() && $lockedSchedule->start_time <= now()->format('H:i:s')),
                 422,
                 'Pendaftaran untuk jadwal yang sudah lewat tidak tersedia.'
