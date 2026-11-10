@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import {
     BadgeCheck,
     Building2,
+    CalendarDays,
     FileChartColumn,
     LayoutGrid,
     MapPin,
@@ -29,6 +30,7 @@ import type { NavGroup, NavItem } from '@/types';
 const items: (NavItem | NavGroup)[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Olahraga', href: '/facilities', icon: Building2 },
+    { title: 'Kelas & Jadwal', href: '/classes', icon: CalendarDays },
     { title: 'Member', href: '/members', icon: Users },
     { title: 'Membership', href: '/memberships', icon: BadgeCheck },
     { title: 'Paket Membership', href: '/membership-packages', icon: PackageIcon },
