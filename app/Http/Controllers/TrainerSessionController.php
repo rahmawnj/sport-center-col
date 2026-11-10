@@ -70,25 +70,27 @@ class TrainerSessionController extends Controller
 
     public function confirmMember(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
     {
+        $data = $request->validate(['attended' => ['required', 'boolean']]);
         $package = $schedule->memberTrainerPackage;
         abort_unless((int) $package->user_id === (int) $request->user()->id, 404);
-        $this->recordAttendanceConfirmation($schedule, 'member');
+        $this->recordAttendanceConfirmation($schedule, 'member', (bool) $data['attended']);
 
         return back()->with('success', 'Konfirmasi kehadiran member berhasil disimpan.');
     }
 
     public function confirmTrainer(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
     {
-        $trainer = \\App\\Models\\Trainer::query()->where('user_id', $request->user()->id)->firstOrFail();
+        $data = $request->validate(['attended' => ['required', 'boolean']]);
+        $trainer = \App\Models\Trainer::query()->where('user_id', $request->user()->id)->firstOrFail();
         abort_unless((int) $schedule->memberTrainerPackage?->trainer_id === (int) $trainer->id, 404);
-        $this->recordAttendanceConfirmation($schedule, 'trainer');
+        $this->recordAttendanceConfirmation($schedule, 'trainer', (bool) $data['attended']);
 
         return back()->with('success', 'Konfirmasi kehadiran trainer berhasil disimpan.');
     }
 
-    private function recordAttendanceConfirmation(TrainerSessionSchedule $schedule, string $role): void
+    private function recordAttendanceConfirmation(TrainerSessionSchedule $schedule, string $role, bool $attended): void
     {
-        DB::transaction(function () use ($schedule, $role) {
+        DB::transaction(function () use ($schedule, $role, $attended) {
             $locked = TrainerSessionSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
             abort_unless($locked->status === 'scheduled', 422, 'Konfirmasi hanya bisa dilakukan untuk jadwal yang belum ditutup.');
 
@@ -101,7 +103,7 @@ class TrainerSessionController extends Controller
 
             $locked->forceFill([
                 $timestamp => now(),
-                $attendance => true,
+                $attendance => $attended,
             ])->save();
         });
     }
@@ -124,6 +126,13 @@ class TrainerSessionController extends Controller
                 ->findOrFail($locked->member_trainer_package_id);
 
             if ($data['result'] === 'completed') {
+                if (! $locked->member_confirmed_at || ! $locked->trainer_confirmed_at
+                    || ! $locked->member_attended || ! $locked->trainer_attended) {
+                    throw ValidationException::withMessages([
+                        'result' => 'Sesi hanya bisa ditandai berhasil setelah member dan trainer sama-sama mengonfirmasi hadir.',
+                    ]);
+                }
+
                 if ($package->used_sessions >= $package->total_sessions) {
                     throw ValidationException::withMessages([
                         'result' => 'Kuota sesi paket sudah habis sehingga sesi tidak dapat ditandai berhasil.',
