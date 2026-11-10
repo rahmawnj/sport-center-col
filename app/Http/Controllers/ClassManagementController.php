@@ -102,9 +102,11 @@ class ClassManagementController extends Controller
     public function storeSchedule(Request $request, SportClass $sportClass): RedirectResponse
     {
         $data = $this->validateSchedule($request);
-        $this->assertTrainerAvailable($sportClass, $data);
 
-        $sportClass->schedules()->create($data);
+        DB::transaction(function () use ($sportClass, $data) {
+            $this->assertTrainerAvailable($sportClass, $data);
+            $sportClass->schedules()->create($data);
+        });
 
         return back()->with('success', 'Jadwal kelas berhasil dibuat.');
     }
@@ -113,12 +115,14 @@ class ClassManagementController extends Controller
     {
         $data = $this->validateSchedule($request);
         $sportClass = SportClass::query()->findOrFail($schedule->class_id);
-        $this->assertTrainerAvailable($sportClass, $data, $schedule->id);
 
-        $schedule->update([
-            ...$data,
-            'class_id' => $sportClass->id,
-        ]);
+        DB::transaction(function () use ($sportClass, $data, $schedule) {
+            $this->assertTrainerAvailable($sportClass, $data, $schedule->id);
+            $schedule->update([
+                ...$data,
+                'class_id' => $sportClass->id,
+            ]);
+        });
 
         return back()->with('success', 'Jadwal kelas berhasil diperbarui.');
     }
@@ -186,23 +190,21 @@ class ClassManagementController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($data, $ignoreScheduleId) {
-            Trainer::query()->whereKey($data['trainer_id'])->lockForUpdate()->firstOrFail();
+        Trainer::query()->whereKey($data['trainer_id'])->lockForUpdate()->firstOrFail();
 
-            $conflict = ClassSchedule::query()
-                ->where('trainer_id', $data['trainer_id'])
-                ->whereDate('session_date', $data['session_date'])
-                ->where('status', 'scheduled')
-                ->when($ignoreScheduleId, fn ($query) => $query->whereKeyNot($ignoreScheduleId))
-                ->whereTime('start_time', '<', $data['end_time'])
-                ->whereTime('end_time', '>', $data['start_time'])
-                ->exists();
+        $conflict = ClassSchedule::query()
+            ->where('trainer_id', $data['trainer_id'])
+            ->whereDate('session_date', $data['session_date'])
+            ->where('status', 'scheduled')
+            ->when($ignoreScheduleId, fn ($query) => $query->whereKeyNot($ignoreScheduleId))
+            ->whereTime('start_time', '<', $data['end_time'])
+            ->whereTime('end_time', '>', $data['start_time'])
+            ->exists();
 
-            if ($conflict) {
-                throw ValidationException::withMessages([
-                    'trainer_id' => 'Trainer sudah memiliki kelas lain pada waktu tersebut.',
-                ]);
-            }
-        });
+        if ($conflict) {
+            throw ValidationException::withMessages([
+                'trainer_id' => 'Trainer sudah memiliki kelas lain pada waktu tersebut.',
+            ]);
+        }
     }
 }
