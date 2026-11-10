@@ -63,10 +63,11 @@ class ClassManagementController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, Facility $facility): RedirectResponse
     {
+        abort_unless($facility->status === 'active', 422, 'Kelas hanya dapat ditambahkan pada fasilitas aktif.');
+
         $data = $request->validate([
-            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:600'],
@@ -74,7 +75,7 @@ class ClassManagementController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        SportClass::query()->create($data);
+        $facility->classes()->create($data);
 
         return back()->with('success', 'Master kelas berhasil dibuat.');
     }
@@ -82,7 +83,6 @@ class ClassManagementController extends Controller
     public function update(Request $request, SportClass $sportClass): RedirectResponse
     {
         $data = $request->validate([
-            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:600'],
