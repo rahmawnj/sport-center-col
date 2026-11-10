@@ -26,7 +26,7 @@ class ClassSchedule extends Model
         ];
     }
 
-    public function class(): BelongsTo
+    public function sportClass(): BelongsTo
     {
         return $this->belongsTo(SportClass::class, 'class_id');
     }
