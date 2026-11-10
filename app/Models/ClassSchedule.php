@@ -15,6 +15,7 @@ class ClassSchedule extends Model
         'start_time',
         'end_time',
         'capacity',
+        'price',
         'status',
     ];
 
@@ -23,6 +24,7 @@ class ClassSchedule extends Model
         return [
             'session_date' => 'date',
             'capacity' => 'integer',
+            'price' => 'decimal:2',
         ];
     }
 
