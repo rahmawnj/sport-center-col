@@ -16,6 +16,7 @@ import { computed, ref } from 'vue';
 
 const page = usePage();
 const sidebarOpen = ref(false);
+const profileMenuOpen = ref(false);
 const user = computed(() => (page.props.auth as { user?: { name?: string; email?: string } } | undefined)?.user);
 const memberCode = computed(() => (page.props as { memberCode?: string | null }).memberCode);
 const codeCopied = ref(false);
@@ -70,7 +71,6 @@ const navigation = [
                         <p class="truncate text-sm font-semibold">{{ user?.name || 'Member' }}</p>
                         <p class="truncate text-xs text-slate-500">{{ user?.email || 'Akun member' }}</p>
                     </div>
-                    <ChevronDown class="size-4 text-slate-400" />
                 </div>
             </div>
 
@@ -100,16 +100,8 @@ const navigation = [
                 </Link>
             </nav>
 
-            <div class="border-t border-slate-100 p-4">
-                <Link href="/" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-950" @click="sidebarOpen = false">
-                    <House class="size-[18px]" />
-                    Kembali ke website
-                </Link>
-                <Link href="/logout" method="post" as="button" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700" @click="sidebarOpen = false">
-                    <LogOut class="size-[18px]" />
-                    Logout
-                </Link>
-                <p class="px-3 pt-2 text-[11px] text-slate-400">Sport Center · Member Portal</p>
+            <div class="mt-auto border-t border-slate-100 p-4">
+                <p class="px-3 py-2 text-[11px] text-slate-400">Sport Center · Member Portal</p>
             </div>
         </aside>
 
@@ -124,14 +116,47 @@ const navigation = [
                         <p class="text-sm font-semibold text-slate-900">Area Member</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <div class="hidden text-right sm:block">
-                        <p class="text-sm font-semibold">{{ user?.name || 'Member' }}</p>
-                        <p class="text-xs text-slate-500">Selamat datang kembali</p>
-                    </div>
-                    <div class="grid size-10 place-items-center rounded-full bg-[#a4da01]/25 font-bold text-[#304600]">
-                        {{ (user?.name || 'M').slice(0, 1).toUpperCase() }}
-                    </div>
+                <div class="relative">
+                    <button
+                        type="button"
+                        class="flex items-center gap-3 rounded-xl px-2 py-1.5 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500"
+                        :aria-expanded="profileMenuOpen"
+                        aria-haspopup="menu"
+                        aria-label="Buka menu profil"
+                        @click="profileMenuOpen = !profileMenuOpen"
+                    >
+                        <div class="hidden text-right sm:block">
+                            <p class="text-sm font-semibold text-slate-900">{{ user?.name || 'Member' }}</p>
+                            <p class="text-xs text-slate-500">Akun Member</p>
+                        </div>
+                        <div class="grid size-10 place-items-center rounded-full bg-[#a4da01]/25 font-bold text-[#304600]">
+                            {{ (user?.name || 'M').slice(0, 1).toUpperCase() }}
+                        </div>
+                        <ChevronDown class="size-4 text-slate-500 transition" :class="profileMenuOpen ? 'rotate-180' : ''" />
+                    </button>
+
+                    <template v-if="profileMenuOpen">
+                        <button type="button" class="fixed inset-0 z-40 cursor-default" aria-label="Tutup menu profil" @click="profileMenuOpen = false" />
+                        <div class="absolute right-0 z-50 mt-3 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white py-2 shadow-xl shadow-slate-900/10" role="menu">
+                            <div class="border-b border-slate-100 px-4 py-3">
+                                <p class="truncate text-sm font-semibold text-slate-900">{{ user?.name || 'Member' }}</p>
+                                <p class="truncate text-xs text-slate-500">{{ user?.email || 'Akun member' }}</p>
+                            </div>
+                            <Link href="/member/profile" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50" role="menuitem" @click="profileMenuOpen = false">
+                                <CircleUserRound class="size-[18px] text-slate-500" />
+                                Profil Saya
+                            </Link>
+                            <Link href="/" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50" role="menuitem" @click="profileMenuOpen = false">
+                                <House class="size-[18px] text-slate-500" />
+                                Kembali ke Website
+                            </Link>
+                            <div class="my-1 border-t border-slate-100" />
+                            <Link href="/logout" method="post" as="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50" role="menuitem" @click="profileMenuOpen = false">
+                                <LogOut class="size-[18px]" />
+                                Logout
+                            </Link>
+                        </div>
+                    </template>
                 </div>
             </header>
 
