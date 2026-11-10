@@ -54,7 +54,7 @@ function formatDate(value:string|null){ return value ? new Intl.DateTimeFormat('
 <Button size="sm" variant="destructive"  @click="setResult(schedule.id,'failed')"><Ban class="mr-1 size-3.5"/>Tidak berhasil</Button>
 <p v-if="!schedule.member_confirmed_at || !schedule.trainer_confirmed_at" class="w-full text-xs text-amber-700">Menunggu konfirmasi dari {{!schedule.member_confirmed_at && !schedule.trainer_confirmed_at ? 'member dan trainer' : (!schedule.member_confirmed_at ? 'member' : 'trainer')}}.</p>
 <p v-else-if="!schedule.member_attended || !schedule.trainer_attended" class="w-full text-xs text-rose-700">Sesi tidak dapat ditandai berhasil karena salah satu pihak mengonfirmasi tidak hadir.</p>
-<p v-if="new Date(schedule.date+'T'+schedule.end_time) > new Date()" class="w-full text-xs text-muted-foreground">Admin dapat menetapkan hasil sesi kapan saja, tanpa menunggu jadwal berakhir.</p>
+<p class="w-full text-xs text-muted-foreground">Admin dapat menetapkan hasil sesi kapan saja, tanpa menunggu jadwal berakhir.</p>
 </div>
 <p v-else class="text-xs text-muted-foreground">{{schedule.status==='completed'?'Kuota sudah dikurangi satu sesi.':'Sesi ditutup tanpa mengurangi kuota.'}}</p>
 </template>
