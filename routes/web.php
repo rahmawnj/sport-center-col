@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ClassManagementController;
+use App\Http\Controllers\MemberClassController;
 use App\Http\Controllers\BookingTimeSlotController;
 use App\Http\Controllers\CourtController;
 use App\Http\Controllers\DashboardController;
