@@ -524,6 +524,7 @@ class PublicBookingController extends Controller
                     ->values();
 
                 $slots[] = [
+                    'window_id' => $window->id,
                     'start_time' => $this->toTime($cursor),
                     'end_time' => $this->toTime($slotEnd),
                     'price' => (float) $window->price * ($duration / 60),
