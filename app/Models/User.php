@@ -86,4 +86,9 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function sessionParticipations(): HasMany
+    {
+        return $this->hasMany(SessionParticipant::class);
+    }
 }
