@@ -7,6 +7,7 @@ use App\Models\Facility;
 use App\Models\SessionParticipant;
 use App\Models\SportClass;
 use App\Models\Trainer;
+use App\Models\TrainerSessionSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -238,7 +239,7 @@ class ClassManagementController extends Controller
 
         Trainer::query()->whereKey($data['trainer_id'])->lockForUpdate()->firstOrFail();
 
-        $conflict = ClassSchedule::query()
+        $classConflict = ClassSchedule::query()
             ->where('trainer_id', $data['trainer_id'])
             ->whereDate('session_date', $data['session_date'])
             ->where('status', 'scheduled')
@@ -247,7 +248,17 @@ class ClassManagementController extends Controller
             ->whereTime('end_time', '>', $data['start_time'])
             ->exists();
 
-        if ($conflict) {
+        $personalTrainingConflict = TrainerSessionSchedule::query()
+            ->whereDate('session_date', $data['session_date'])
+            ->where('status', 'scheduled')
+            ->whereHas('memberTrainerPackage', fn ($query) => $query
+                ->where('trainer_id', $data['trainer_id'])
+                ->whereIn('status', ['pending', 'active']))
+            ->whereTime('start_time', '<', $data['end_time'])
+            ->whereTime('end_time', '>', $data['start_time'])
+            ->exists();
+
+        if ($classConflict || $personalTrainingConflict) {
             throw ValidationException::withMessages([
                 'trainer_id' => 'Trainer sudah memiliki kelas lain pada waktu tersebut.',
             ]);
