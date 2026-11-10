@@ -270,9 +270,15 @@ currentlySelected.delete(slots.value[index].start_time);
         chosen.every((entry) => entry.courts.some((available) => available.id === court.id)),
     );
 
+    const [startHour, startMinute] = chosen[0].start_time.split(':').map(Number);
+    const bookingEndMinutes = (startHour * 60) + startMinute
+        + (chosen.length * Math.max(1, pkg.value?.duration_minutes ?? 60));
+    const bookingEndTime = String(Math.floor(bookingEndMinutes / 60)).padStart(2, '0')
+        + ':' + String(bookingEndMinutes % 60).padStart(2, '0');
+
     slot.value = {
         start_time: chosen[0].start_time,
-        end_time: chosen[chosen.length - 1].end_time,
+        end_time: bookingEndTime,
         price: chosen.reduce((total, entry) => total + entry.price, 0),
         courts: commonCourts,
     };
