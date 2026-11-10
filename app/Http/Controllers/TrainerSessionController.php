@@ -62,10 +62,48 @@ class TrainerSessionController extends Controller
             $this->ensureMembershipCoversDate($package, $data['session_date']);
             $this->ensureNoScheduleOverlap($package, $data, $locked->id);
 
-            $locked->update($data);
+            $locked->update([\n                ...$data,\n                'member_attended' => false,\n                'trainer_attended' => false,\n                'member_confirmed_at' => null,\n                'trainer_confirmed_at' => null,\n            ]);
         });
 
         return back()->with('success', 'Jadwal sesi berhasil diperbarui.');
+    }
+
+    public function confirmMember(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
+    {
+        $package = $schedule->memberTrainerPackage;
+        abort_unless((int) $package->user_id === (int) $request->user()->id, 404);
+        $this->recordAttendanceConfirmation($schedule, 'member');
+
+        return back()->with('success', 'Konfirmasi kehadiran member berhasil disimpan.');
+    }
+
+    public function confirmTrainer(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
+    {
+        $trainer = \\App\\Models\\Trainer::query()->where('user_id', $request->user()->id)->firstOrFail();
+        abort_unless((int) $schedule->memberTrainerPackage?->trainer_id === (int) $trainer->id, 404);
+        $this->recordAttendanceConfirmation($schedule, 'trainer');
+
+        return back()->with('success', 'Konfirmasi kehadiran trainer berhasil disimpan.');
+    }
+
+    private function recordAttendanceConfirmation(TrainerSessionSchedule $schedule, string $role): void
+    {
+        DB::transaction(function () use ($schedule, $role) {
+            $locked = TrainerSessionSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
+            abort_unless($locked->status === 'scheduled', 422, 'Konfirmasi hanya bisa dilakukan untuk jadwal yang belum ditutup.');
+
+            $sessionEndsAt = $locked->session_date->toDateString().' '.$locked->end_time;
+            abort_unless(now()->gte($sessionEndsAt), 422, 'Konfirmasi kehadiran hanya bisa dilakukan setelah sesi berakhir.');
+
+            $timestamp = $role === 'member' ? 'member_confirmed_at' : 'trainer_confirmed_at';
+            $attendance = $role === 'member' ? 'member_attended' : 'trainer_attended';
+            abort_unless(! $locked->{$timestamp}, 422, 'Kehadiran sudah dikonfirmasi.');
+
+            $locked->forceFill([
+                $timestamp => now(),
+                $attendance => true,
+            ])->save();
+        });
     }
 
     public function setResult(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
