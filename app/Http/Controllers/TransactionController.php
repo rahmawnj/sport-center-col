@@ -243,7 +243,6 @@ class TransactionController extends Controller
                         $trainerPurchase->update(['status' => $childStatus]);
                     }
                 }
-            }
             } elseif ($locked->transactionable_type === 'class') {
                 $participantStatus = match ($childStatus) {
                     'active' => 'confirmed',
