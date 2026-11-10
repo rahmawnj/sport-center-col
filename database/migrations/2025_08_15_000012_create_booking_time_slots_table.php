@@ -16,7 +16,7 @@ return new class extends Migration
             $table->time('end_time');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            $table->index(['facility_id', 'day_type', 'is_active', 'start_time']);
+            $table->index(['facility_id', 'day_type', 'is_active', 'start_time'], 'booking_slots_facility_day_active_start_idx');
         });
     }
 
