@@ -540,17 +540,19 @@ class PublicBookingController extends Controller
     private function isMasterSlotStart(int $facilityId, Carbon $date, int $startMinutes, int $durationMinutes): bool
     {
         $day = strtolower($date->englishDayOfWeek);
+        $step = max(1, $durationMinutes) + $turnaround;
 
         return BookingTimeSlot::query()
             ->where('facility_id', $facilityId)
             ->where('day', $day)
             ->where('is_active', true)
             ->get(['start_time', 'end_time'])
-            ->contains(function (BookingTimeSlot $window) use ($startMinutes, $durationMinutes) {
+            ->contains(function (BookingTimeSlot $window) use ($startMinutes, $durationMinutes, $step) {
                 $windowStart = $this->toMinutes((string) $window->start_time);
                 $windowEnd = $this->toMinutes((string) $window->end_time);
 
                 return $startMinutes >= $windowStart
+                    && ($startMinutes - $windowStart) % $step === 0
                     && $startMinutes + $durationMinutes <= $windowEnd;
             });
     }
