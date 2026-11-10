@@ -63,7 +63,7 @@ class FacilityController extends Controller
             'classes' => fn ($query) => $query->with(['schedules' => fn ($schedules) => $schedules
                 ->with(['trainer:id,name', 'participants.user:id,name'])
                 ->withCount(['participants as registered_count' => fn ($participants) => $participants->whereIn('status', ['pending', 'confirmed'])])
-                ->orderBy('session_date')->orderBy('start_time')]),
+                ->orderBy('day')->orderBy('start_time')]),
         ]);
 
         return Inertia::render('facilities/Show', [
@@ -123,17 +123,18 @@ class FacilityController extends Controller
                         'id' => $schedule->id,
                         'trainer_id' => $schedule->trainer_id,
                         'trainer' => $schedule->trainer?->name,
-                        'date' => $schedule->session_date?->toDateString(),
+                        'day' => $schedule->day,
                         'start_time' => substr((string) $schedule->start_time, 0, 5),
                         'end_time' => substr((string) $schedule->end_time, 0, 5),
                         'capacity' => $schedule->capacity,
                         'effective_capacity' => (int) ($schedule->capacity ?? $class->default_capacity),
                         'registered_count' => (int) $schedule->registered_count,
                         'price' => (float) $schedule->price,
-                        'status' => $schedule->status,
+                        'is_active' => (bool) $schedule->is_active,
                         'participants' => $schedule->participants->map(fn (SessionParticipant $participant) => [
                             'id' => $participant->id,
                             'name' => $participant->user?->name ?? 'Member',
+                            'session_date' => $participant->session_date?->toDateString(),
                             'status' => $participant->status,
                         ])->values(),
                     ])->values(),
