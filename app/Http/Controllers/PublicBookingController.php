@@ -540,6 +540,7 @@ class PublicBookingController extends Controller
     private function isMasterSlotStart(int $facilityId, Carbon $date, int $startMinutes, int $durationMinutes): bool
     {
         $day = strtolower($date->englishDayOfWeek);
+        $turnaround = max(0, (int) Facility::query()->whereKey($facilityId)->value('turnaround_minutes'));
         $step = max(1, $durationMinutes) + $turnaround;
 
         return BookingTimeSlot::query()
