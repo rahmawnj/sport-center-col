@@ -421,9 +421,9 @@ class TransactionController extends Controller
 
         $windows = BookingTimeSlot::query()
             ->where('facility_id', $package->facility_id)
+            ->where('day', strtolower($date->englishDayOfWeek))
             ->where('is_active', true)
-            ->whereIn('day_type', $date->isWeekday() ? ['all', 'weekday'] : ['all', 'weekend'])
-            ->get(['start_time', 'end_time']);
+            ->get(['start_time', 'end_time', 'price']);
         $step = $durationMinutes + $turnaround;
         $validSlot = $windows->contains(function (BookingTimeSlot $window) use ($startMinutes, $endMinutes, $step) {
             $windowStart = $this->toMinutes((string) $window->start_time);
