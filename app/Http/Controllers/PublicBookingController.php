@@ -10,6 +10,7 @@ use App\Models\Package;
 use App\Models\PackagePricingRule;
 use App\Models\Transaction;
 use App\Models\UserMembership;
+use App\Services\PackagePricingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,8 @@ use Inertia\Response;
 
 class PublicBookingController extends Controller
 {
+    public function __construct(private PackagePricingService $pricing) {}
+
     private const DEFAULT_OPEN = '08:00';
 
     private const DEFAULT_CLOSE = '23:00';
@@ -52,8 +55,9 @@ class PublicBookingController extends Controller
                         'specialty' => $trainer->specialty,
                         'price' => (float) $trainer->pivot->price,
                     ])->values(),
+                    'pricing_summary' => $this->pricing->summary($package, Carbon::today()),
                     'pricing_rules' => $package->pricingRules
-                        ->filter(fn ($rule) => $this->isActiveOn($rule, Carbon::today()->toDateString()))
+                        ->filter(fn ($rule) => $this->pricing->isActiveOn($rule, Carbon::today()->toDateString()))
                         ->map(fn ($rule) => [
                             'day_type' => $rule->day_type,
                             'start_time' => $rule->start_time ? substr((string) $rule->start_time, 0, 5) : null,
@@ -281,26 +285,19 @@ class PublicBookingController extends Controller
      */
     private function bookingPrice(Package $package, array $data): float
     {
-        $date = Carbon::parse($data['date']);
-        $adjustment = $this->courtAdjustment($data['court_id'] ?? null);
+        $quote = $this->pricing->quote(
+            $package,
+            Carbon::parse($data['date']),
+            $data['start_time'] ?? null,
+            max(1, (int) ($data['duration_hours'] ?? 1)),
+            $this->courtAdjustment($data['court_id'] ?? null),
+        );
 
-        if (empty($data['start_time'])) {
-            return (float) ($this->basePrice($package, $date) ?? 0) + $adjustment;
-        }
-        $rules = $this->matchingRules($package, $date);
-        $start = $this->toMinutes($data['start_time']);
-        $hours = max(1, (int) ($data['duration_hours'] ?? 1));
-        $total = 0.0;
-
-        for ($minute = $start; $minute < $start + ($hours * 60); $minute += 60) {
-            $price = $this->resolvePrice($rules, $minute);
-            if ($price === null) {
-                throw ValidationException::withMessages(['start_time' => 'Tarif untuk jadwal ini tidak ditemukan.']);
-            }
-            $total += $price;
+        if (! $quote['available']) {
+            throw ValidationException::withMessages(['start_time' => 'Tarif untuk jadwal ini tidak ditemukan.']);
         }
 
-        return $total + $adjustment;
+        return (float) $quote['total'];
     }
 
     private function courtAdjustment(mixed $courtId): float
@@ -320,7 +317,7 @@ class PublicBookingController extends Controller
         }
 
         $date = Carbon::parse($data['date']);
-        $rules = $this->matchingRules($package, $date);
+        $rules = $this->pricing->rulesForDate($package, $date);
         $hasTimedPricing = $rules->contains(fn ($rule) => $rule->start_time && $rule->end_time);
 
         if (! $hasTimedPricing) {
@@ -365,7 +362,7 @@ class PublicBookingController extends Controller
 
         $price = 0.0;
         for ($minute = $startMinutes; $minute < $endMinutes; $minute += 60) {
-            $hourPrice = $this->resolvePrice($rules, $minute);
+            $hourPrice = $this->pricing->priceAt($rules, $minute);
             if ($hourPrice === null) {
                 throw ValidationException::withMessages(['start_time' => 'Durasi yang dipilih melewati jam operasional atau tidak memiliki tarif.']);
             }
@@ -463,19 +460,7 @@ class PublicBookingController extends Controller
 
     private function basePrice(Package $package, Carbon $date): ?float
     {
-        if ($package->type === 'membership') {
-            return (float) $package->price;
-        }
-
-        $rules = $this->matchingRules($package, $date);
-
-        if ($rules->isEmpty()) {
-            $rules = $package->pricingRules->filter(
-                fn ($rule) => $this->isActiveOn($rule, $date->toDateString()),
-            );
-        }
-
-        return $rules->isEmpty() ? null : (float) $rules->min('price');
+        return $this->pricing->summary($package, $date)['starting_price'];
     }
 
     /**
@@ -562,53 +547,6 @@ class PublicBookingController extends Controller
     private function windowsOverlap(int $start, int $end, int $otherStart, int $otherEnd, int $turnaround): bool
     {
         return $start < ($otherEnd + $turnaround) && ($end + $turnaround) > $otherStart;
-    }
-
-    /**
-     * Rules that apply on the given date (day type + promo date range), sorted by
-     * priority first, then by the narrowest time window so promos win over base rates.
-     *
-     * @return Collection<int, PackagePricingRule>
-     */
-    private function matchingRules(Package $package, Carbon $date): Collection
-    {
-        $dayType = $date->isWeekend() ? 'weekend' : 'weekday';
-        $dateString = $date->toDateString();
-
-        return $package->pricingRules
-            ->filter(fn ($rule) => in_array($rule->day_type, [$dayType, 'all'], true)
-                && $this->isActiveOn($rule, $dateString))
-            ->sortBy([
-                fn ($a, $b) => $b->priority <=> $a->priority,
-                fn ($a, $b) => $this->windowWidth($a) <=> $this->windowWidth($b),
-            ])
-            ->values();
-    }
-
-    private function resolvePrice(Collection $rules, int $startMinutes): ?float
-    {
-        $rule = $rules->first(function ($rule) use ($startMinutes) {
-            $ruleStart = $rule->start_time ? $this->toMinutes((string) $rule->start_time) : 0;
-            $ruleEnd = $rule->end_time ? $this->toMinutes((string) $rule->end_time) : 1440;
-
-            return $startMinutes >= $ruleStart && $startMinutes < $ruleEnd;
-        });
-
-        return $rule ? (float) $rule->price : null;
-    }
-
-    private function isActiveOn($rule, string $dateString): bool
-    {
-        return ($rule->date_start === null || $rule->date_start->toDateString() <= $dateString)
-            && ($rule->date_end === null || $rule->date_end->toDateString() >= $dateString);
-    }
-
-    private function windowWidth($rule): int
-    {
-        $start = $rule->start_time ? $this->toMinutes((string) $rule->start_time) : 0;
-        $end = $rule->end_time ? $this->toMinutes((string) $rule->end_time) : 1440;
-
-        return $end - $start;
     }
 
     private function toMinutes(string $time): int
