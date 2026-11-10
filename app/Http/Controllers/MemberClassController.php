@@ -28,7 +28,8 @@ class MemberClassController extends Controller
                             ->whereTime('start_time', '>', now()->format('H:i:s'));
                     });
             })
-            ->whereHas('sportClass', fn ($query) => $query->where('is_active', true))
+            ->whereHas('sportClass', fn ($query) => $query->where('is_active', true)
+                ->whereHas('facility', fn ($facility) => $facility->where('status', 'active')))
             ->orderBy('session_date')
             ->orderBy('start_time')
             ->get()
