@@ -20,7 +20,7 @@ class ClassManagementController extends Controller
     {
         $classes = SportClass::query()
             ->with(['facility:id,name', 'schedules' => fn ($query) => $query
-                ->with('trainer:id,name')
+                ->with(['trainer:id,name', 'participants.user:id,name,email'])
                 ->withCount(['participants as registered_count' => fn ($participants) => $participants->whereIn('status', ['pending', 'confirmed'])])
                 ->orderBy('session_date')->orderBy('start_time')])
             ->orderBy('name')
@@ -46,6 +46,12 @@ class ClassManagementController extends Controller
                     'registered_count' => (int) $schedule->registered_count,
                     'price' => (float) $schedule->price,
                     'status' => $schedule->status,
+                    'participants' => $schedule->participants->map(fn (SessionParticipant $participant) => [
+                        'id' => $participant->id,
+                        'name' => $participant->user?->name ?? 'Member',
+                        'email' => $participant->user?->email,
+                        'status' => $participant->status,
+                    ])->values(),
                 ])->values(),
             ]);
 
@@ -159,6 +165,28 @@ class ClassManagementController extends Controller
         $schedule->update(['status' => $data['status']]);
 
         return back()->with('success', 'Status jadwal berhasil diperbarui.');
+    }
+
+
+    public function updateParticipantAttendance(Request $request, SessionParticipant $participant): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:attended,no_show'],
+        ]);
+
+        DB::transaction(function () use ($participant, $data) {
+            $locked = SessionParticipant::query()
+                ->with('schedule')
+                ->lockForUpdate()
+                ->findOrFail($participant->id);
+
+            abort_unless($locked->schedule?->status === 'completed', 422, 'Kehadiran hanya dapat dicatat setelah kelas selesai.');
+            abort_unless(in_array($locked->status, ['confirmed', 'attended', 'no_show'], true), 422, 'Peserta belum dikonfirmasi pembayarannya.');
+
+            $locked->update(['status' => $data['status']]);
+        });
+
+        return back()->with('success', 'Kehadiran peserta berhasil diperbarui.');
     }
 
     private function validateSchedule(Request $request): array
