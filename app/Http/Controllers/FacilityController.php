@@ -58,6 +58,10 @@ class FacilityController extends Controller
             'packages.trainerAddons.facilities',
             'trainers' => fn ($query) => $query->orderBy('name'),
             'devices' => fn ($query) => $query->with('court:id,name')->orderBy('name'),
+            'classes' => fn ($query) => $query->with(['schedules' => fn ($schedules) => $schedules
+                ->with(['trainer:id,name', 'participants.user:id,name'])
+                ->withCount(['participants as registered_count' => fn ($participants) => $participants->whereIn('status', ['pending', 'confirmed'])])
+                ->orderBy('session_date')->orderBy('start_time')]),
         ]);
 
         return Inertia::render('facilities/Show', [
@@ -104,6 +108,33 @@ class FacilityController extends Controller
                     'id' => $trainer->id,
                     'name' => $trainer->name,
                     'specialty' => $trainer->specialty,
+                ])->values(),
+                'classes' => $facility->classes->map(fn ($class) => [
+                    'id' => $class->id,
+                    'facility_id' => $class->facility_id,
+                    'name' => $class->name,
+                    'description' => $class->description,
+                    'duration_minutes' => $class->duration_minutes,
+                    'default_capacity' => $class->default_capacity,
+                    'is_active' => (bool) $class->is_active,
+                    'schedules' => $class->schedules->map(fn (ClassSchedule $schedule) => [
+                        'id' => $schedule->id,
+                        'trainer_id' => $schedule->trainer_id,
+                        'trainer' => $schedule->trainer?->name,
+                        'date' => $schedule->session_date?->toDateString(),
+                        'start_time' => substr((string) $schedule->start_time, 0, 5),
+                        'end_time' => substr((string) $schedule->end_time, 0, 5),
+                        'capacity' => $schedule->capacity,
+                        'effective_capacity' => (int) ($schedule->capacity ?? $class->default_capacity),
+                        'registered_count' => (int) $schedule->registered_count,
+                        'price' => (float) $schedule->price,
+                        'status' => $schedule->status,
+                        'participants' => $schedule->participants->map(fn (SessionParticipant $participant) => [
+                            'id' => $participant->id,
+                            'name' => $participant->user?->name ?? 'Member',
+                            'status' => $participant->status,
+                        ])->values(),
+                    ])->values(),
                 ])->values(),
                 'booking_time_slots' => BookingTimeSlot::query()
                     ->where('facility_id', $facility->id)
