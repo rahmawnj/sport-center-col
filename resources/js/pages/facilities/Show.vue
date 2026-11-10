@@ -132,9 +132,9 @@ function getBookingSlotSuggestion(day: BookingDay): { startTime: string | null; 
     return { startTime: String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0'), previousEnd: latestSlot.end_time.slice(0, 5) };
 }
 function applyBookingSlotSuggestion() { bookingSlotForm.start_time = getBookingSlotSuggestion(bookingSlotForm.day).startTime ?? ''; }
-function openBookingSlotCreate() {
-    bookingSlotEditing.value = null; bookingSlotForm.day = 'monday';
-    bookingSlotForm.start_time = getBookingSlotSuggestion('monday').startTime ?? '';
+function openBookingSlotCreate(day: BookingDay = 'monday') {
+    bookingSlotEditing.value = null; bookingSlotForm.day = day;
+    bookingSlotForm.start_time = getBookingSlotSuggestion(day).startTime ?? '';
     bookingSlotForm.end_time = '12:00'; bookingSlotForm.price = '50000';
     bookingSlotForm.is_active = true; bookingSlotForm.clearErrors(); showBookingSlotForm.value = true;
 }
@@ -589,7 +589,7 @@ function promoRange(rule: PricingRule) {
                             <span class="font-semibold">{{ day.label }}</span>
                             <span class="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">{{ day.slots.length }} rentang</span>
                         </div>
-                        <Button size="sm" variant="outline" @click="bookingSlotForm.day = day.value; openBookingSlotCreate(); bookingSlotForm.day = day.value">
+                        <Button size="sm" variant="outline" @click="openBookingSlotCreate(day.value)">
                             <Plus class="mr-1 size-3.5" />Tambah
                         </Button>
                     </div>
