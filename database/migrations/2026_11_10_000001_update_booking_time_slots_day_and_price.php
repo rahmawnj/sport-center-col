@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('booking_time_slots', function (Blueprint $table) {
-            $table->string('day', 12)->nullable()->after('facility_id');
+            $table->enum('day', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])->nullable()->after('facility_id');
             $table->decimal('price', 12, 2)->default(0)->after('end_time');
         });
 
