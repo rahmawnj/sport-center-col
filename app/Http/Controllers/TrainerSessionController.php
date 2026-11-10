@@ -74,6 +74,51 @@ class TrainerSessionController extends Controller
         return back()->with('success', 'Jadwal sesi berhasil diperbarui.');
     }
 
+    public function showMember(Request $request, TrainerSessionSchedule $schedule): Response
+    {
+        $schedule->load(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name', 'memberTrainerPackage.facility:id,name']);
+        abort_unless((int) $schedule->memberTrainerPackage?->user_id === (int) $request->user()->id, 404);
+
+        return Inertia::render('member/TrainerScheduleShow', [
+            'schedule' => $this->scheduleDetailData($schedule, 'member'),
+        ]);
+    }
+
+    public function showTrainer(Request $request, TrainerSessionSchedule $schedule): Response
+    {
+        $trainer = \\App\\Models\\Trainer::query()->where('user_id', $request->user()->id)->firstOrFail();
+        $schedule->load(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name', 'memberTrainerPackage.facility:id,name']);
+        abort_unless((int) $schedule->memberTrainerPackage?->trainer_id === (int) $trainer->id, 404);
+
+        return Inertia::render('trainer/TrainerScheduleShow', [
+            'schedule' => $this->scheduleDetailData($schedule, 'trainer'),
+        ]);
+    }
+
+    private function scheduleDetailData(TrainerSessionSchedule $schedule, string $viewer): array
+    {
+        $package = $schedule->memberTrainerPackage;
+
+        return [
+            'id' => $schedule->id,
+            'member' => $package?->user?->name ?? 'Member',
+            'trainer' => $package?->trainer?->name ?? 'Trainer',
+            'package' => $package?->trainerPackage?->name ?? 'Paket trainer',
+            'facility' => $package?->facility?->name,
+            'date' => $schedule->session_date?->toDateString(),
+            'start_time' => substr((string) $schedule->start_time, 0, 5),
+            'end_time' => substr((string) $schedule->end_time, 0, 5),
+            'member_attended' => (bool) $schedule->member_attended,
+            'trainer_attended' => (bool) $schedule->trainer_attended,
+            'member_confirmed_at' => $schedule->member_confirmed_at?->toISOString(),
+            'trainer_confirmed_at' => $schedule->trainer_confirmed_at?->toISOString(),
+            'status' => $schedule->status,
+            'viewer' => $viewer,
+            'can_confirm' => $schedule->status === 'scheduled'
+                && ($viewer === 'member' ? ! $schedule->member_confirmed_at : ! $schedule->trainer_confirmed_at),
+        ];
+    }
+
     public function confirmMember(Request $request, TrainerSessionSchedule $schedule): RedirectResponse
     {
         $data = $request->validate(['attended' => ['required', 'boolean']]);
