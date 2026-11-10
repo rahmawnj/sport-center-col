@@ -29,12 +29,16 @@ class BookingTimeSlotController extends Controller
     public function update(Request $request, Facility $facility, BookingTimeSlot $bookingTimeSlot): RedirectResponse
     {
         $data = $request->validate([
+            'day_type' => ['sometimes', 'required', 'in:all,weekday,weekend'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'is_active' => ['required', 'boolean'],
         ]);
 
         abort_unless($bookingTimeSlot->facility_id === $facility->id, 404);
+
+        // Keep the existing day type when an older client omits this field.
+        $data['day_type'] ??= $bookingTimeSlot->day_type;
         $data['facility_id'] = $facility->id;
         $this->ensureNoConflict($data, $bookingTimeSlot->id);
         $bookingTimeSlot->update($data);
