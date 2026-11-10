@@ -63,6 +63,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('member/trainer-schedules/{schedule}', [TrainerSessionController::class, 'showMember'])->middleware(EnsureUserRole::class.':Member')->name('member.trainer-schedules.show');
     Route::post('member/trainer-schedules/{schedule}/confirm', [TrainerSessionController::class, 'confirmMember'])->middleware(EnsureUserRole::class.':Member')->name('member.trainer-schedules.confirm');
 
+    Route::get('member/classes', [MemberClassController::class, 'index'])->name('member.classes');
+    Route::post('member/classes/{schedule}/register', [MemberClassController::class, 'store'])->name('member.classes.register');
+
     Route::get('member/dashboard', [MemberDashboardController::class, 'index'])
         ->middleware(EnsureUserRole::class.':Member')
         ->name('member.dashboard');
@@ -88,6 +91,14 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware([EnsureUserRole::class.':Superadmin'])->group(function () {
+        Route::get('classes', [ClassManagementController::class, 'index'])->name('classes.index');
+        Route::post('classes', [ClassManagementController::class, 'store'])->name('classes.store');
+        Route::put('classes/{sportClass}', [ClassManagementController::class, 'update'])->name('classes.update');
+        Route::delete('classes/{sportClass}', [ClassManagementController::class, 'destroy'])->name('classes.destroy');
+        Route::post('classes/{sportClass}/schedules', [ClassManagementController::class, 'storeSchedule'])->name('classes.schedules.store');
+        Route::put('class-schedules/{schedule}', [ClassManagementController::class, 'updateSchedule'])->name('class-schedules.update');
+        Route::delete('class-schedules/{schedule}', [ClassManagementController::class, 'destroySchedule'])->name('class-schedules.destroy');
+        Route::put('class-schedules/{schedule}/status', [ClassManagementController::class, 'updateScheduleStatus'])->name('class-schedules.status');
 
         Route::post('facilities/{facility}/booking-time-slots', [BookingTimeSlotController::class, 'store'])->name('facilities.booking-time-slots.store');
         Route::put('facilities/{facility}/booking-time-slots/{bookingTimeSlot}', [BookingTimeSlotController::class, 'update'])->name('facilities.booking-time-slots.update');
