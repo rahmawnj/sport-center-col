@@ -1294,7 +1294,7 @@ function promoRange(rule: PricingRule) {
                             inputmode="numeric"
                             maxlength="5"
                             pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-                            placeholder="22:00"
+                            placeholder="12:00"
                             autocomplete="off"
                             required
                         />
