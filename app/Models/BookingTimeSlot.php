@@ -11,7 +11,7 @@ class BookingTimeSlot extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'price' => 'decimal:2'];
     }
 
     public function facility(): BelongsTo
