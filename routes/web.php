@@ -65,14 +65,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('member/trainer-schedules/{schedule}', [TrainerSessionController::class, 'showMember'])->middleware(EnsureUserRole::class.':Member')->name('member.trainer-schedules.show');
     Route::post('member/trainer-schedules/{schedule}/confirm', [TrainerSessionController::class, 'confirmMember'])->middleware(EnsureUserRole::class.':Member')->name('member.trainer-schedules.confirm');
 
-    Route::get('member/classes', [MemberClassController::class, 'index'])->name('member.classes');
-    Route::post('member/classes/{schedule}/register', [MemberClassController::class, 'store'])->name('member.classes.register');
-
     Route::get('member/dashboard', [MemberDashboardController::class, 'index'])
         ->middleware(EnsureUserRole::class.':Member')
         ->name('member.dashboard');
 
     Route::prefix('member')->name('member.')->middleware(EnsureUserRole::class.':Member')->group(function () {
+        Route::get('classes', [MemberClassController::class, 'index'])->name('classes');
+        Route::post('classes/{schedule}/register', [MemberClassController::class, 'store'])->name('classes.register');
         Route::get('bookings', [MemberDashboardController::class, 'bookings'])->name('bookings');
         Route::get('membership', [MemberDashboardController::class, 'membership'])->name('membership');
         Route::get('membership/{membership}', [MemberDashboardController::class, 'membershipShow'])->name('membership.show');
