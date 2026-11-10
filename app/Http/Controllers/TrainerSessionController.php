@@ -88,7 +88,7 @@ class TrainerSessionController extends Controller
 
     public function showTrainer(Request $request, TrainerSessionSchedule $schedule): Response
     {
-        $trainer = \\App\\Models\\Trainer::query()->where('user_id', $request->user()->id)->firstOrFail();
+        $trainer = \App\Models\Trainer::query()->where('user_id', $request->user()->id)->firstOrFail();
         $schedule->load(['memberTrainerPackage.user:id,name', 'memberTrainerPackage.trainer:id,name', 'memberTrainerPackage.trainerPackage:id,name', 'memberTrainerPackage.facility:id,name']);
         abort_unless((int) $schedule->memberTrainerPackage?->trainer_id === (int) $trainer->id, 404);
 
