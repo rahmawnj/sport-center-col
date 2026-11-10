@@ -111,9 +111,10 @@ class FacilityController extends Controller
                     ->get()
                     ->map(fn (BookingTimeSlot $slot) => [
                         'id' => $slot->id,
-                        'day_type' => $slot->day_type,
+                        'day' => $slot->day,
                         'start_time' => substr((string) $slot->start_time, 0, 5),
                         'end_time' => substr((string) $slot->end_time, 0, 5),
+                        'price' => (float) $slot->price,
                         'is_active' => (bool) $slot->is_active,
                     ])->values(),
                 'devices' => $facility->devices->map(fn ($device) => [
