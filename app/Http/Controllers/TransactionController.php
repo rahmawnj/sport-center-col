@@ -9,6 +9,7 @@ use App\Models\Device;
 use App\Models\Facility;
 use App\Models\Package;
 use App\Models\PackagePricingRule;
+use App\Models\SessionParticipant;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\UserMembership;
