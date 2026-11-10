@@ -7,8 +7,6 @@ use App\Models\Facility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class BookingTimeSlotController extends Controller
 {
@@ -30,7 +28,6 @@ class BookingTimeSlotController extends Controller
     public function update(Request $request, Facility $facility, BookingTimeSlot $bookingTimeSlot): RedirectResponse
     {
         $data = $request->validate([
-            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'is_active' => ['required', 'boolean'],
