@@ -10,12 +10,15 @@ use Illuminate\Validation\ValidationException;
 
 class BookingTimeSlotController extends Controller
 {
+    private const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
     public function store(Request $request, Facility $facility): RedirectResponse
     {
         $data = $request->validate([
-            'day_type' => ['required', 'in:all,weekday,weekend'],
+            'day' => ['required', 'in:'.implode(',', self::DAYS)],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'price' => ['required', 'numeric', 'min:0'],
             'is_active' => ['required', 'boolean'],
         ]);
 
@@ -23,27 +26,26 @@ class BookingTimeSlotController extends Controller
         $this->ensureNoConflict($data);
         BookingTimeSlot::create($data);
 
-        return back()->with('success', 'Master jam booking berhasil ditambahkan.');
+        return back()->with('success', 'Jam dan harga booking berhasil ditambahkan.');
     }
 
     public function update(Request $request, Facility $facility, BookingTimeSlot $bookingTimeSlot): RedirectResponse
     {
+        abort_unless($bookingTimeSlot->facility_id === $facility->id, 404);
+
         $data = $request->validate([
-            'day_type' => ['sometimes', 'required', 'in:all,weekday,weekend'],
+            'day' => ['required', 'in:'.implode(',', self::DAYS)],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'price' => ['required', 'numeric', 'min:0'],
             'is_active' => ['required', 'boolean'],
         ]);
 
-        abort_unless($bookingTimeSlot->facility_id === $facility->id, 404);
-
-        // Keep the existing day type when an older client omits this field.
-        $data['day_type'] ??= $bookingTimeSlot->day_type;
         $data['facility_id'] = $facility->id;
         $this->ensureNoConflict($data, $bookingTimeSlot->id);
         $bookingTimeSlot->update($data);
 
-        return back()->with('success', 'Master jam booking berhasil diperbarui.');
+        return back()->with('success', 'Jam dan harga booking berhasil diperbarui.');
     }
 
     public function destroy(Facility $facility, BookingTimeSlot $bookingTimeSlot): RedirectResponse
@@ -51,7 +53,7 @@ class BookingTimeSlotController extends Controller
         abort_unless($bookingTimeSlot->facility_id === $facility->id, 404);
         $bookingTimeSlot->delete();
 
-        return back()->with('success', 'Master jam booking berhasil dihapus.');
+        return back()->with('success', 'Rentang jam booking berhasil dihapus.');
     }
 
     private function ensureNoConflict(array $data, ?int $ignoreId = null): void
@@ -66,10 +68,10 @@ class BookingTimeSlotController extends Controller
 
         $conflict = BookingTimeSlot::query()
             ->where('facility_id', $data['facility_id'])
+            ->where('day', $data['day'])
             ->where('is_active', true)
-            ->whereIn('day_type', $data['day_type'] === 'all' ? ['all', 'weekday', 'weekend'] : ['all', $data['day_type']])
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
-            ->get(['day_type', 'start_time', 'end_time'])
+            ->get(['start_time', 'end_time'])
             ->contains(function (BookingTimeSlot $slot) use ($start, $end, $turnaround) {
                 $otherStart = $this->toMinutes((string) $slot->start_time);
                 $otherEnd = $this->toMinutes((string) $slot->end_time);
@@ -80,7 +82,7 @@ class BookingTimeSlotController extends Controller
 
         if ($conflict) {
             throw ValidationException::withMessages([
-                'start_time' => "Rentang jam bertabrakan atau terlalu mepet. Beri jeda minimal {$turnaround} menit sesuai pengaturan fasilitas.",
+                'start_time' => "Rentang jam pada hari tersebut bertabrakan atau terlalu mepet. Beri jeda minimal {$turnaround} menit sesuai pengaturan fasilitas.",
             ]);
         }
     }
