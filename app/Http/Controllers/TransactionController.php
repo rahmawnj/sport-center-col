@@ -245,6 +245,19 @@ class TransactionController extends Controller
                     }
                 }
             } elseif ($locked->transactionable_type === 'class') {
+                $participants = SessionParticipant::query()
+                    ->with('schedule')
+                    ->where('transaction_id', $locked->id)
+                    ->whereIn('status', ['pending', 'confirmed'])
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($childStatus === 'active' && $participants->contains(fn (SessionParticipant $participant) => $participant->schedule?->status !== 'scheduled')) {
+                    throw ValidationException::withMessages([
+                        'payment_status' => 'Jadwal kelas sudah dibatalkan atau selesai. Pembayaran tidak dapat dikonfirmasi.',
+                    ]);
+                }
+
                 $participantStatus = match ($childStatus) {
                     'active' => 'confirmed',
                     'cancelled' => 'cancelled',
@@ -252,9 +265,7 @@ class TransactionController extends Controller
                 };
 
                 SessionParticipant::query()
-                    ->where('transaction_id', $locked->id)
-                    ->whereIn('status', ['pending', 'confirmed'])
-                    ->lockForUpdate()
+                    ->whereKey($participants->pluck('id'))
                     ->update(['status' => $participantStatus]);
             }
         });
