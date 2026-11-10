@@ -129,7 +129,7 @@ class ClassManagementController extends Controller
 
     public function destroySchedule(ClassSchedule $schedule): RedirectResponse
     {
-        if ($schedule->participants()->whereIn('status', ['pending', 'confirmed', 'attended'])->exists()) {
+        if ($schedule->participants()->exists()) {
             return back()->with('error', 'Jadwal memiliki peserta terdaftar. Ubah status menjadi dibatalkan agar riwayat tetap tersimpan.');
         }
 
@@ -144,7 +144,7 @@ class ClassManagementController extends Controller
             'status' => ['required', 'in:scheduled,completed,cancelled'],
         ]);
 
-        if ($data['status'] === 'completed' && $schedule->session_date->isFuture()) {
+        if ($data['status'] === 'completed' && now()->lt($schedule->session_date->copy()->setTimeFromTimeString((string) $schedule->end_time))) {
             throw ValidationException::withMessages(['status' => 'Jadwal yang belum berlangsung tidak bisa ditandai selesai.']);
         }
 
