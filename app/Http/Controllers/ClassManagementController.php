@@ -115,6 +115,14 @@ class ClassManagementController extends Controller
     {
         $data = $this->validateSchedule($request);
         $sportClass = SportClass::query()->findOrFail($schedule->class_id);
+        $registeredCount = $schedule->participants()->whereIn('status', ['pending', 'confirmed'])->count();
+        $newCapacity = $data['capacity'] ?? $sportClass->default_capacity;
+
+        if ($newCapacity < $registeredCount) {
+            throw ValidationException::withMessages([
+                'capacity' => "Kapasitas tidak boleh lebih kecil dari {$registeredCount} peserta yang sudah terdaftar.",
+            ]);
+        }
 
         DB::transaction(function () use ($sportClass, $data, $schedule) {
             $this->assertTrainerAvailable($sportClass, $data, $schedule->id);
