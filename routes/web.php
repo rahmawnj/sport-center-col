@@ -59,6 +59,8 @@ Route::middleware(['auth'])->group(function () {
         return app(DashboardController::class)->index($request);
     })->name('dashboard');
 
+    Route::post('member/trainer-schedules/{schedule}/confirm', [TrainerSessionController::class, 'confirmMember'])->middleware(EnsureUserRole::class.':Member')->name('member.trainer-schedules.confirm');
+
     Route::get('member/dashboard', [MemberDashboardController::class, 'index'])
         ->middleware(EnsureUserRole::class.':Member')
         ->name('member.dashboard');
@@ -75,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::prefix('trainer')->name('trainer.')->middleware(EnsureUserRole::class.':Trainer')->group(function () {
+        Route::post('schedules/{schedule}/confirm', [TrainerSessionController::class, 'confirmTrainer'])->name('schedules.confirm');
         Route::get('dashboard', [TrainerDashboardController::class, 'index'])->name('dashboard');
         Route::get('members', [TrainerDashboardController::class, 'members'])->name('members');
         Route::get('members/{memberTrainerPackage}', [TrainerDashboardController::class, 'memberShow'])->name('members.show');
