@@ -46,6 +46,7 @@ type Court = {
     price_adjustment?: number;
 };
 type Slot = {
+    window_id: number;
     start_time: string;
     end_time: string;
     price: number;
@@ -250,6 +251,11 @@ currentlySelected.delete(slots.value[index].start_time);
         .map((time) => slots.value.find((entry) => entry.start_time === time))
         .filter((entry): entry is Slot => !!entry)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    if (new Set(chosen.map((entry) => entry.window_id)).size > 1) {
+        slotSelectionError.value = 'Booking tidak bisa melewati pergantian rentang harga. Selesaikan booking pada satu rentang jam.';
+        return;
+    }
 
     selectedSlots.value = chosen.map((entry) => entry.start_time);
     courtId.value = null;
