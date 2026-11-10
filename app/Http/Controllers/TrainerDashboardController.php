@@ -56,7 +56,7 @@ class TrainerDashboardController extends Controller
                 'member_confirmed_at' => $schedule->member_confirmed_at?->toISOString(),
                 'trainer_confirmed_at' => $schedule->trainer_confirmed_at?->toISOString(),
                 'status' => $schedule->status,
-                'can_confirm' => $schedule->status === 'scheduled' && now()->gte($schedule->session_date->toDateString().' '.$schedule->end_time),
+                'can_confirm' => $schedule->status === 'scheduled',
             ]);
 
         return Inertia::render('trainer/Dashboard', [
