@@ -62,7 +62,8 @@ class TrainerSessionController extends Controller
             $this->ensureMembershipCoversDate($package, $data['session_date']);
             $this->ensureNoScheduleOverlap($package, $data, $locked->id);
 
-            $locked->update([\n                ...$data,\n                'member_attended' => false,\n                'trainer_attended' => false,\n                'member_confirmed_at' => null,\n                'trainer_confirmed_at' => null,\n            ]);
+            $locked->update([
+                ...$data,\n                'member_attended' => false,\n                'trainer_attended' => false,\n                'member_confirmed_at' => null,\n                'trainer_confirmed_at' => null,\n            ]);
         });
 
         return back()->with('success', 'Jadwal sesi berhasil diperbarui.');
