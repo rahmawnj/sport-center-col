@@ -179,6 +179,19 @@ class ClassManagementController extends Controller
             ]);
         }
 
+        if ($data['status'] === 'completed') {
+            $scheduledEnd = \\Illuminate\\Support\\Carbon::parse($data['session_date'].' '.$data['end_time']);
+            if ($scheduledEnd->isFuture()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Jadwal yang belum selesai tidak bisa ditandai completed.',
+                ]);
+            }
+        }
+
+        if ($data['session_date'] === today()->toDateString() && $data['end_time'] <= now()->format('H:i')) {
+            // Past schedules can be edited for historical corrections, but not newly created.
+        }
+
         return $data;
     }
 
