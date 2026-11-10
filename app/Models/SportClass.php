@@ -16,7 +16,6 @@ class SportClass extends Model
         'description',
         'duration_minutes',
         'default_capacity',
-        'price',
         'is_active',
     ];
 
@@ -25,7 +24,6 @@ class SportClass extends Model
         return [
             'duration_minutes' => 'integer',
             'default_capacity' => 'integer',
-            'price' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }
