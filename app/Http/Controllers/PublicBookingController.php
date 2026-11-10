@@ -475,10 +475,8 @@ class PublicBookingController extends Controller
         $close = $rules->pluck('end_time')->filter()->max() ?? self::DEFAULT_CLOSE;
         $duration = max(1, (int) $package->duration_minutes);
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
-
-        // Slot labels follow the package duration (e.g. 10:00, 11:00, 12:00).
-        // Turnaround is only a conflict buffer between separate bookings; it
-        // must not shift every slot's start time.
+        // Each next slot starts after the session duration plus preparation gap.
+        $step = $duration + $turnaround;
 
         $courts = Court::query()
             ->where('facility_id', $package->facility_id)
@@ -498,7 +496,7 @@ class PublicBookingController extends Controller
 
         while ($cursor + $duration <= $end) {
             if ($date->isToday() && $cursor < (now()->hour * 60 + now()->minute)) {
-                $cursor += $duration;
+                $cursor += $step;
 
                 continue;
             }
@@ -534,7 +532,7 @@ class PublicBookingController extends Controller
                 ];
             }
 
-            $cursor += $duration;
+            $cursor += $step;
         }
 
         return $slots;
