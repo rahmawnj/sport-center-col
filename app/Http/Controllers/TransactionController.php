@@ -260,7 +260,9 @@ class TransactionController extends Controller
                 if ($childStatus === 'active' && (
                     $participants->isEmpty()
                     || $hasCancelledParticipant
-                    || $participants->contains(fn (SessionParticipant $participant) => $participant->schedule?->status !== 'scheduled')
+                    || $participants->contains(fn (SessionParticipant $participant) => ! $participant->schedule?->is_active
+                        || $participant->session_date?->lt(today())
+                        || ($participant->session_date?->isToday() && $participant->schedule?->start_time <= now()->format('H:i:s')))
                 )) {
                     throw ValidationException::withMessages([
                         'payment_status' => 'Jadwal kelas sudah dibatalkan atau selesai. Pembayaran tidak dapat dikonfirmasi.',
@@ -285,7 +287,8 @@ class TransactionController extends Controller
     public function show(Transaction $transaction): Response
     {
         $transaction->load(['sessionParticipants.schedule.sportClass.facility', 'sessionParticipants.schedule.trainer']);
-        $classSchedule = $transaction->sessionParticipants->first()?->schedule;
+        $classParticipant = $transaction->sessionParticipants->first();
+        $classSchedule = $classParticipant?->schedule;
         $details = [];
 
         if ($transaction->transactionable_type === 'class' && $classSchedule) {
@@ -293,7 +296,7 @@ class TransactionController extends Controller
                 ['label' => 'Kelas', 'value' => $classSchedule->sportClass?->name],
                 ['label' => 'Fasilitas', 'value' => $classSchedule->sportClass?->facility?->name],
                 ['label' => 'Trainer', 'value' => $classSchedule->trainer?->name ?? 'Belum ditentukan'],
-                ['label' => 'Tanggal', 'value' => $classSchedule->session_date?->format('d M Y')],
+                ['label' => 'Tanggal', 'value' => $classParticipant?->session_date?->format('d M Y')],
                 ['label' => 'Waktu', 'value' => substr((string) $classSchedule->start_time, 0, 5).' - '.substr((string) $classSchedule->end_time, 0, 5)],
             ];
         }
