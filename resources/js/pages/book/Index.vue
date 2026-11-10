@@ -23,12 +23,14 @@ type PricingRule = {
     price: number;
 };
 type TrainerAddon = { id: number; name: string; specialty: string | null; price: number };
+type PricingSummary = { starting_price: number | null; day_type: 'weekday' | 'weekend'; rules: PricingRule[] };
 type BookingPackage = {
     id: number;
     name: string;
     type: 'session' | 'membership' | 'entry';
     duration_minutes: number;
     pricing_rules: PricingRule[];
+    pricing_summary: PricingSummary;
     trainer_addons: TrainerAddon[];
 };
 type Facility = {
@@ -106,13 +108,7 @@ const selectedDurationLabel = computed(() => {
     return hours === 1 ? '1 jam' : `${hours} jam`;
 });
 
-const packagePrice = computed(() => {
-    if (!pkg.value?.pricing_rules.length) {
-        return null;
-    }
-
-    return Math.min(...pkg.value.pricing_rules.map((rule) => rule.price));
-});
+const packagePrice = computed(() => pkg.value?.pricing_summary.starting_price ?? null);
 
 const selectedTrainerAddon = computed(() => pkg.value?.trainer_addons.find((addon) => addon.id === form.trainer_id) ?? null);
 
@@ -145,13 +141,9 @@ const visibleSteps = computed(() => {
 });
 
 function packagePriceLabel(item: BookingPackage) {
-    if (!item.pricing_rules.length) {
-        return '—';
-    }
-
-    const prices = item.pricing_rules.map((rule) => rule.price);
-
-    return formatIDR(Math.min(...prices));
+    return item.pricing_summary.starting_price === null
+        ? '—'
+        : formatIDR(item.pricing_summary.starting_price);
 }
 
 const canNext = computed(() => {
