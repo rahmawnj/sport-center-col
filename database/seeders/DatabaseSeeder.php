@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             BookingLandingPageSeeder::class,
+            BookingTimeSlotSeeder::class,
             MembershipPackageSeeder::class,
             TrainerSeeder::class,
             TrainerPackageSeeder::class,
