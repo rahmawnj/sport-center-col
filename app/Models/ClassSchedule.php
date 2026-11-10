@@ -11,20 +11,20 @@ class ClassSchedule extends Model
     protected $fillable = [
         'class_id',
         'trainer_id',
-        'session_date',
+        'day',
         'start_time',
         'end_time',
         'capacity',
         'price',
-        'status',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'session_date' => 'date',
             'capacity' => 'integer',
             'price' => 'decimal:2',
+            'is_active' => 'boolean',
         ];
     }
 
