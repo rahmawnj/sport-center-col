@@ -64,7 +64,11 @@ class TrainerSessionController extends Controller
 
             $locked->update([
                 ...$data,
-                'member_attended' => false,\n                'trainer_attended' => false,\n                'member_confirmed_at' => null,\n                'trainer_confirmed_at' => null,\n            ]);
+                'member_attended' => false,
+                'trainer_attended' => false,
+                'member_confirmed_at' => null,
+                'trainer_confirmed_at' => null,
+            ]);
         });
 
         return back()->with('success', 'Jadwal sesi berhasil diperbarui.');
