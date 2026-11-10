@@ -89,10 +89,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware([EnsureUserRole::class.':Superadmin'])->group(function () {
 
-        Route::get('booking-time-slots', [BookingTimeSlotController::class, 'index'])->name('booking-time-slots.index');
-        Route::post('booking-time-slots', [BookingTimeSlotController::class, 'store'])->name('booking-time-slots.store');
-        Route::put('booking-time-slots/{bookingTimeSlot}', [BookingTimeSlotController::class, 'update'])->name('booking-time-slots.update');
-        Route::delete('booking-time-slots/{bookingTimeSlot}', [BookingTimeSlotController::class, 'destroy'])->name('booking-time-slots.destroy');
+        Route::post('facilities/{facility}/booking-time-slots', [BookingTimeSlotController::class, 'store'])->name('facilities.booking-time-slots.store');
+        Route::put('facilities/{facility}/booking-time-slots/{bookingTimeSlot}', [BookingTimeSlotController::class, 'update'])->name('facilities.booking-time-slots.update');
+        Route::delete('facilities/{facility}/booking-time-slots/{bookingTimeSlot}', [BookingTimeSlotController::class, 'destroy'])->name('facilities.booking-time-slots.destroy');
 
         Route::get('facilities', [FacilityController::class, 'index'])->name('facilities.index');
         Route::post('facilities', [FacilityController::class, 'store'])->name('facilities.store');
