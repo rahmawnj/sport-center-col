@@ -11,11 +11,12 @@ return new class extends Migration
         Schema::create('booking_time_slots', function (Blueprint $table) {
             $table->id();
             $table->foreignId('facility_id')->constrained()->cascadeOnDelete();
+            $table->enum('day_type', ['all', 'weekday', 'weekend'])->default('all');
             $table->time('start_time');
             $table->time('end_time');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            $table->index(['facility_id', 'is_active', 'start_time']);
+            $table->index(['facility_id', 'day_type', 'is_active', 'start_time']);
         });
     }
 
