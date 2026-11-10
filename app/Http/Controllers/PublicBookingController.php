@@ -7,7 +7,6 @@ use App\Models\Court;
 use App\Models\Device;
 use App\Models\Facility;
 use App\Models\Package;
-use App\Models\PackagePricingRule;
 use App\Models\Transaction;
 use App\Models\UserMembership;
 use App\Services\PackagePricingService;
@@ -15,7 +14,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -56,8 +54,7 @@ class PublicBookingController extends Controller
                         'price' => (float) $trainer->pivot->price,
                     ])->values(),
                     'pricing_summary' => $this->pricing->summary($package, Carbon::today()),
-                    'pricing_rules' => $package->pricingRules
-                        ->filter(fn ($rule) => $this->pricing->isActiveOn($rule, Carbon::today()->toDateString()))
+                    'pricing_rules' => $this->pricing->rulesForDate($package, Carbon::today())
                         ->map(fn ($rule) => [
                             'day_type' => $rule->day_type,
                             'start_time' => $rule->start_time ? substr((string) $rule->start_time, 0, 5) : null,
@@ -468,7 +465,7 @@ class PublicBookingController extends Controller
      */
     private function buildSlots(Package $package, Carbon $date): array
     {
-        $rules = $this->matchingRules($package, $date);
+        $rules = $this->pricing->rulesForDate($package, $date);
 
         if ($rules->isEmpty()) {
             return [];
@@ -503,7 +500,7 @@ class PublicBookingController extends Controller
                 continue;
             }
 
-            $price = $this->resolvePrice($rules, $cursor);
+            $price = $this->pricing->priceAt($rules, $cursor);
 
             if ($price !== null) {
                 $slotEnd = $cursor + $duration;
