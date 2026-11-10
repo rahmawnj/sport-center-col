@@ -21,7 +21,7 @@ class BookingPricingSeeder extends Seeder
             ->with('pricingRules')
             ->get()
             ->each(function (Package $package): void {
-                $basePrice = (float) ($package->pricingRules->min('price') ?? $package->price);
+                $basePrice = (float) ($package->pricingRules->where('priority', '<', 100)->min('price') ?? $package->price);
 
                 if ($basePrice <= 0) {
                     $this->command?->warn("Tarif {$package->name} dilewati karena belum memiliki harga dasar.");
