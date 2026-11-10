@@ -15,6 +15,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import FormSelect from '@/components/FormSelect.vue';
+import FacilityClasses from '@/components/FacilityClasses.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -566,6 +567,8 @@ function promoRange(rule: PricingRule) {
             </div>
         </div>
 
+
+        <FacilityClasses :facility-id="props.facility.id" :classes="props.facility.classes" :trainers="props.facility.trainers" />
 
         <section class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
