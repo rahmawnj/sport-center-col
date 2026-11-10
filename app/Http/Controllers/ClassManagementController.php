@@ -1,18 +1,18 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\ClassSchedule;
-use App\\Models\\Facility;
-use App\\Models\\SessionParticipant;
-use App\\Models\\SportClass;
-use App\\Models\\Trainer;
-use Illuminate\\Http\\RedirectResponse;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Validation\\ValidationException;
-use Inertia\\Inertia;
-use Inertia\\Response;
+use App\Models\ClassSchedule;
+use App\Models\Facility;
+use App\Models\SessionParticipant;
+use App\Models\SportClass;
+use App\Models\Trainer;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ClassManagementController extends Controller
 {
