@@ -40,9 +40,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        DB::table('transactions')->where('payment_status', 'failed')->update(['payment_status' => 'unpaid']);
+        DB::table('transactions')->where('payment_status', 'refunded')->update(['payment_status' => 'fully_paid']);
+
         Schema::table('transactions', function (Blueprint $table) {
-            DB::table('transactions')->where('payment_status', 'failed')->update(['payment_status' => 'unpaid']);
-            DB::table('transactions')->where('payment_status', 'refunded')->update(['payment_status' => 'fully_paid']);
             $table->enum('payment_status', ['unpaid', 'dp_paid', 'fully_paid'])
                 ->default('unpaid')
                 ->change();
