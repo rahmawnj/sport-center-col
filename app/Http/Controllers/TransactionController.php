@@ -244,6 +244,19 @@ class TransactionController extends Controller
                     }
                 }
             }
+            } elseif ($locked->transactionable_type === 'class') {
+                $participantStatus = match ($childStatus) {
+                    'active' => 'confirmed',
+                    'cancelled' => 'cancelled',
+                    default => 'pending',
+                };
+
+                SessionParticipant::query()
+                    ->where('transaction_id', $locked->id)
+                    ->whereIn('status', ['pending', 'confirmed'])
+                    ->lockForUpdate()
+                    ->update(['status' => $participantStatus]);
+            }
         });
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil diperbarui.');
