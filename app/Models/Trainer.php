@@ -40,4 +40,9 @@ class Trainer extends Model
     {
         return $this->hasMany(MemberTrainerPackage::class);
     }
+
+    public function classSchedules(): HasMany
+    {
+        return $this->hasMany(ClassSchedule::class);
+    }
 }
