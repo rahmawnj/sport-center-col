@@ -55,7 +55,7 @@ function setAttendance(id:number,status:'attended'|'no_show'){router.put('/sessi
 
 <div v-if="classDialog" class="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" @click.self="classDialog=false">
   <form class="w-full max-w-lg space-y-4 rounded-2xl border bg-background p-6 shadow-xl" @submit.prevent="saveClass">
-    <div><h3 class="text-lg font-semibold">{{editingClass?'Edit master kelas':'Tambah master kelas'}}</h3><p class="text-sm text-muted-foreground">Fasilitas: {{/* fixed by current detail page */}} ID {{facilityId}}</p></div>
+    <div><h3 class="text-lg font-semibold">{{editingClass?'Edit master kelas':'Tambah master kelas'}}</h3><p class="text-sm text-muted-foreground">Fasilitas: ID {{props.facilityId}}</p></div>
     <div class="space-y-1"><Label>Nama kelas</Label><Input v-model="classForm.name" required/><p v-if="classForm.errors.name" class="text-xs text-destructive">{{classForm.errors.name}}</p></div>
     <div class="space-y-1"><Label>Deskripsi</Label><textarea v-model="classForm.description" rows="3" class="w-full rounded-md border bg-background p-3 text-sm"/></div>
     <div class="grid grid-cols-2 gap-3"><div class="space-y-1"><Label>Durasi (menit)</Label><Input v-model="classForm.duration_minutes" type="number" min="1" max="600" required/></div><div class="space-y-1"><Label>Kapasitas default</Label><Input v-model="classForm.default_capacity" type="number" min="1" required/></div></div>
