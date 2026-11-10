@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Schedule = { id:number; trainer_id:number|null; trainer:string|null; date:string; start_time:string; end_time:string; capacity:number|null; effective_capacity:number; registered_count:number; price:number; status:string };
+type Schedule = { id:number; trainer_id:number|null; trainer:string|null; date:string; start_time:string; end_time:string; capacity:number|null; effective_capacity:number; registered_count:number; price:number; status:string; participants:{id:number;name:string;email:string|null;status:string}[] };
 type SportClass = { id:number; facility_id:number; facility:string; name:string; description:string|null; duration_minutes:number; default_capacity:number; is_active:boolean; schedules:Schedule[] };
 const props=defineProps<{classes:SportClass[];facilities:{id:number;name:string}[];trainers:{id:number;name:string}[]}>();
 const classDialog=ref(false); const editingClass=ref<number|null>(null);
@@ -23,6 +23,7 @@ function setStatus(s:Schedule,status:string){router.put('/class-schedules/'+s.id
 function editSchedule(s:Schedule){editingSchedule.value=s.id;scheduleForm.clearErrors();scheduleForm.trainer_id=String(s.trainer_id??'');scheduleForm.session_date=s.date;scheduleForm.start_time=s.start_time;scheduleForm.end_time=s.end_time;scheduleForm.capacity=s.capacity===null?'':String(s.capacity);scheduleForm.price=String(s.price);scheduleForm.status=s.status;scheduleDialog.value=true;}
 function saveSchedule(){if(!editingSchedule.value)return;scheduleForm.put('/class-schedules/'+editingSchedule.value,{preserveScroll:true,onSuccess:()=>scheduleDialog.value=false});}
 function removeSchedule(s:Schedule){if(confirm('Hapus jadwal ini?'))router.delete('/class-schedules/'+s.id,{preserveScroll:true});}
+function setAttendance(id:number,status:'attended'|'no_show'){router.put('/session-participants/'+id+'/attendance',{status},{preserveScroll:true});}
 const money=(v:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(v);
 const dateLabel=(v:string)=>new Date(v+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
 </script>
@@ -44,7 +45,7 @@ const dateLabel=(v:string)=>new Date(v+'T00:00:00').toLocaleDateString('id-ID',{
 <h3 class="text-sm font-semibold">Jadwal kelas ({{item.schedules.length}})</h3>
 <div v-if="!item.schedules.length" class="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">Belum ada jadwal untuk kelas ini.</div>
 <div v-for="s in item.schedules" :key="s.id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
-<div><p class="font-semibold">{{dateLabel(s.date)}} · {{s.start_time}}–{{s.end_time}}</p><p class="mt-1 text-xs text-muted-foreground">{{s.trainer||'Trainer belum ditentukan'}} · {{s.registered_count}}/{{s.effective_capacity}} peserta · {{money(s.price)}}</p><span class="mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold" :class="s.status==='scheduled'?'bg-sky-100 text-sky-700':s.status==='completed'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'">{{s.status}}</span></div>
+<div><p class="font-semibold">{{dateLabel(s.date)}} · {{s.start_time}}–{{s.end_time}}</p><p class="mt-1 text-xs text-muted-foreground">{{s.trainer||'Trainer belum ditentukan'}} · {{s.registered_count}}/{{s.effective_capacity}} peserta · {{money(s.price)}}</p><span class="mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold" :class="s.status==='scheduled'?'bg-sky-100 text-sky-700':s.status==='completed'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'">{{s.status}}</span><div v-if="s.participants.length" class="mt-3 space-y-2"><p class="text-xs font-semibold text-muted-foreground">Peserta</p><div v-for="p in s.participants" :key="p.id" class="flex flex-wrap items-center justify-between gap-2 text-xs"><span>{{p.name}} <span class="text-muted-foreground">· {{p.status}}</span></span><div v-if="s.status==='completed' && ['confirmed','attended','no_show'].includes(p.status)" class="flex gap-1"><button type="button" class="rounded-md border px-2 py-1 hover:bg-emerald-50" @click="setAttendance(p.id,'attended')">Hadir</button><button type="button" class="rounded-md border px-2 py-1 hover:bg-rose-50" @click="setAttendance(p.id,'no_show')">Tidak hadir</button></div></div></div></div>
 <div class="flex flex-wrap gap-2"><Button size="sm" variant="outline" @click="editSchedule(s)">Edit</Button><Button v-if="s.status==='scheduled'" size="sm" variant="outline" @click="setStatus(s,'completed')">Selesai</Button><Button v-if="s.status==='scheduled'" size="sm" variant="outline" @click="setStatus(s,'cancelled')">Batalkan</Button><Button size="sm" variant="ghost" class="text-destructive" @click="removeSchedule(s)">Hapus</Button></div>
 </div>
 </div>
