@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('class_schedules', function (Blueprint $table) {
-            $table->string('day', 9)->default('monday')->after('trainer_id');
+            $table->enum('day', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])->default('monday')->after('trainer_id');
             $table->boolean('is_active')->default(true)->after('price');
         });
 
