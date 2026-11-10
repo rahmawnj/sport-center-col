@@ -95,9 +95,6 @@ class TrainerSessionController extends Controller
             $locked = TrainerSessionSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
             abort_unless($locked->status === 'scheduled', 422, 'Konfirmasi hanya bisa dilakukan untuk jadwal yang belum ditutup.');
 
-            $sessionEndsAt = $locked->session_date->toDateString().' '.$locked->end_time;
-            abort_unless(now()->gte($sessionEndsAt), 422, 'Konfirmasi kehadiran hanya bisa dilakukan setelah sesi berakhir.');
-
             $timestamp = $role === 'member' ? 'member_confirmed_at' : 'trainer_confirmed_at';
             $attendance = $role === 'member' ? 'member_attended' : 'trainer_attended';
             abort_unless(! $locked->{$timestamp}, 422, 'Kehadiran sudah dikonfirmasi.');
