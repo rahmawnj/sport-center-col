@@ -75,7 +75,7 @@ const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;act
       </div>
     </section>
     <section v-if="trainerSchedules.length" class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-      <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-bold text-slate-900">Konfirmasi sesi personal trainer</h2><p class="mt-1 text-sm text-slate-500">Konfirmasi kehadiranmu setelah jadwal sesi berakhir.</p></div></div>
+      <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-bold text-slate-900">Konfirmasi sesi personal trainer</h2><p class="mt-1 text-sm text-slate-500">Kamu bisa mengonfirmasi hadir atau tidak hadir sebelum hari latihan.</p></div></div>
       <div class="mt-4 divide-y divide-slate-100">
         <article v-for="item in trainerSchedules" :key="item.id" class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div><p class="font-semibold text-slate-900">{{ item.package || 'Sesi personal trainer' }}</p><p class="mt-1 text-sm text-slate-500">{{ item.trainer || 'Trainer' }} · {{ dateLabel(item.date) }} · {{ item.start_time }}–{{ item.end_time }}</p>
@@ -83,8 +83,8 @@ const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;act
             <p class="mt-1 text-xs text-slate-500">Trainer: {{ !item.trainer_confirmed_at ? 'Belum dikonfirmasi' : (item.trainer_attended ? 'Hadir' : 'Tidak hadir') }}</p>
           </div>
           <div v-if="item.status === 'scheduled' && !item.member_confirmed_at" class="flex flex-wrap gap-2">
-            <button type="button" :disabled="!item.can_confirm" @click="confirmTrainerSchedule(item.id,true)" class="rounded-lg bg-lime-600 px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Hadir</button>
-            <button type="button" :disabled="!item.can_confirm" @click="confirmTrainerSchedule(item.id,false)" class="rounded-lg border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-40">Tidak hadir</button>
+            <button type="button" @click="confirmTrainerSchedule(item.id,true)" class="rounded-lg bg-lime-600 px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Hadir</button>
+            <button type="button" @click="confirmTrainerSchedule(item.id,false)" class="rounded-lg border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-40">Tidak hadir</button>
           </div>
           <span v-else class="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">{{ item.status === 'completed' ? 'Sesi berhasil' : item.status === 'failed' ? 'Sesi tidak berhasil' : 'Sudah dikonfirmasi' }}</span>
         </article>
