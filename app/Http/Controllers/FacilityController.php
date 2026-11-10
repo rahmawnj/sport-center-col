@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Facility;
 use App\Models\BookingTimeSlot;
+use App\Models\ClassSchedule;
+use App\Models\SessionParticipant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
