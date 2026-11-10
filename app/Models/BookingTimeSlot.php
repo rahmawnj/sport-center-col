@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BookingTimeSlot extends Model
 {
-    protected $fillable = ['facility_id', 'day_type', 'start_time', 'end_time', 'is_active'];
+    protected $fillable = ['facility_id', 'day', 'start_time', 'end_time', 'price', 'is_active'];
 
     protected function casts(): array
     {
