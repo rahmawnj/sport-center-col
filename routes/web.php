@@ -92,7 +92,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware([EnsureUserRole::class.':Superadmin'])->group(function () {
-        Route::get('classes', [ClassManagementController::class, 'index'])->name('classes.index');
+        Route::redirect('classes', '/facilities')->name('classes.index');
         Route::post('classes', [ClassManagementController::class, 'store'])->name('classes.store');
         Route::put('classes/{sportClass}', [ClassManagementController::class, 'update'])->name('classes.update');
         Route::delete('classes/{sportClass}', [ClassManagementController::class, 'destroy'])->name('classes.destroy');
