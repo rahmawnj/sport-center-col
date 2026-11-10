@@ -53,6 +53,8 @@ class TrainerDashboardController extends Controller
                 'end_time' => substr((string) $schedule->end_time, 0, 5),
                 'member_attended' => (bool) $schedule->member_attended,
                 'trainer_attended' => (bool) $schedule->trainer_attended,
+                'member_confirmed_at' => $schedule->member_confirmed_at?->toISOString(),
+                'trainer_confirmed_at' => $schedule->trainer_confirmed_at?->toISOString(),
                 'status' => $schedule->status,
                 'can_confirm' => $schedule->status === 'scheduled' && now()->gte($schedule->session_date->toDateString().' '.$schedule->end_time),
             ]);
