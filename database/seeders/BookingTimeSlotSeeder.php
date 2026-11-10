@@ -37,7 +37,7 @@ class BookingTimeSlotSeeder extends Seeder
                     ];
 
                     foreach ($periods as [$start, $end, $periodMultiplier]) {
-                        BookingTimeSlot::updateOrCreate(
+                        BookingTimeSlot::firstOrCreate(
                             [
                                 'facility_id' => $facility->id,
                                 'day' => $day,
