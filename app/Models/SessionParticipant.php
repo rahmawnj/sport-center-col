@@ -9,6 +9,7 @@ class SessionParticipant extends Model
 {
     protected $fillable = [
         'class_schedule_id',
+        'session_date',
         'user_id',
         'transaction_id',
         'price',
@@ -18,6 +19,7 @@ class SessionParticipant extends Model
     protected function casts(): array
     {
         return [
+            'session_date' => 'date',
             'price' => 'decimal:2',
         ];
     }
