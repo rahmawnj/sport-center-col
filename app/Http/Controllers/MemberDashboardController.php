@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\MemberTrainerPackage;
+use App\Models\SessionParticipant;
 use App\Models\Transaction;
 use App\Models\UserMembership;
 use Illuminate\Http\Request;
