@@ -88,6 +88,6 @@ class Transaction extends Model
 
     public function sessionParticipants(): HasMany
     {
-        return $this->hasMany(SessionParticipant::class);
+        return $this->hasMany(SessionParticipant::class, 'transaction_id');
     }
 }
