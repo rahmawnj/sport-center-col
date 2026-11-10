@@ -16,9 +16,9 @@ class BookingTimeSlotSeeder extends Seeder
     public function run(): void
     {
         Facility::query()
-            ->where('is_bookable_online', true)
             ->each(function (Facility $facility): void {
                 $basePrice = $this->basePriceFor($facility->name);
+                $turnaround = max(0, (int) $facility->turnaround_minutes);
 
                 // Remove only legacy rows migrated without a price.
                 BookingTimeSlot::query()
@@ -31,8 +31,8 @@ class BookingTimeSlotSeeder extends Seeder
                     $multiplier = $weekend ? 1.25 : 1;
 
                     $periods = [
-                        ['07:00', '12:00', 1.00],
-                        ['12:00', '17:00', 1.20],
+                        ['07:00', $this->toTime(12 * 60 - $turnaround), 1.00],
+                        ['12:00', $this->toTime(17 * 60 - $turnaround), 1.20],
                         ['17:00', '23:00', 1.50],
                     ];
 
@@ -52,6 +52,11 @@ class BookingTimeSlotSeeder extends Seeder
                     }
                 }
             });
+    }
+
+    private function toTime(int $minutes): string
+    {
+        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
     }
 
     private function basePriceFor(string $facilityName): int
