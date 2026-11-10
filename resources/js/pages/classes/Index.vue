@@ -54,10 +54,10 @@ const dateLabel=(v:string)=>new Date(v+'T00:00:00').toLocaleDateString('id-ID',{
 </div>
 <form class="h-fit space-y-3 rounded-xl bg-muted/40 p-4" @submit.prevent="addSchedule(item)">
 <h3 class="font-semibold">Tambah jadwal</h3>
-<div class="space-y-1"><Label>Tanggal</Label><Input v-model="formFor(item.id).session_date" type="date" required/></div>
-<div class="grid grid-cols-2 gap-2"><div class="space-y-1"><Label>Mulai</Label><Input v-model="formFor(item.id).start_time" type="time" required/></div><div class="space-y-1"><Label>Selesai</Label><Input v-model="formFor(item.id).end_time" type="time" required/></div></div>
-<div class="space-y-1"><Label>Trainer</Label><select v-model="formFor(item.id).trainer_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="">Belum ditentukan</option><option v-for="t in trainers" :key="t.id" :value="String(t.id)">{{t.name}}</option></select></div>
-<div class="grid grid-cols-2 gap-2"><div class="space-y-1"><Label>Kapasitas</Label><Input v-model="formFor(item.id).capacity" type="number" min="1" placeholder="Default"/></div><div class="space-y-1"><Label>Harga (Rp)</Label><Input v-model="formFor(item.id).price" type="number" min="0" required/></div></div>
+<div class="space-y-1"><Label>Tanggal</Label><Input v-model="formFor(item).session_date" type="date" required/></div>
+<div class="grid grid-cols-2 gap-2"><div class="space-y-1"><Label>Mulai</Label><Input v-model="formFor(item).start_time" type="time" required @update:model-value="updateNewScheduleEnd(item)"/></div><div class="space-y-1"><Label>Selesai</Label><Input v-model="formFor(item).end_time" type="time" required/></div></div>
+<div class="space-y-1"><Label>Trainer</Label><select v-model="formFor(item).trainer_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="">Belum ditentukan</option><option v-for="t in trainers" :key="t.id" :value="String(t.id)">{{t.name}}</option></select></div>
+<div class="grid grid-cols-2 gap-2"><div class="space-y-1"><Label>Kapasitas</Label><Input v-model="formFor(item).capacity" type="number" min="1" placeholder="Default"/></div><div class="space-y-1"><Label>Harga (Rp)</Label><Input v-model="formFor(item).price" type="number" min="0" required/></div></div>
 <Button type="submit" class="w-full">Simpan jadwal</Button>
 </form>
 </div>
