@@ -222,7 +222,7 @@ class MemberDashboardController extends Controller
             ->through(fn (Transaction $transaction) => [
                 'id' => $transaction->id,
                 'invoice_number' => $transaction->invoice_number,
-                'reference' => match ($transaction->transactionable_type) { 'membership' => 'Membership + Personal Trainer', 'trainer_package' => 'Personal Trainer', default => 'Booking' },
+                'reference' => match ($transaction->transactionable_type) { 'membership' => 'Membership + Personal Trainer', 'trainer_package' => 'Personal Trainer', 'class' => 'Kelas', default => 'Booking' },
                 'amount' => (float) $transaction->total_amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $transaction->payment_status,
@@ -296,6 +296,13 @@ class MemberDashboardController extends Controller
                 if ($legacyTrainerPackages->count() === 1) {
                     $legacyTrainerPackages->update(['status' => 'cancelled']);
                 }
+            }
+
+            if ($locked->transactionable_type === 'class') {
+                SessionParticipant::query()
+                    ->where('transaction_id', $locked->id)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'cancelled']);
             }
         });
 
