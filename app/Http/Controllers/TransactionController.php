@@ -264,6 +264,20 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction): Response
     {
+        $transaction->load(['sessionParticipants.schedule.sportClass.facility', 'sessionParticipants.schedule.trainer']);
+        $classSchedule = $transaction->sessionParticipants->first()?->schedule;
+        $details = [];
+
+        if ($transaction->transactionable_type === 'class' && $classSchedule) {
+            $details = [
+                ['label' => 'Kelas', 'value' => $classSchedule->sportClass?->name],
+                ['label' => 'Fasilitas', 'value' => $classSchedule->sportClass?->facility?->name],
+                ['label' => 'Trainer', 'value' => $classSchedule->trainer?->name ?? 'Belum ditentukan'],
+                ['label' => 'Tanggal', 'value' => $classSchedule->session_date?->format('d M Y')],
+                ['label' => 'Waktu', 'value' => substr((string) $classSchedule->start_time, 0, 5).' - '.substr((string) $classSchedule->end_time, 0, 5)],
+            ];
+        }
+
         return Inertia::render('transactions/Show', [
             'transaction' => [
                 'id' => $transaction->id,
@@ -275,7 +289,7 @@ class TransactionController extends Controller
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
                 'reference' => $this->reference($transaction),
                 'created_at' => $transaction->created_at?->toISOString(),
-                'details' => [],
+                'details' => $details,
             ],
         ]);
     }
