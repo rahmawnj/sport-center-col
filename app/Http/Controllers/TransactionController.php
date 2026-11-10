@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\BookingTimeSlot;
 use App\Models\MemberTrainerPackage;
 use App\Models\Device;
 use App\Models\Facility;
@@ -411,12 +412,32 @@ class TransactionController extends Controller
 
         $package->loadMissing('facility');
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
-
         $date = Carbon::parse($data['date']);
         $startMinutes = $this->toMinutes($data['start_time']);
-        $endMinutes = $startMinutes + max(1, (int) $package->duration_minutes);
+        $durationMinutes = max(1, (int) $package->duration_minutes);
+        $endMinutes = $startMinutes + $durationMinutes;
         $startTime = $this->toTime($startMinutes);
         $endTime = $this->toTime($endMinutes);
+
+        $windows = BookingTimeSlot::query()
+            ->where('facility_id', $package->facility_id)
+            ->where('is_active', true)
+            ->get(['start_time', 'end_time']);
+        $step = $durationMinutes + $turnaround;
+        $validSlot = $windows->contains(function (BookingTimeSlot $window) use ($startMinutes, $endMinutes, $step) {
+            $windowStart = $this->toMinutes((string) $window->start_time);
+            $windowEnd = $this->toMinutes((string) $window->end_time);
+
+            return $startMinutes >= $windowStart
+                && ($startMinutes - $windowStart) % $step === 0
+                && $endMinutes <= $windowEnd;
+        });
+
+        if (! $validSlot) {
+            throw ValidationException::withMessages([
+                'start_time' => 'Jam yang dipilih tidak sesuai Master Jam Booking. Silakan pilih slot yang tersedia.',
+            ]);
+        }
 
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
             throw ValidationException::withMessages([
@@ -445,8 +466,6 @@ class TransactionController extends Controller
                 ]);
             }
 
-            // For session bookings, save the reservation only.
-            // Payment transactions are intentionally not created in this flow.
             Booking::create([
                 'guest_name' => $data['customer_name'] ?? null,
                 'court_id' => $data['court_id'],

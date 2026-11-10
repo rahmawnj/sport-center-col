@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\BookingTimeSlot;
 use App\Models\Court;
 use App\Models\Device;
 use App\Models\Facility;
@@ -353,6 +354,10 @@ class PublicBookingController extends Controller
         $endMinutes = $startMinutes + $durationMinutes;
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
 
+        if (! $this->isMasterSlotStart($package->facility_id, $startMinutes, $durationMinutes)) {
+            throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih tidak sesuai Master Jam Booking. Silakan pilih slot yang tersedia.']);
+        }
+
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
@@ -466,16 +471,12 @@ class PublicBookingController extends Controller
     private function buildSlots(Package $package, Carbon $date): array
     {
         $rules = $this->pricing->rulesForDate($package, $date);
-
         if ($rules->isEmpty()) {
             return [];
         }
 
-        $open = $rules->pluck('start_time')->filter()->min() ?? self::DEFAULT_OPEN;
-        $close = $rules->pluck('end_time')->filter()->max() ?? self::DEFAULT_CLOSE;
         $duration = max(1, (int) $package->duration_minutes);
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
-        // Each next slot starts after the session duration plus preparation gap.
         $step = $duration + $turnaround;
 
         $courts = Court::query()
@@ -490,52 +491,77 @@ class PublicBookingController extends Controller
             ->whereNotIn('status', ['cancelled'])
             ->get(['court_id', 'start_time', 'end_time']);
 
+        $windows = BookingTimeSlot::query()
+            ->where('facility_id', $package->facility_id)
+            ->where('is_active', true)
+            ->orderBy('start_time')
+            ->get();
+
         $slots = [];
-        $cursor = $this->toMinutes((string) $open);
-        $end = $this->toMinutes((string) $close);
+        foreach ($windows as $window) {
+            $cursor = $this->toMinutes((string) $window->start_time);
+            $windowEnd = $this->toMinutes((string) $window->end_time);
 
-        while ($cursor + $duration <= $end) {
-            if ($date->isToday() && $cursor < (now()->hour * 60 + now()->minute)) {
+            while ($cursor + $duration <= $windowEnd) {
+                if ($date->isToday() && $cursor < (now()->hour * 60 + now()->minute)) {
+                    $cursor += $step;
+                    continue;
+                }
+
+                $price = $this->pricing->priceAt($rules, $cursor);
+                if ($price !== null) {
+                    $slotEnd = $cursor + $duration;
+                    $available = $courts
+                        ->reject(fn ($court) => $bookings->contains(
+                            fn ($booking) => (int) $booking->court_id === $court->id
+                                && $this->windowsOverlap(
+                                    $cursor,
+                                    $slotEnd,
+                                    $this->toMinutes((string) $booking->start_time),
+                                    $this->toMinutes((string) $booking->end_time),
+                                    $turnaround,
+                                )
+                        ))
+                        ->map(fn ($court) => [
+                            'id' => $court->id,
+                            'name' => $court->name,
+                            'amenities' => $court->amenities ?? [],
+                            'price_adjustment' => (float) $court->price_adjustment,
+                        ])
+                        ->values();
+
+                    $slots[] = [
+                        'start_time' => $this->toTime($cursor),
+                        'end_time' => $this->toTime($slotEnd),
+                        'price' => (float) $price,
+                        'courts' => $available,
+                    ];
+                }
+
                 $cursor += $step;
-
-                continue;
             }
-
-            $price = $this->pricing->priceAt($rules, $cursor);
-
-            if ($price !== null) {
-                $slotEnd = $cursor + $duration;
-                $available = $courts
-                    ->reject(fn ($court) => $bookings->contains(
-                        fn ($booking) => (int) $booking->court_id === $court->id
-                            && $this->windowsOverlap(
-                                $cursor,
-                                $slotEnd,
-                                $this->toMinutes((string) $booking->start_time),
-                                $this->toMinutes((string) $booking->end_time),
-                                $turnaround,
-                            )
-                    ))
-                    ->map(fn ($court) => [
-                        'id' => $court->id,
-                        'name' => $court->name,
-                        'amenities' => $court->amenities ?? [],
-                        'price_adjustment' => (float) $court->price_adjustment,
-                    ])
-                    ->values();
-
-                $slots[] = [
-                    'start_time' => $this->toTime($cursor),
-                    'end_time' => $this->toTime($slotEnd),
-                    'price' => (float) $price,
-                    'courts' => $available,
-                ];
-            }
-
-            $cursor += $step;
         }
 
         return $slots;
+    }
+
+    private function isMasterSlotStart(int $facilityId, int $startMinutes, int $durationMinutes): bool
+    {
+        $turnaround = max(0, (int) Facility::query()->whereKey($facilityId)->value('turnaround_minutes'));
+        $step = max(1, $durationMinutes) + $turnaround;
+
+        return BookingTimeSlot::query()
+            ->where('facility_id', $facilityId)
+            ->where('is_active', true)
+            ->get(['start_time', 'end_time'])
+            ->contains(function (BookingTimeSlot $window) use ($startMinutes, $durationMinutes, $step) {
+                $windowStart = $this->toMinutes((string) $window->start_time);
+                $windowEnd = $this->toMinutes((string) $window->end_time);
+
+                return $startMinutes >= $windowStart
+                    && ($startMinutes - $windowStart) % $step === 0
+                    && $startMinutes + $durationMinutes <= $windowEnd;
+            });
     }
 
     /**
