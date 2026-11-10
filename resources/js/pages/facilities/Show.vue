@@ -95,6 +95,7 @@ type Props = {
         courts: Court[];
         packages: Package[];
         trainers: Trainer[];
+        classes: { id:number; facility_id:number; name:string; description:string|null; duration_minutes:number; default_capacity:number; is_active:boolean; schedules:{ id:number; trainer_id:number|null; trainer:string|null; date:string; start_time:string; end_time:string; capacity:number|null; effective_capacity:number; registered_count:number; price:number; status:string; participants:{id:number;name:string;status:string}[] }[] }[];
         devices: Device[];
         booking_time_slots: BookingTimeSlot[];
     };
@@ -568,7 +569,7 @@ function promoRange(rule: PricingRule) {
         </div>
 
 
-        <FacilityClasses :facility-id="props.facility.id" :classes="props.facility.classes" :trainers="props.facility.trainers" />
+        <FacilityClasses :facility-id="props.facility.id" :facility-name="props.facility.name" :classes="props.facility.classes" :trainers="props.facility.trainers" />
 
         <section class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
