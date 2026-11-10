@@ -100,20 +100,37 @@ type Props = {
 
 const props = defineProps<Props>();
 
+const showBookingSlotForm = ref(false);
 const bookingSlotEditing = ref<BookingTimeSlot | null>(null);
+const bookingSlotTitle = computed(() => bookingSlotEditing.value ? 'Edit jam booking' : 'Tambah jam booking');
 const bookingSlotForm = useForm({
     start_time: '07:00',
     end_time: '22:00',
     is_active: true,
 });
+function openBookingSlotCreate() {
+    bookingSlotEditing.value = null;
+    bookingSlotForm.start_time = '07:00';
+    bookingSlotForm.end_time = '22:00';
+    bookingSlotForm.is_active = true;
+    bookingSlotForm.clearErrors();
+    showBookingSlotForm.value = true;
+}
 function editBookingSlot(slot: BookingTimeSlot) {
     bookingSlotEditing.value = slot;
+    showBookingSlotForm.value = true;
     bookingSlotForm.start_time = slot.start_time;
     bookingSlotForm.end_time = slot.end_time;
     bookingSlotForm.is_active = slot.is_active;
     bookingSlotForm.clearErrors();
 }
+function closeBookingSlotForm() {
+    showBookingSlotForm.value = false;
+    bookingSlotEditing.value = null;
+    bookingSlotForm.clearErrors();
+}
 function resetBookingSlotForm() {
+    showBookingSlotForm.value = false;
     bookingSlotEditing.value = null;
     bookingSlotForm.reset();
     bookingSlotForm.clearErrors();
@@ -528,69 +545,44 @@ function promoRange(rule: PricingRule) {
         </div>
 
 
-        <section class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <Clock class="size-5" />
-                    </div>
-                    <div>
-                        <h2 class="font-semibold">Master Jam Booking</h2>
-                        <p class="mt-1 text-sm text-muted-foreground">
-                            Atur jam operasional fasilitas ini. Booking online dan kasir memakai jadwal yang sama.
-                            Jeda antar-slot mengikuti pengaturan fasilitas: {{ props.facility.turnaround_minutes }} menit.
-                        </p>
-                    </div>
+        <section class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <Clock class="size-4 text-primary" />
+                    <h2 class="font-semibold">Master Jam Booking</h2>
+                    <span class="text-sm text-muted-foreground">({{ props.facility.booking_time_slots.length }})</span>
                 </div>
+                <Button size="sm" @click="openBookingSlotCreate">
+                    <Plus class="mr-2 size-4" />
+                    Tambah jam
+                </Button>
             </div>
-
-            <form class="grid gap-3 rounded-xl border bg-muted/20 p-4 md:grid-cols-[1fr_1fr_auto_auto]" @submit.prevent="submitBookingSlot">
-                <div class="grid gap-1.5">
-                    <Label for="booking-start">Jam mulai</Label>
-                    <Input id="booking-start" v-model="bookingSlotForm.start_time" type="time" required />
-                    <p v-if="bookingSlotForm.errors.start_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.start_time }}</p>
-                </div>
-                <div class="grid gap-1.5">
-                    <Label for="booking-end">Jam selesai</Label>
-                    <Input id="booking-end" v-model="bookingSlotForm.end_time" type="time" required />
-                    <p v-if="bookingSlotForm.errors.end_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.end_time }}</p>
-                </div>
-                <label class="flex items-center gap-2 self-end pb-2 text-sm">
-                    <input v-model="bookingSlotForm.is_active" type="checkbox" class="size-4 rounded border" />
-                    Aktif
-                </label>
-                <div class="flex items-end gap-2">
-                    <Button type="submit" size="sm" :disabled="bookingSlotForm.processing">
-                        {{ bookingSlotForm.processing ? 'Menyimpan...' : bookingSlotEditing ? 'Simpan' : 'Tambah jam' }}
-                    </Button>
-                    <Button v-if="bookingSlotEditing" type="button" size="sm" variant="outline" @click="resetBookingSlotForm">Batal</Button>
-                </div>
-            </form>
-
-            <div v-if="props.facility.booking_time_slots.length" class="divide-y rounded-xl border">
-                <div v-for="slot in props.facility.booking_time_slots" :key="slot.id" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                    <div class="flex items-center gap-3">
+            <p class="text-sm text-muted-foreground">
+                Jam operasional untuk booking online dan kasir. Jeda antar-slot mengikuti pengaturan fasilitas ({{ props.facility.turnaround_minutes }} menit).
+            </p>
+            <div v-if="props.facility.booking_time_slots.length" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <div v-for="slot in props.facility.booking_time_slots" :key="slot.id" class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="min-w-0">
                         <div class="font-medium tabular-nums">{{ slot.start_time }} – {{ slot.end_time }}</div>
-                        <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="slot.is_active ? 'bg-emerald-500/10 text-emerald-700' : 'bg-muted text-muted-foreground'">
+                        <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium" :class="slot.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">
                             {{ slot.is_active ? 'Aktif' : 'Nonaktif' }}
                         </span>
                     </div>
-                    <div class="flex items-center gap-1">
-                        <Button type="button" size="sm" variant="ghost" @click="editBookingSlot(slot)">
-                            <Pencil class="mr-1.5 size-3.5" /> Edit
-                        </Button>
-                        <Button type="button" size="sm" variant="ghost" class="text-destructive" @click="removeBookingSlot(slot)">
-                            <Trash2 class="mr-1.5 size-3.5" /> Hapus
-                        </Button>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                            <Button variant="ghost" size="icon"><EllipsisVertical class="size-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem @click="editBookingSlot(slot)"><Pencil class="mr-2 size-4" />Edit</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem class="text-destructive focus:text-destructive" @click="removeBookingSlot(slot)"><Trash2 class="mr-2 size-4" />Hapus</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
-            <div v-else class="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            <div v-else class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm">
                 Belum ada jam booking. Tambahkan rentang jam operasional agar fasilitas ini bisa menerima booking.
             </div>
-            <p class="text-xs text-muted-foreground">
-                Slot booking akan dibuat otomatis berdasarkan durasi paket. Rentang aktif tidak boleh tumpang tindih atau terlalu berdekatan.
-            </p>
         </section>
 
         <section class="space-y-3">
@@ -1225,6 +1217,49 @@ function promoRange(rule: PricingRule) {
                     </Button>
                 </div>
             </Form>
+        </div>
+    </div>
+
+    <div
+        v-if="showBookingSlotForm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        @click.self="closeBookingSlotForm"
+    >
+        <div class="w-full max-w-md overflow-hidden rounded-2xl border bg-background shadow-2xl">
+            <div class="flex items-start justify-between border-b p-5">
+                <div>
+                    <p class="text-sm font-medium text-primary">Master jam booking</p>
+                    <h2 class="mt-1 text-xl font-semibold">{{ bookingSlotTitle }}</h2>
+                </div>
+                <Button variant="ghost" size="icon" @click="closeBookingSlotForm"><X class="size-4" /></Button>
+            </div>
+            <form class="space-y-5 p-5" @submit.prevent="submitBookingSlot">
+                <div class="grid gap-4">
+                    <div class="grid gap-2">
+                        <Label for="booking-start">Jam mulai</Label>
+                        <Input id="booking-start" v-model="bookingSlotForm.start_time" type="time" required />
+                        <p v-if="bookingSlotForm.errors.start_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.start_time }}</p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="booking-end">Jam selesai</Label>
+                        <Input id="booking-end" v-model="bookingSlotForm.end_time" type="time" required />
+                        <p v-if="bookingSlotForm.errors.end_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.end_time }}</p>
+                    </div>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input v-model="bookingSlotForm.is_active" type="checkbox" class="size-4 rounded border" />
+                        Aktif
+                    </label>
+                    <p class="text-xs text-muted-foreground">
+                        Slot dibuat otomatis berdasarkan durasi paket. Jeda minimal antar-rentang mengikuti pengaturan fasilitas: {{ props.facility.turnaround_minutes }} menit.
+                    </p>
+                </div>
+                <div class="flex justify-end gap-2 border-t pt-4">
+                    <Button type="button" variant="ghost" @click="closeBookingSlotForm">Batal</Button>
+                    <Button type="submit" :disabled="bookingSlotForm.processing">
+                        {{ bookingSlotForm.processing ? 'Menyimpan...' : bookingSlotEditing ? 'Simpan perubahan' : 'Tambah jam' }}
+                    </Button>
+                </div>
+            </form>
         </div>
     </div>
 
