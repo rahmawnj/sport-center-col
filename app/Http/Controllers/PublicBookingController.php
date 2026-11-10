@@ -283,19 +283,23 @@ class PublicBookingController extends Controller
      */
     private function bookingPrice(Package $package, array $data): float
     {
-        $quote = $this->pricing->quote(
-            $package,
-            Carbon::parse($data['date']),
-            $data['start_time'] ?? null,
-            max(1, (int) ($data['duration_hours'] ?? 1)),
-            $this->courtAdjustment($data['court_id'] ?? null),
-        );
+        $date = Carbon::parse($data['date']);
+        $start = $this->toMinutes($data['start_time'] ?? '00:00');
+        $duration = max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
+        $end = $start + $duration;
+        $window = BookingTimeSlot::query()
+            ->where('facility_id', $package->facility_id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->get()
+            ->first(fn (BookingTimeSlot $slot) => $start >= $this->toMinutes((string) $slot->start_time)
+                && $end <= $this->toMinutes((string) $slot->end_time));
 
-        if (! $quote['available']) {
-            throw ValidationException::withMessages(['start_time' => 'Tarif untuk jadwal ini tidak ditemukan.']);
+        if (! $window) {
+            throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
         }
 
-        return (float) $quote['total'];
+        return ((float) $window->price * ($duration / 60)) + $this->courtAdjustment($data['court_id'] ?? null);
     }
 
     private function courtAdjustment(mixed $courtId): float
@@ -315,10 +319,13 @@ class PublicBookingController extends Controller
         }
 
         $date = Carbon::parse($data['date']);
-        $rules = $this->pricing->rulesForDate($package, $date);
-        $hasTimedPricing = $rules->contains(fn ($rule) => $rule->start_time && $rule->end_time);
+        $hasOperatingHours = BookingTimeSlot::query()
+            ->where('facility_id', $package->facility_id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->exists();
 
-        if (! $hasTimedPricing) {
+        if (! $hasOperatingHours) {
             $user = $request->user();
 
             return Booking::create([
@@ -360,15 +367,6 @@ class PublicBookingController extends Controller
 
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
-        }
-
-        $price = 0.0;
-        for ($minute = $startMinutes; $minute < $endMinutes; $minute += 60) {
-            $hourPrice = $this->pricing->priceAt($rules, $minute);
-            if ($hourPrice === null) {
-                throw ValidationException::withMessages(['start_time' => 'Durasi yang dipilih melewati jam operasional atau tidak memiliki tarif.']);
-            }
-            $price += $hourPrice;
         }
 
         return DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround) {
@@ -470,14 +468,10 @@ class PublicBookingController extends Controller
      */
     private function buildSlots(Package $package, Carbon $date): array
     {
-        $rules = $this->pricing->rulesForDate($package, $date);
-        if ($rules->isEmpty()) {
-            return [];
-        }
-
         $duration = max(1, (int) $package->duration_minutes);
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
         $step = $duration + $turnaround;
+        $day = strtolower($date->englishDayOfWeek);
 
         $courts = Court::query()
             ->where('facility_id', $package->facility_id)
@@ -493,8 +487,8 @@ class PublicBookingController extends Controller
 
         $windows = BookingTimeSlot::query()
             ->where('facility_id', $package->facility_id)
+            ->where('day', $day)
             ->where('is_active', true)
-            ->whereIn('day_type', $date->isWeekday() ? ['all', 'weekday'] : ['all', 'weekend'])
             ->orderBy('start_time')
             ->get();
 
@@ -509,35 +503,32 @@ class PublicBookingController extends Controller
                     continue;
                 }
 
-                $price = $this->pricing->priceAt($rules, $cursor);
-                if ($price !== null) {
-                    $slotEnd = $cursor + $duration;
-                    $available = $courts
-                        ->reject(fn ($court) => $bookings->contains(
-                            fn ($booking) => (int) $booking->court_id === $court->id
-                                && $this->windowsOverlap(
-                                    $cursor,
-                                    $slotEnd,
-                                    $this->toMinutes((string) $booking->start_time),
-                                    $this->toMinutes((string) $booking->end_time),
-                                    $turnaround,
-                                )
-                        ))
-                        ->map(fn ($court) => [
-                            'id' => $court->id,
-                            'name' => $court->name,
-                            'amenities' => $court->amenities ?? [],
-                            'price_adjustment' => (float) $court->price_adjustment,
-                        ])
-                        ->values();
+                $slotEnd = $cursor + $duration;
+                $available = $courts
+                    ->reject(fn ($court) => $bookings->contains(
+                        fn ($booking) => (int) $booking->court_id === $court->id
+                            && $this->windowsOverlap(
+                                $cursor,
+                                $slotEnd,
+                                $this->toMinutes((string) $booking->start_time),
+                                $this->toMinutes((string) $booking->end_time),
+                                $turnaround,
+                            )
+                    ))
+                    ->map(fn ($court) => [
+                        'id' => $court->id,
+                        'name' => $court->name,
+                        'amenities' => $court->amenities ?? [],
+                        'price_adjustment' => (float) $court->price_adjustment,
+                    ])
+                    ->values();
 
-                    $slots[] = [
-                        'start_time' => $this->toTime($cursor),
-                        'end_time' => $this->toTime($slotEnd),
-                        'price' => (float) $price,
-                        'courts' => $available,
-                    ];
-                }
+                $slots[] = [
+                    'start_time' => $this->toTime($cursor),
+                    'end_time' => $this->toTime($slotEnd),
+                    'price' => (float) $window->price * ($duration / 60),
+                    'courts' => $available,
+                ];
 
                 $cursor += $step;
             }
@@ -548,20 +539,18 @@ class PublicBookingController extends Controller
 
     private function isMasterSlotStart(int $facilityId, Carbon $date, int $startMinutes, int $durationMinutes): bool
     {
-        $turnaround = max(0, (int) Facility::query()->whereKey($facilityId)->value('turnaround_minutes'));
-        $step = max(1, $durationMinutes) + $turnaround;
+        $day = strtolower($date->englishDayOfWeek);
 
         return BookingTimeSlot::query()
             ->where('facility_id', $facilityId)
+            ->where('day', $day)
             ->where('is_active', true)
-            ->whereIn('day_type', $date->isWeekday() ? ['all', 'weekday'] : ['all', 'weekend'])
             ->get(['start_time', 'end_time'])
-            ->contains(function (BookingTimeSlot $window) use ($startMinutes, $durationMinutes, $step) {
+            ->contains(function (BookingTimeSlot $window) use ($startMinutes, $durationMinutes) {
                 $windowStart = $this->toMinutes((string) $window->start_time);
                 $windowEnd = $this->toMinutes((string) $window->end_time);
 
                 return $startMinutes >= $windowStart
-                    && ($startMinutes - $windowStart) % $step === 0
                     && $startMinutes + $durationMinutes <= $windowEnd;
             });
     }
