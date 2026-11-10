@@ -238,7 +238,8 @@ class MemberDashboardController extends Controller
         abort_unless($transaction->user_id === $request->user()->id, 404);
 
         $transaction->load(['sessionParticipants.schedule.sportClass.facility', 'sessionParticipants.schedule.trainer']);
-        $classSchedule = $transaction->sessionParticipants->first()?->schedule;
+        $classParticipant = $transaction->sessionParticipants->first();
+        $classSchedule = $classParticipant?->schedule;
 
         return Inertia::render('member/PaymentShow', [
             'payment' => [
@@ -250,7 +251,7 @@ class MemberDashboardController extends Controller
                     'name' => $classSchedule->sportClass?->name,
                     'facility' => $classSchedule->sportClass?->facility?->name,
                     'trainer' => $classSchedule->trainer?->name,
-                    'date' => $classSchedule->session_date?->toDateString(),
+                    'date' => $classParticipant?->session_date?->toDateString(),
                     'start_time' => substr((string) $classSchedule->start_time, 0, 5),
                     'end_time' => substr((string) $classSchedule->end_time, 0, 5),
                 ] : null,
