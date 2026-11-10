@@ -1,11 +1,11 @@
 <?php
 
-namespace App\\Services;
+namespace App\Services;
 
-use App\\Models\\Package;
-use App\\Models\\PackagePricingRule;
-use Illuminate\\Support\\Carbon;
-use Illuminate\\Support\\Collection;
+use App\Models\Package;
+use App\Models\PackagePricingRule;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class PackagePricingService
 {
