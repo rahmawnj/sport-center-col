@@ -29,7 +29,10 @@ return new class extends Migration
         }
 
         Schema::table('transactions', function (Blueprint $table) {
-            $table->enum('transactionable_type', ['membership', 'booking', 'class'])
+            $table->enum('payment_status', ['unpaid', 'dp_paid', 'fully_paid', 'failed', 'refunded'])
+                ->default('unpaid')
+                ->change();
+            $table->enum('transactionable_type', ['membership', 'booking', 'trainer_package', 'class'])
                 ->default('booking')
                 ->change();
         });
@@ -38,7 +41,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->enum('transactionable_type', ['membership', 'booking'])
+            DB::table('transactions')->where('payment_status', 'failed')->update(['payment_status' => 'unpaid']);
+            DB::table('transactions')->where('payment_status', 'refunded')->update(['payment_status' => 'fully_paid']);
+            $table->enum('payment_status', ['unpaid', 'dp_paid', 'fully_paid'])
+                ->default('unpaid')
+                ->change();
+            $table->enum('transactionable_type', ['membership', 'booking', 'trainer_package'])
                 ->default('booking')
                 ->change();
         });
