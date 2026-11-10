@@ -168,9 +168,6 @@ class TrainerSessionController extends Controller
             $locked = TrainerSessionSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
             abort_unless($locked->status === 'scheduled', 422, 'Hasil sesi ini sudah ditetapkan sebelumnya.');
 
-            $sessionEndsAt = $locked->session_date->toDateString().' '.$locked->end_time;
-            abort_unless(now()->gte($sessionEndsAt), 422, 'Hasil sesi hanya bisa ditetapkan setelah jadwal berakhir.');
-
             $package = MemberTrainerPackage::query()
                 ->lockForUpdate()
                 ->findOrFail($locked->member_trainer_package_id);
