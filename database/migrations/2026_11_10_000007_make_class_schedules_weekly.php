@@ -34,7 +34,7 @@ return new class extends Migration
         Schema::table('session_participants', function (Blueprint $table) {
             $table->dropUnique(['class_schedule_id', 'user_id']);
             $table->date('session_date')->nullable(false)->change();
-            $table->unique(['class_schedule_id', 'user_id', 'session_date'], 'session_participants_schedule_user_date_unique');
+            $table->index(['class_schedule_id', 'user_id', 'session_date'], 'session_participants_schedule_user_date_index');
             $table->index(['session_date', 'status'], 'session_participants_date_status_index');
         });
 
@@ -57,7 +57,7 @@ return new class extends Migration
         DB::table('class_schedules')->update(['session_date' => today()->toDateString()]);
 
         Schema::table('session_participants', function (Blueprint $table) {
-            $table->dropUnique('session_participants_schedule_user_date_unique');
+            $table->dropIndex('session_participants_schedule_user_date_index');
             $table->dropIndex('session_participants_date_status_index');
             $table->dropColumn('session_date');
             $table->unique(['class_schedule_id', 'user_id']);
