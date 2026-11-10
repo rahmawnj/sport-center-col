@@ -100,7 +100,7 @@ const packageTypeLabel: Record<string, string> = {
 };
 
 const isSession = computed(() => pkg.value?.type === 'session');
-const hasTimedSession = computed(() => isSession.value && !!pkg.value?.pricing_rules.some((rule) => rule.start_time && rule.end_time));
+const hasTimedSession = computed(() => isSession.value);
 const selectedDurationHours = computed(() => selectedSlots.value.length);
 const selectedDurationLabel = computed(() => {
     const hours = selectedDurationHours.value;
@@ -141,6 +141,7 @@ const visibleSteps = computed(() => {
 });
 
 function packagePriceLabel(item: BookingPackage) {
+    if (item.type === 'session') return 'Harga sesuai hari & jam';
     return item.pricing_summary.starting_price === null
         ? '—'
         : formatIDR(item.pricing_summary.starting_price);
