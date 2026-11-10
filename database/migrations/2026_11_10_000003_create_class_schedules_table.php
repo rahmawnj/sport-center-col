@@ -16,6 +16,7 @@ return new class extends Migration
             $table->time('start_time');
             $table->time('end_time');
             $table->unsignedSmallInteger('capacity')->nullable();
+            $table->decimal('price', 12, 2)->default(0);
             $table->enum('status', ['scheduled', 'completed', 'cancelled'])->default('scheduled');
             $table->timestamps();
 
