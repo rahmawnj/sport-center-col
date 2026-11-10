@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use App\Models\ClassSchedule;
 use App\Models\Facility;
 use App\Models\SessionParticipant;
 use App\Models\SportClass;
 use App\Models\Trainer;
 use App\Models\TrainerSessionSchedule;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,13 +18,15 @@ use Inertia\Response;
 
 class ClassManagementController extends Controller
 {
+    private const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
     public function index(): Response
     {
         $classes = SportClass::query()
             ->with(['facility:id,name', 'schedules' => fn ($query) => $query
                 ->with(['trainer:id,name', 'participants.user:id,name,email'])
                 ->withCount(['participants as registered_count' => fn ($participants) => $participants->whereIn('status', ['pending', 'confirmed'])])
-                ->orderBy('session_date')->orderBy('start_time')])
+                ->orderBy('day')->orderBy('start_time')])
             ->orderBy('name')
             ->get()
             ->map(fn (SportClass $class) => [
@@ -40,18 +42,19 @@ class ClassManagementController extends Controller
                     'id' => $schedule->id,
                     'trainer_id' => $schedule->trainer_id,
                     'trainer' => $schedule->trainer?->name,
-                    'date' => $schedule->session_date?->toDateString(),
+                    'day' => $schedule->day,
                     'start_time' => substr((string) $schedule->start_time, 0, 5),
                     'end_time' => substr((string) $schedule->end_time, 0, 5),
                     'capacity' => $schedule->capacity,
                     'effective_capacity' => (int) ($schedule->capacity ?? $class->default_capacity),
                     'registered_count' => (int) $schedule->registered_count,
                     'price' => (float) $schedule->price,
-                    'status' => $schedule->status,
+                    'is_active' => (bool) $schedule->is_active,
                     'participants' => $schedule->participants->map(fn (SessionParticipant $participant) => [
                         'id' => $participant->id,
                         'name' => $participant->user?->name ?? 'Member',
                         'email' => $participant->user?->email,
+                        'session_date' => $participant->session_date?->toDateString(),
                         'status' => $participant->status,
                     ])->values(),
                 ])->values(),
@@ -117,7 +120,7 @@ class ClassManagementController extends Controller
             $sportClass->schedules()->create($data);
         });
 
-        return back()->with('success', 'Jadwal kelas berhasil dibuat.');
+        return back()->with('success', 'Jadwal rutin mingguan berhasil dibuat.');
     }
 
     public function updateSchedule(Request $request, ClassSchedule $schedule): RedirectResponse
@@ -125,95 +128,59 @@ class ClassManagementController extends Controller
         $data = $this->validateSchedule($request);
         $sportClass = SportClass::query()->findOrFail($schedule->class_id);
         $this->assertClassDuration($sportClass, $data);
-        $registeredCount = $schedule->participants()->whereIn('status', ['pending', 'confirmed'])->count();
-        $newCapacity = $data['capacity'] ?? $sportClass->default_capacity;
 
-        if ($newCapacity < $registeredCount) {
+        $newCapacity = $data['capacity'] ?? $sportClass->default_capacity;
+        $maxRegisteredOnOneDate = $schedule->participants()
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->selectRaw('session_date, COUNT(*) as participant_count')
+            ->groupBy('session_date')
+            ->orderByDesc('participant_count')
+            ->value('participant_count') ?? 0;
+
+        if ($newCapacity < $maxRegisteredOnOneDate) {
             throw ValidationException::withMessages([
-                'capacity' => "Kapasitas tidak boleh lebih kecil dari {$registeredCount} peserta yang sudah terdaftar.",
+                'capacity' => "Kapasitas tidak boleh lebih kecil dari {$maxRegisteredOnOneDate} peserta pada satu sesi.",
             ]);
         }
 
         DB::transaction(function () use ($sportClass, $data, $schedule) {
             $this->assertTrainerAvailable($sportClass, $data, $schedule->id);
-            $schedule->update([
-                ...$data,
-                'class_id' => $sportClass->id,
-            ]);
+            $schedule->update([...$data, 'class_id' => $sportClass->id]);
         });
 
-        return back()->with('success', 'Jadwal kelas berhasil diperbarui.');
+        return back()->with('success', 'Jadwal rutin mingguan berhasil diperbarui.');
     }
 
     public function destroySchedule(ClassSchedule $schedule): RedirectResponse
     {
         if ($schedule->participants()->exists()) {
-            return back()->with('error', 'Jadwal memiliki peserta terdaftar. Ubah status menjadi dibatalkan agar riwayat tetap tersimpan.');
+            return back()->with('error', 'Jadwal ini memiliki riwayat peserta. Nonaktifkan jadwal agar riwayat tetap tersimpan.');
         }
 
         $schedule->delete();
 
-        return back()->with('success', 'Jadwal kelas berhasil dihapus.');
+        return back()->with('success', 'Jadwal berhasil dihapus.');
     }
 
     public function updateScheduleStatus(Request $request, ClassSchedule $schedule): RedirectResponse
     {
-        $data = $request->validate([
-            'status' => ['required', 'in:scheduled,completed,cancelled'],
-        ]);
+        $data = $request->validate(['is_active' => ['required', 'boolean']]);
+        $schedule->update(['is_active' => $data['is_active']]);
 
-        if ($data['status'] === 'completed' && now()->lt($schedule->session_date->copy()->setTimeFromTimeString((string) $schedule->end_time))) {
-            throw ValidationException::withMessages(['status' => 'Jadwal yang belum berlangsung tidak bisa ditandai selesai.']);
-        }
-
-        DB::transaction(function () use ($schedule, $data) {
-            $lockedSchedule = ClassSchedule::query()->lockForUpdate()->findOrFail($schedule->id);
-
-            if ($data['status'] === 'cancelled') {
-                $unresolvedPaidParticipants = $lockedSchedule->participants()
-                    ->whereIn('status', ['pending', 'confirmed'])
-                    ->whereHas('transaction', fn ($query) => $query->whereNotIn('payment_status', ['unpaid', 'failed', 'refunded']))
-                    ->exists();
-
-                if ($unresolvedPaidParticipants) {
-                    throw ValidationException::withMessages([
-                        'status' => 'Ada peserta yang sudah membayar atau membayar DP. Tandai transaksinya sebagai refunded terlebih dahulu sebelum membatalkan kelas.',
-                    ]);
-                }
-
-                $pendingParticipants = $lockedSchedule->participants()
-                    ->where('status', 'pending')
-                    ->with('transaction')
-                    ->get();
-
-                foreach ($pendingParticipants as $participant) {
-                    if ($participant->transaction?->payment_status === 'unpaid') {
-                        $participant->transaction->update(['payment_status' => 'failed']);
-                    }
-                    $participant->update(['status' => 'cancelled']);
-                }
-            }
-
-            $lockedSchedule->update(['status' => $data['status']]);
-        });
-
-        return back()->with('success', 'Status jadwal berhasil diperbarui.');
+        return back()->with('success', $data['is_active'] ? 'Jadwal rutin diaktifkan.' : 'Jadwal rutin dinonaktifkan.');
     }
-
 
     public function updateParticipantAttendance(Request $request, SessionParticipant $participant): RedirectResponse
     {
-        $data = $request->validate([
-            'status' => ['required', 'in:attended,no_show'],
-        ]);
+        $data = $request->validate(['status' => ['required', 'in:attended,no_show']]);
 
         DB::transaction(function () use ($participant, $data) {
-            $locked = SessionParticipant::query()
-                ->with('schedule')
-                ->lockForUpdate()
-                ->findOrFail($participant->id);
+            $locked = SessionParticipant::query()->with('schedule')->lockForUpdate()->findOrFail($participant->id);
+            $schedule = $locked->schedule;
 
-            abort_unless($locked->schedule?->status === 'completed', 422, 'Kehadiran hanya dapat dicatat setelah kelas selesai.');
+            abort_unless($schedule, 404);
+            $sessionEnd = Carbon::parse($locked->session_date->toDateString().' '.$schedule->end_time);
+            abort_unless(now()->gte($sessionEnd), 422, 'Kehadiran hanya dapat dicatat setelah sesi selesai.');
             abort_unless(in_array($locked->status, ['confirmed', 'attended', 'no_show'], true), 422, 'Peserta belum dikonfirmasi pembayarannya.');
 
             $locked->update(['status' => $data['status']]);
@@ -226,33 +193,20 @@ class ClassManagementController extends Controller
     {
         $data = $request->validate([
             'trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
-            'session_date' => ['required', 'date', 'after_or_equal:today'],
+            'day' => ['required', 'in:'.implode(',', self::DAYS)],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:500'],
             'price' => ['required', 'numeric', 'min:0'],
-            'status' => ['required', 'in:scheduled,completed,cancelled'],
+            'is_active' => ['required', 'boolean'],
         ]);
 
         if ($data['end_time'] <= $data['start_time']) {
-            throw ValidationException::withMessages([
-                'end_time' => 'Jam selesai harus lebih besar dari jam mulai.',
-            ]);
+            throw ValidationException::withMessages(['end_time' => 'Jam selesai harus lebih besar dari jam mulai.']);
         }
-
-        if ($data['status'] === 'completed') {
-            $scheduledEnd = Carbon::parse($data['session_date'].' '.$data['end_time']);
-            if ($scheduledEnd->isFuture()) {
-                throw ValidationException::withMessages([
-                    'status' => 'Jadwal yang belum selesai tidak bisa ditandai completed.',
-                ]);
-            }
-        }
-
 
         return $data;
     }
-
 
     private function assertClassDuration(SportClass $sportClass, array $data): void
     {
@@ -277,24 +231,28 @@ class ClassManagementController extends Controller
             ->exists();
 
         if (! $facilityHasTrainer) {
-            throw ValidationException::withMessages([
-                'trainer_id' => 'Trainer belum terhubung dengan fasilitas kelas ini.',
-            ]);
+            throw ValidationException::withMessages(['trainer_id' => 'Trainer belum terhubung dengan fasilitas kelas ini.']);
         }
 
         Trainer::query()->whereKey($data['trainer_id'])->lockForUpdate()->firstOrFail();
 
         $classConflict = ClassSchedule::query()
             ->where('trainer_id', $data['trainer_id'])
-            ->whereDate('session_date', $data['session_date'])
-            ->where('status', 'scheduled')
-            ->when($ignoreScheduleId, fn ($query) => $query->whereKeyNot($ignoreScheduleId))
+            ->where('day', $data['day'])
+            ->where('is_active', true)
+            ->when($ignoreScheduleId, fn ($query) => $query->where('id', '!=', $ignoreScheduleId))
             ->whereTime('start_time', '<', $data['end_time'])
             ->whereTime('end_time', '>', $data['start_time'])
             ->exists();
 
+        $dates = collect(range(0, 83))
+            ->map(fn ($offset) => today()->addDays($offset))
+            ->filter(fn (Carbon $date) => strtolower($date->englishDayOfWeek) === $data['day'])
+            ->map(fn (Carbon $date) => $date->toDateString())
+            ->all();
+
         $personalTrainingConflict = TrainerSessionSchedule::query()
-            ->whereDate('session_date', $data['session_date'])
+            ->whereIn('session_date', $dates)
             ->where('status', 'scheduled')
             ->whereHas('memberTrainerPackage', fn ($query) => $query
                 ->where('trainer_id', $data['trainer_id'])
@@ -304,9 +262,7 @@ class ClassManagementController extends Controller
             ->exists();
 
         if ($classConflict || $personalTrainingConflict) {
-            throw ValidationException::withMessages([
-                'trainer_id' => 'Trainer sudah memiliki kelas lain pada waktu tersebut.',
-            ]);
+            throw ValidationException::withMessages(['trainer_id' => 'Trainer sudah memiliki jadwal lain pada hari dan waktu tersebut.']);
         }
     }
 }
