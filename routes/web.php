@@ -100,6 +100,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('class-schedules/{schedule}', [ClassManagementController::class, 'updateSchedule'])->name('class-schedules.update');
         Route::delete('class-schedules/{schedule}', [ClassManagementController::class, 'destroySchedule'])->name('class-schedules.destroy');
         Route::put('class-schedules/{schedule}/status', [ClassManagementController::class, 'updateScheduleStatus'])->name('class-schedules.status');
+        Route::put('session-participants/{participant}/attendance', [ClassManagementController::class, 'updateParticipantAttendance'])->name('session-participants.attendance');
 
         Route::post('facilities/{facility}/booking-time-slots', [BookingTimeSlotController::class, 'store'])->name('facilities.booking-time-slots.store');
         Route::put('facilities/{facility}/booking-time-slots/{bookingTimeSlot}', [BookingTimeSlotController::class, 'update'])->name('facilities.booking-time-slots.update');
