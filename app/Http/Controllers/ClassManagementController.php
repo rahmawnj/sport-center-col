@@ -109,6 +109,7 @@ class ClassManagementController extends Controller
     public function storeSchedule(Request $request, SportClass $sportClass): RedirectResponse
     {
         $data = $this->validateSchedule($request);
+        $this->assertClassDuration($sportClass, $data);
 
         DB::transaction(function () use ($sportClass, $data) {
             $this->assertTrainerAvailable($sportClass, $data);
@@ -122,6 +123,7 @@ class ClassManagementController extends Controller
     {
         $data = $this->validateSchedule($request);
         $sportClass = SportClass::query()->findOrFail($schedule->class_id);
+        $this->assertClassDuration($sportClass, $data);
         $registeredCount = $schedule->participants()->whereIn('status', ['pending', 'confirmed'])->count();
         $newCapacity = $data['capacity'] ?? $sportClass->default_capacity;
 
@@ -219,6 +221,19 @@ class ClassManagementController extends Controller
 
 
         return $data;
+    }
+
+
+    private function assertClassDuration(SportClass $sportClass, array $data): void
+    {
+        $start = Carbon::createFromFormat('H:i', $data['start_time']);
+        $expectedEnd = $start->copy()->addMinutes((int) $sportClass->duration_minutes)->format('H:i');
+
+        if ($data['end_time'] !== $expectedEnd) {
+            throw ValidationException::withMessages([
+                'end_time' => "Durasi kelas ini {$sportClass->duration_minutes} menit. Jam selesai seharusnya {$expectedEnd}.",
+            ]);
+        }
     }
 
     private function assertTrainerAvailable(SportClass $sportClass, array $data, ?int $ignoreScheduleId = null): void
