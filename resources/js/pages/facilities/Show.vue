@@ -1290,12 +1290,32 @@ function promoRange(rule: PricingRule) {
                     </div>
                     <div class="grid gap-2">
                         <Label for="booking-start">Jam mulai</Label>
-                        <Input id="booking-start" v-model="bookingSlotForm.start_time" type="time" required />
+                        <Input
+                            id="booking-start"
+                            v-model="bookingSlotForm.start_time"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="5"
+                            pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                            placeholder="07:00"
+                            autocomplete="off"
+                            required
+                        />
                         <p v-if="bookingSlotForm.errors.start_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.start_time }}</p>
                     </div>
                     <div class="grid gap-2">
                         <Label for="booking-end">Jam selesai</Label>
-                        <Input id="booking-end" v-model="bookingSlotForm.end_time" type="time" required />
+                        <Input
+                            id="booking-end"
+                            v-model="bookingSlotForm.end_time"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="5"
+                            pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                            placeholder="22:00"
+                            autocomplete="off"
+                            required
+                        />
                         <p v-if="bookingSlotForm.errors.end_time" class="text-xs text-destructive">{{ bookingSlotForm.errors.end_time }}</p>
                     </div>
                     <label class="flex items-center gap-2 text-sm">
