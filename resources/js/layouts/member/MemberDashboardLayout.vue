@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     CalendarDays,
+    Dumbbell,
     ChevronDown,
     CircleUserRound,
     CreditCard,
@@ -37,6 +38,7 @@ const currentPath = computed(() => page.url.split('?')[0]);
 const navigation = [
     { label: 'Dashboard', href: '/member/dashboard', icon: LayoutDashboard },
     { label: 'Booking Saya', href: '/member/bookings', icon: CalendarDays },
+    { label: 'Kelas & Jadwal', href: '/member/classes', icon: Dumbbell },
     { label: 'Membership Saya', href: '/member/membership', icon: Trophy },
     { label: 'Pembayaran', href: '/member/payments', icon: CreditCard },
     { label: 'Profil Saya', href: '/member/profile', icon: CircleUserRound },
