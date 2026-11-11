@@ -34,35 +34,13 @@ class PublicBookingController extends Controller
         $facilities = Facility::query()
             ->where('status', 'active')
             ->where('is_bookable_online', true)
-            ->with(['packages' => fn ($query) => $query->where('type', 'session')->orderBy('name')->with(['pricingRules', 'trainerAddons.facilities'])])
+            ->with(['courts' => fn ($query) => $query->where('status', 'available')->orderBy('name')])
             ->orderBy('name')
             ->get()
             ->map(fn (Facility $facility) => [
                 'id' => $facility->id,
                 'name' => $facility->name,
                 'slug' => $facility->slug,
-                'packages' => $facility->packages->map(fn (Package $package) => [
-                    'id' => $package->id,
-                    'name' => $package->name,
-                    'type' => $package->type,
-                    'duration_minutes' => $package->duration_minutes,
-                    'trainer_addons' => $package->trainerAddons
-                        ->filter(fn ($trainer) => $trainer->facilities->contains('id', $facility->id))
-                        ->map(fn ($trainer) => [
-                        'id' => $trainer->id,
-                        'name' => $trainer->name,
-                        'specialty' => $trainer->specialty,
-                        'price' => (float) $trainer->pivot->price,
-                    ])->values(),
-                    'pricing_summary' => $this->pricing->summary($package, Carbon::today()),
-                    'pricing_rules' => $this->pricing->rulesForDate($package, Carbon::today())
-                        ->map(fn ($rule) => [
-                            'day_type' => $rule->day_type,
-                            'start_time' => $rule->start_time ? substr((string) $rule->start_time, 0, 5) : null,
-                            'end_time' => $rule->end_time ? substr((string) $rule->end_time, 0, 5) : null,
-                            'price' => (float) $rule->price,
-                        ])->values(),
-                ])->values(),
             ]);
 
         $requestedFacility = (string) $request->query('facility', '');
@@ -86,15 +64,15 @@ class PublicBookingController extends Controller
     public function availability(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'package_id' => ['required', 'integer', 'exists:packages,id'],
+            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'date' => ['required', 'date', 'after_or_equal:today'],
         ]);
 
-        $package = Package::with(['facility.courts', 'pricingRules'])->findOrFail($data['package_id']);
+        $facility = Facility::with('courts')->findOrFail($data['facility_id']);
         $date = Carbon::parse($data['date']);
 
         $bookings = Booking::with(['court:id,name', 'user:id,name'])
-            ->whereIn('court_id', $package->facility->courts->pluck('id'))
+            ->whereIn('court_id', $facility->courts->pluck('id'))
             ->whereDate('date', $date->toDateString())
             ->whereNotIn('status', ['cancelled'])
             ->orderBy('start_time')
@@ -108,11 +86,8 @@ class PublicBookingController extends Controller
                 'customer_name' => $booking->user?->name ?? $booking->guest_name,
             ])->values();
 
-        $courts = Court::query()
-            ->where('facility_id', $package->facility_id)
+        $courts = $facility->courts
             ->where('status', 'available')
-            ->orderBy('name')
-            ->get()
             ->map(fn ($court) => [
                 'id' => $court->id,
                 'name' => $court->name,
@@ -122,7 +97,7 @@ class PublicBookingController extends Controller
             ])->values();
 
         return response()->json([
-            'slots' => $this->buildSlots($package, $date),
+            'slots' => $this->buildSlots($facility, $date),
             'bookings' => $bookings,
             'courts' => $courts,
         ]);
@@ -130,27 +105,6 @@ class PublicBookingController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'package_id' => ['required', 'integer', 'exists:packages,id'],
-            'trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],
-            'payment_method' => ['nullable', 'in:cash,bank_transfer'],
-        ]);
-
-        $package = Package::with(['pricingRules', 'facility', 'trainerAddons'])->findOrFail($data['package_id']);
-
-        if ($package->type === 'membership') {
-            abort_unless($request->user(), 403, 'Silakan login sebagai member untuk membeli membership.');
-            abort_unless($request->user()->role?->name === 'Member', 403, 'Pembelian membership hanya tersedia untuk akun Member.');
-
-            $data = array_merge($data, $request->validate([
-                'terms_accepted' => ['required', 'accepted'],
-            ]));
-
-            $this->storeDirect($request, $package, $data);
-
-            return redirect()->route('member.membership')->with('success', 'Pembelian membership tersimpan di akunmu. Ikuti status pembayaran pada menu Pembayaran.');
-        }
-
         $contactRules = $request->user()
             ? [
                 'guest_name' => ['nullable', 'string', 'max:255'],
@@ -163,67 +117,24 @@ class PublicBookingController extends Controller
                 'guest_phone' => ['required', 'string', 'max:50'],
             ];
 
-        $data = array_merge($data, $request->validate(array_merge([
-            'court_id' => ['nullable', 'integer', 'exists:courts,id'],
-            'date' => ['nullable', 'date', 'after_or_equal:today'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
+        $data = $request->validate(array_merge([
+            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+            'court_id' => ['required', 'integer', 'exists:courts,id'],
+            'date' => ['required', 'date', 'after_or_equal:today'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'duration_hours' => ['required', 'integer', 'min:1', 'max:16'],
+            'payment_method' => ['nullable', 'in:cash,bank_transfer'],
             'terms_accepted' => ['required', 'accepted'],
-        ], $contactRules)));
+        ], $contactRules));
 
-        if ($package->type !== 'session') {
-            $this->storeDirect($request, $package, $data);
+        $facility = Facility::query()->findOrFail($data['facility_id']);
+        abort_unless($facility->status === 'active' && $facility->is_bookable_online, 422, 'Olahraga ini tidak tersedia untuk booking online.');
 
-            return redirect()->route('booking.index')->with('success', 'Pesanan berhasil dibuat dan tersimpan.');
-        }
+        $total = (int) round($this->bookingPrice($facility, $data));
 
-        $trainerAddon = null;
-        if (! empty($data['trainer_id'])) {
-            $trainerAddon = $package->trainerAddons->firstWhere('id', (int) $data['trainer_id']);
-            if (! $trainerAddon || ! $trainerAddon->facilities()->whereKey($package->facility_id)->exists()) {
-                throw ValidationException::withMessages(['trainer_id' => 'Trainer tersebut tidak tersedia sebagai add-on untuk paket ini.']);
-            }
-        }
-
-        $addonPrice = $trainerAddon ? (float) $trainerAddon->pivot->price : 0;
-        $total = (int) round($this->bookingPrice($package, $data) + $addonPrice);
-
-        $booking = DB::transaction(function () use ($request, $package, $data, $total, $trainerAddon, $addonPrice) {
-            if ($trainerAddon) {
-                // Serialize bookings for the same trainer to prevent overlapping assignments.
-                $trainerAddon->newQuery()->whereKey($trainerAddon->id)->lockForUpdate()->first();
-                $trainerBookings = BookingTrainerAddon::query()
-                    ->where('trainer_id', $trainerAddon->id)
-                    ->whereHas('booking', fn ($query) => $query
-                        ->whereDate('date', $data['date'])
-                        ->whereNotIn('status', ['cancelled']));
-
-                if (! empty($data['start_time'])) {
-                    $trainerStart = Carbon::createFromFormat('H:i', $data['start_time']);
-                    $trainerEnd = $trainerStart->copy()->addHours(max(1, (int) ($data['duration_hours'] ?? 1)));
-                    $trainerBookings->whereHas('booking', fn ($query) => $query
-                        ->whereTime('start_time', '<', $trainerEnd->format('H:i:s'))
-                        ->whereTime('end_time', '>', $trainerStart->format('H:i:s')));
-                }
-
-                if ($trainerBookings->exists()) {
-                    throw ValidationException::withMessages([
-                        'trainer_id' => 'Trainer sudah memiliki booking pada tanggal atau jam tersebut. Silakan pilih trainer lain.',
-                    ]);
-                }
-            }
-
-            $booking = $this->storeBooking($request, $package, $data);
-            if ($trainerAddon) {
-                $booking->trainerAddon()->create([
-                    'package_id' => $package->id,
-                    'trainer_id' => $trainerAddon->id,
-                    'price' => $addonPrice,
-                ]);
-            }
+        $booking = DB::transaction(function () use ($request, $facility, $data, $total) {
+            $booking = $this->storeBooking($request, $facility, $data);
             $user = $request->user();
-
-            // Keep the receipt code identical to the QR ticket code in transactions.
             $bookingCode = 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT);
 
             Transaction::query()->create([
@@ -241,9 +152,6 @@ class PublicBookingController extends Controller
         });
 
         Cache::put('booking_receipt_'.$booking->id, [
-            'package' => $package->name,
-            'trainer' => $trainerAddon?->name,
-            'trainer_addon_price' => $addonPrice,
             'total' => $total,
         ], now()->addDays(30));
 
@@ -264,9 +172,6 @@ class PublicBookingController extends Controller
                 'customerPhone' => $booking->guest_phone,
                 'facility' => $booking->court?->facility?->name ?? 'Olahraga',
                 'court' => $booking->court?->name ?? '—',
-                'package' => (string) ($receiptDetails['package'] ?? 'Booking sesi'),
-                'trainer' => $booking->trainerAddon?->trainer?->name,
-                'trainerAddonPrice' => (int) ($booking->trainerAddon?->price ?? 0),
                 'date' => $booking->date?->format('d M Y'),
                 'startTime' => substr((string) $booking->start_time, 0, 5),
                 'endTime' => substr((string) $booking->end_time, 0, 5),
@@ -281,14 +186,14 @@ class PublicBookingController extends Controller
      *
      * @param  array<string, mixed>  $data
      */
-    private function bookingPrice(Package $package, array $data): float
+    private function bookingPrice(Facility $facility, array $data): float
     {
         $date = Carbon::parse($data['date']);
         $start = $this->toMinutes($data['start_time'] ?? '00:00');
         $duration = max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
         $end = $start + $duration;
         $window = BookingTimeSlot::query()
-            ->where('facility_id', $package->facility_id)
+            ->where('facility_id', $facility->id)
             ->where('day', strtolower($date->englishDayOfWeek))
             ->where('is_active', true)
             ->get()
@@ -299,7 +204,7 @@ class PublicBookingController extends Controller
             throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
         }
 
-        return ((float) $window->price * ($duration / 60)) + $this->courtAdjustment($data['court_id'] ?? null);
+        return ((float) $window->price * (max(1, (int) $data['duration_hours']))) + $this->courtAdjustment($data['court_id'] ?? null);
     }
 
     private function courtAdjustment(mixed $courtId): float
@@ -312,39 +217,16 @@ class PublicBookingController extends Controller
     /**
      * @param  array<string, mixed>  $data
      */
-    private function storeBooking(Request $request, Package $package, array $data): Booking
+    private function storeBooking(Request $request, Facility $facility, array $data): Booking
     {
-        if (empty($data['date'])) {
-            throw ValidationException::withMessages(['date' => 'Tanggal sesi wajib dipilih.']);
-        }
-
         $date = Carbon::parse($data['date']);
-        $hasOperatingHours = BookingTimeSlot::query()
-            ->where('facility_id', $package->facility_id)
-            ->where('day', strtolower($date->englishDayOfWeek))
-            ->where('is_active', true)
-            ->exists();
+        $startMinutes = $this->toMinutes($data['start_time']);
+        $durationHours = max(1, (int) $data['duration_hours']);
+        $durationMinutes = $durationHours * 60;
+        $endMinutes = $startMinutes + $durationMinutes;
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
 
-        if (! $hasOperatingHours) {
-            $user = $request->user();
-
-            return Booking::create([
-                'user_id' => $user?->id,
-                'guest_name' => $user ? $user->name : $data['guest_name'],
-                'guest_email' => $user ? $user->email : $data['guest_email'],
-                'guest_phone' => $user ? null : $data['guest_phone'],
-                'court_id' => null,
-                    'date' => $date->toDateString(),
-                'start_time' => null,
-                'end_time' => null,
-                'status' => 'pending',
-            ]);
-        }
-
-        if (empty($data['court_id']) || empty($data['start_time'])) {
-            throw ValidationException::withMessages(['start_time' => 'Pilih jam dan lapangan yang tersedia.']);
-        }
-        $courtIsBookable = $package->facility->courts()
+        $courtIsBookable = $facility->courts()
             ->whereKey($data['court_id'])
             ->where('status', 'available')
             ->exists();
@@ -355,13 +237,7 @@ class PublicBookingController extends Controller
             ]);
         }
 
-        $startMinutes = $this->toMinutes($data['start_time']);
-        $durationHours = max(1, (int) ($data['duration_hours'] ?? 1));
-        $durationMinutes = $durationHours * 60;
-        $endMinutes = $startMinutes + $durationMinutes;
-        $turnaround = max(0, (int) $package->facility->turnaround_minutes);
-
-        if (! $this->isMasterSlotStart($package->facility_id, $date, $startMinutes, $durationMinutes)) {
+        if (! $this->isMasterSlotStart($facility->id, $date, $startMinutes, $durationMinutes)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih tidak sesuai Master Jam Booking. Silakan pilih slot yang tersedia.']);
         }
 
@@ -466,15 +342,15 @@ class PublicBookingController extends Controller
     /**
      * @return array<int, array{start_time: string, end_time: string, price: float, courts: array<int, array{id: int, name: string}>}>
      */
-    private function buildSlots(Package $package, Carbon $date): array
+    private function buildSlots(Facility $facility, Carbon $date): array
     {
-        $duration = max(1, (int) $package->duration_minutes);
-        $turnaround = max(0, (int) $package->facility->turnaround_minutes);
+        // Tanpa paket: satu pilihan slot mewakili satu jam booking.
+        $duration = 60;
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
         $step = $duration + $turnaround;
         $day = strtolower($date->englishDayOfWeek);
 
-        $courts = Court::query()
-            ->where('facility_id', $package->facility_id)
+        $courts = $facility->courts()
             ->where('status', 'available')
             ->orderBy('name')
             ->get();
@@ -486,7 +362,7 @@ class PublicBookingController extends Controller
             ->get(['court_id', 'start_time', 'end_time']);
 
         $windows = BookingTimeSlot::query()
-            ->where('facility_id', $package->facility_id)
+            ->where('facility_id', $facility->id)
             ->where('day', $day)
             ->where('is_active', true)
             ->orderBy('start_time')
@@ -531,7 +407,7 @@ class PublicBookingController extends Controller
                     'window_id' => $window->id,
                     'start_time' => $this->toTime($cursor),
                     'end_time' => $this->toTime($slotEnd),
-                    'price' => (float) $window->price * ($duration / 60),
+                    'price' => (float) $window->price,
                     'courts' => $courtOptions,
                 ];
 
