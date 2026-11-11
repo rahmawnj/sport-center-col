@@ -43,7 +43,8 @@ const steps = [
     { id: 2, label: 'Pilih kelas' },
     { id: 3, label: 'Pilih jadwal & tanggal' },
     { id: 5, label: 'Data peserta' },
-    { id: 6, label: 'Pembayaran' },
+    { id: 6, label: 'Konfirmasi' },
+    { id: 7, label: 'Pembayaran' },
 ];
 
 const step = ref(1);
@@ -98,6 +99,7 @@ const canContinue = computed(() => {
     if (step.value === 3) return !!selectedSchedule.value;
     if (step.value === 4) return !!selected.value && selected.value.available_count > 0;
     if (step.value === 5) return contactIsValid.value;
+    if (step.value === 6) return true;
     return true;
 });
 
@@ -163,7 +165,7 @@ function goBack() {
 }
 function goNext() {
     if (!canContinue.value) return;
-    step.value = Math.min(6, step.value + 1);
+    step.value = Math.min(7, step.value + 1);
 }
 function submit() {
     if (!selected.value || selected.value.available_count < 1) return;
@@ -182,6 +184,7 @@ function submit() {
         onError: (errors) => {
             const fields = Object.keys(errors);
             if (fields.includes('schedule')) step.value = 3;
+            else if (fields.includes('payment_method')) step.value = 7;
             else if (fields.some((field) => ['guest_name', 'guest_email', 'guest_phone'].includes(field))) step.value = 5;
         },
     });
@@ -382,6 +385,36 @@ onMounted(() => {
                                 </div>
                             </div>
 
+                            <div v-else-if="step === 6" class="space-y-5">
+                                <div>
+                                    <h2 class="font-semibold">Konfirmasi pendaftaran</h2>
+                                    <p class="mt-1 text-sm text-slate-500">Pastikan semua detail kelas dan data peserta sudah benar sebelum memilih pembayaran.</p>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Detail kelas</p>
+                                    <div class="mt-3 space-y-3 text-sm">
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Olahraga</span><strong class="text-right">{{ selectedFacility?.name }}</strong></div>
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Kelas</span><strong class="text-right">{{ selectedClass?.name }}</strong></div>
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Tanggal</span><strong class="text-right">{{ selected ? dateLabel(selected.session_date) : '—' }}</strong></div>
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Waktu</span><strong class="text-right">{{ selected?.start_time }}–{{ selected?.end_time }}</strong></div>
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Instruktur</span><strong class="text-right">{{ selected?.trainer || 'Akan diumumkan' }}</strong></div>
+                                    </div>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 p-4">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Data peserta</p>
+                                    <div class="mt-3 space-y-3 text-sm">
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Nama</span><strong class="text-right">{{ form.guest_name || '—' }}</strong></div>
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Email</span><strong class="break-all text-right">{{ form.guest_email || '—' }}</strong></div>
+                                        <div class="flex justify-between gap-4"><span class="text-slate-500">Nomor HP</span><strong class="text-right">{{ form.guest_phone || '—' }}</strong></div>
+                                    </div>
+                                </div>
+                                <div class="rounded-2xl border border-lime-200 bg-lime-50 p-4">
+                                    <p class="text-sm font-semibold text-lime-900">Total pendaftaran</p>
+                                    <p class="mt-1 text-2xl font-bold text-lime-900">{{ selected ? money(selected.price) : '—' }}</p>
+                                    <p class="mt-1 text-xs text-lime-800">Harga untuk satu peserta. Metode pembayaran dipilih pada langkah berikutnya.</p>
+                                </div>
+                            </div>
+
                             <form v-else class="space-y-6" @submit.prevent="submit">
                                 <div>
                                     <h2 class="font-semibold">Metode pembayaran</h2>
@@ -405,7 +438,8 @@ onMounted(() => {
 
                             <div class="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-between">
                                 <button type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700" @click="goBack"><ArrowLeft class="mr-2 size-4" /> Kembali</button>
-                                <button v-if="step === 5" type="button" :disabled="!canContinue" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] disabled:opacity-40" @click="goNext">Lanjut ke pembayaran <ArrowRight class="ml-2 size-4" /></button>
+                                <button v-if="step === 5" type="button" :disabled="!canContinue" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] disabled:opacity-40" @click="goNext">Lanjut konfirmasi <ArrowRight class="ml-2 size-4" /></button>
+                                <button v-else-if="step === 6" type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428]" @click="goNext">Lanjut ke pembayaran <ArrowRight class="ml-2 size-4" /></button>
                                 <button v-else type="button" :disabled="form.processing" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] disabled:opacity-50" @click="submit">
                                     <Loader2 v-if="form.processing" class="mr-2 size-4 animate-spin" />
                                     {{ form.processing ? 'Memproses pendaftaran...' : 'Konfirmasi pendaftaran' }}
@@ -422,7 +456,7 @@ onMounted(() => {
                                 <div><p class="text-slate-500">Kelas</p><p class="mt-1 font-semibold">{{ selectedClass?.name }}</p></div>
                                 <div><p class="text-slate-500">Tanggal & waktu</p><p class="mt-1 font-semibold">{{ dateLabel(selected.session_date) }}</p><p class="mt-0.5 text-slate-500">{{ dayLabel(selected.day) }} · {{ selected.start_time }}–{{ selected.end_time }}</p></div>
                                 <div><p class="text-slate-500">Instruktur</p><p class="mt-1 font-semibold">{{ selected.trainer || 'Trainer akan diumumkan' }}</p></div>
-                                <div v-if="step === 6"><p class="text-slate-500">Peserta</p><p class="mt-1 font-semibold">{{ form.guest_name || 'Belum diisi' }}</p><p class="mt-0.5 text-slate-500">{{ form.guest_email || 'Email belum diisi' }}</p></div>
+                                <div v-if="step >= 6"><p class="text-slate-500">Peserta</p><p class="mt-1 font-semibold">{{ form.guest_name || 'Belum diisi' }}</p><p class="mt-0.5 text-slate-500">{{ form.guest_email || 'Email belum diisi' }}</p></div>
                                 <div class="border-t border-slate-200 pt-4"><p class="text-slate-500">Total pembayaran</p><p class="mt-1 text-2xl font-bold">{{ money(selected.price) }}</p><p class="mt-1 text-xs text-slate-500">Harga untuk satu peserta</p></div>
                             </div>
                             <p v-else class="mt-4 text-sm text-slate-500">Pilih olahraga, kelas, dan sesi terlebih dahulu.</p>
