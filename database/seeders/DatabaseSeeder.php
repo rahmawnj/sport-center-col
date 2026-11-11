@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             BookingPricingSeeder::class,
             MembershipPackageSeeder::class,
             TrainerSeeder::class,
+            ClassSeeder::class,
             TrainerPackageSeeder::class,
         ]);
 
