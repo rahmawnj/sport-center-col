@@ -31,7 +31,7 @@ function makeBookableFacility(int $turnaround = 0): array
     BookingTimeSlot::create([
         'facility_id' => $facility->id,
         'day' => $day,
-        'start_time' => '07:00',
+        'start_time' => '09:00',
         'end_time' => '16:00',
         'price' => 250000,
         'is_active' => true,
