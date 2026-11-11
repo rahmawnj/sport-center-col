@@ -163,7 +163,7 @@ class PublicBookingController extends Controller
 
     public function receipt(Request $request, Booking $booking): Response
     {
-        $booking->load(['court.facility', 'user']);
+        $booking->load(['court.facility', 'user', 'trainerAddon.trainer']);
         $receiptDetails = Cache::get('booking_receipt_'.$booking->id, []);
 
         return Inertia::render('book/Receipt', [
@@ -175,6 +175,8 @@ class PublicBookingController extends Controller
                 'customerPhone' => $booking->guest_phone,
                 'facility' => $booking->court?->facility?->name ?? 'Olahraga',
                 'court' => $booking->court?->name ?? '—',
+                'trainer' => $booking->trainerAddon?->trainer?->name,
+                'trainerAddonPrice' => (int) ($booking->trainerAddon?->price ?? 0),
                 'date' => $booking->date?->format('d M Y'),
                 'startTime' => substr((string) $booking->start_time, 0, 5),
                 'endTime' => substr((string) $booking->end_time, 0, 5),
