@@ -1,11 +1,11 @@
 <?php
 
-namespace Database\\Seeders;
+namespace Database\Seeders;
 
-use App\\Models\\ClassSchedule;
-use App\\Models\\Facility;
-use App\\Models\\SportClass;
-use Illuminate\\Database\\Seeder;
+use App\Models\ClassSchedule;
+use App\Models\Facility;
+use App\Models\SportClass;
+use Illuminate\Database\Seeder;
 
 class ClassSeeder extends Seeder
 {
