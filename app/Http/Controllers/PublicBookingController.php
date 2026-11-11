@@ -23,8 +23,6 @@ use Inertia\Response;
 
 class PublicBookingController extends Controller
 {
-    public function __construct(private PackagePricingService $pricing) {}
-
     private const DEFAULT_OPEN = '08:00';
 
     private const DEFAULT_CLOSE = '23:00';
@@ -160,7 +158,7 @@ class PublicBookingController extends Controller
 
     public function receipt(Request $request, Booking $booking): Response
     {
-        $booking->load(['court.facility', 'user', 'trainerAddon.trainer']);
+        $booking->load(['court.facility', 'user']);
         $receiptDetails = Cache::get('booking_receipt_'.$booking->id, []);
 
         return Inertia::render('book/Receipt', [
@@ -282,64 +280,6 @@ class PublicBookingController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     */
-    private function storeDirect(Request $request, Package $package, array $data): void
-    {
-        $price = $this->basePrice($package, Carbon::today());
-
-        if ($price === null) {
-            throw ValidationException::withMessages(['package_id' => 'Paket ini belum memiliki harga.']);
-        }
-
-        $user = $request->user();
-
-        if ($package->type === 'membership') {
-            if (! $user) {
-                throw ValidationException::withMessages(['package_id' => 'Membership memerlukan akun. Silakan masuk terlebih dahulu.']);
-            }
-
-            $start = Carbon::today();
-            $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)));
-
-            DB::transaction(function () use ($user, $package, $start, $end, $price, $data) {
-                $membership = UserMembership::create([
-                    'user_id' => $user->id,
-                    'package_id' => $package->id,
-                    'start_date' => $start->toDateString(),
-                    'end_date' => $end->toDateString(),
-                    'status' => 'active',
-                ]);
-
-                Transaction::query()->create([
-                    'user_id' => $user->id,
-                    'transactionable_type' => 'membership',
-                    'total_amount' => $price,
-                    'payment_method' => $data['payment_method'] ?? 'bank_transfer',
-                    'payment_status' => 'unpaid',
-                ]);
-            });
-
-            return;
-        }
-
-        Transaction::query()->create([
-            'user_id' => $user?->id,
-            'device_id' => Device::forFacility($package->facility_id)?->id,
-            'transactionable_type' => 'booking',
-            'guest_name' => $user ? $user->name : $data['guest_name'],
-            'amount' => $price,
-            'payment_method' => $data['payment_method'] ?? 'bank_transfer',
-            'payment_status' => 'unpaid',
-        ]);
-    }
-
-    private function basePrice(Package $package, Carbon $date): ?float
-    {
-        return $this->pricing->summary($package, $date)['starting_price'];
-    }
-
-    /**
      * @return array<int, array{start_time: string, end_time: string, price: float, courts: array<int, array{id: int, name: string}>}>
      */
     private function buildSlots(Facility $facility, Carbon $date): array
@@ -422,7 +362,7 @@ class PublicBookingController extends Controller
     {
         $day = strtolower($date->englishDayOfWeek);
         $turnaround = max(0, (int) Facility::query()->whereKey($facilityId)->value('turnaround_minutes'));
-        $step = max(1, $durationMinutes) + $turnaround;
+        $step = 60 + $turnaround;
 
         return BookingTimeSlot::query()
             ->where('facility_id', $facilityId)
