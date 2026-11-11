@@ -248,8 +248,8 @@ class ClassManagementController extends Controller
 
         $dates = collect(range(0, 83))
             ->map(fn ($offset) => today()->addDays($offset))
-            ->filter(fn (Carbon $date) => strtolower($date->englishDayOfWeek) === $data['day'])
-            ->map(fn (Carbon $date) => $date->toDateString())
+            ->filter(fn ($date) => strtolower($date->englishDayOfWeek) === $data['day'])
+            ->map(fn ($date) => $date->toDateString())
             ->all();
 
         $personalTrainingConflict = TrainerSessionSchedule::query()
