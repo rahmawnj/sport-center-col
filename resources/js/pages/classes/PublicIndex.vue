@@ -327,6 +327,9 @@ onMounted(() => {
                                 class="rounded-2xl border p-4 text-left transition hover:border-lime-300 hover:bg-lime-50/40 disabled:cursor-not-allowed disabled:opacity-60"
                                 :class="selected?.id === session.id && selected?.session_date === session.session_date ? 'border-[#a4da01] bg-lime-50 ring-2 ring-[#a4da01]/30' : 'border-slate-200'"
                                 @click="chooseSession(session)">
+                                <div class="mb-3">
+                                    <p class="text-xs font-semibold text-slate-500">{{ dateLabel(session.session_date) }}</p>
+                                </div>
                                 <div class="flex items-start justify-between gap-3">
                                     <span class="rounded-full bg-lime-50 px-2.5 py-1 text-[11px] font-bold text-lime-800">{{ session.start_time }}–{{ session.end_time }}</span>
                                     <span v-if="session.available_count < 1" class="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">Kuota penuh</span>
