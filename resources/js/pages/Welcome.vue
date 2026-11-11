@@ -521,14 +521,14 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                                             <span><i class="fa-solid fa-user-tie mr-1.5"></i>{{ schedule.trainer || 'Instruktur akan ditentukan' }}</span>
                                             <span><i class="fa-solid fa-users mr-1.5"></i>{{ schedule.capacity }} peserta</span>
                                         </div>
-                                        <p class="mt-3 border-t border-slate-200 pt-3 text-sm font-black text-[#001428]">{{ formatCurrency(schedule.price) }} <span class="font-medium text-slate-400">/ peserta</span></p>
+                                        <div class="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
+                                            <p class="text-sm font-black text-[#001428]">{{ formatCurrency(schedule.price) }} <span class="font-medium text-slate-400">/ peserta</span></p>
+                                            <Link :href="`/kelas?schedule=${schedule.id}`" class="inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-4 py-2 text-xs font-black text-[#001428] transition hover:bg-[#b8ec24]">
+                                                Daftar sesi <i class="fa-solid fa-arrow-right"></i>
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="border-t border-slate-100 px-6 py-4">
-                                <Link href="/login" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]">
-                                    Login untuk mendaftar <i class="fa-solid fa-arrow-right"></i>
-                                </Link>
                             </div>
                         </article>
                     </div>
