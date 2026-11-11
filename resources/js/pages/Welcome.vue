@@ -494,7 +494,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     </div>
 
                     <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                        <article v-for="(item, index) in classes" :key="item.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        <article v-for="item in classes" :key="item.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                             <div class="flex items-start justify-between gap-4 bg-[#001428] p-6 text-white">
                                 <div>
                                     <span class="inline-flex rounded-full bg-[#a4da01]/15 px-3 py-1.5 text-xs font-extrabold text-[#c7f45b]">{{ item.facility || 'Sport Center' }}</span>
