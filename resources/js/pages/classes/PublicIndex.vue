@@ -41,9 +41,7 @@ const props = defineProps<{
 const steps = [
     { id: 1, label: 'Pilih olahraga' },
     { id: 2, label: 'Pilih kelas' },
-    { id: 3, label: 'Pilih jadwal' },
-    { id: 4, label: 'Pilih tanggal' },
-
+    { id: 3, label: 'Pilih jadwal & tanggal' },
     { id: 5, label: 'Data peserta' },
     { id: 6, label: 'Pembayaran' },
 ];
@@ -145,7 +143,7 @@ function chooseSchedule(schedule: Session) {
     selectedDate.value = null;
     selected.value = null;
     form.clearErrors();
-    step.value = 4;
+    step.value = 3;
 }
 function chooseDate(date: string) {
     const session = dates.value.find((item) => item.session_date === date);
@@ -157,6 +155,10 @@ function chooseDate(date: string) {
     step.value = 5;
 }
 function goBack() {
+    if (step.value === 5) {
+        step.value = 3;
+        return;
+    }
     step.value = Math.max(1, step.value - 1);
 }
 function goNext() {
@@ -179,7 +181,7 @@ function submit() {
         },
         onError: (errors) => {
             const fields = Object.keys(errors);
-            if (fields.includes('schedule')) step.value = 4;
+            if (fields.includes('schedule')) step.value = 3;
             else if (fields.some((field) => ['guest_name', 'guest_email', 'guest_phone'].includes(field))) step.value = 5;
         },
     });
@@ -240,7 +242,7 @@ onMounted(() => {
                                 <span class="flex size-5 items-center justify-center rounded-full text-xs"
                                     :class="step > item.id ? 'bg-[#001428] text-white' : step === item.id ? 'bg-white/70' : 'bg-slate-100'">
                                     <Check v-if="step > item.id" class="size-3" />
-                                    <template v-else>{{ item.id }}</template>
+                                    <template v-else>{{ index + 1 }}</template>
                                 </span>
                                 {{ item.label }}
                             </div>
@@ -302,7 +304,7 @@ onMounted(() => {
                     <section v-else-if="step === 3" class="mt-6 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-6">
                         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h2 class="font-semibold">Pilih jadwal kelas</h2>
+                                <h2 class="font-semibold">Pilih jadwal dan tanggal kelas</h2>
                                 <p class="mt-1 text-xs text-slate-500">{{ selectedFacility?.name }} · {{ selectedClass?.name }}</p>
                             </div>
                             <span class="rounded-full bg-lime-50 px-3 py-1.5 text-xs font-semibold text-lime-800">{{ schedulesByDay.reduce((total, group) => total + group.schedules.length, 0) }} jadwal tersedia</span>
@@ -310,22 +312,36 @@ onMounted(() => {
                         <div v-if="schedulesByDay.length" class="space-y-5">
                             <div v-for="group in schedulesByDay" :key="group.day">
                                 <h3 class="mb-3 text-sm font-bold text-slate-700">{{ dayLabel(group.day) }}</h3>
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    <button v-for="schedule in group.schedules" :key="schedule.id" type="button"
-                                        class="rounded-2xl border p-4 text-left transition hover:border-lime-300 hover:bg-lime-50/40"
-                                        :class="selectedSchedule?.id === schedule.id ? 'border-[#a4da01] bg-lime-50 ring-2 ring-[#a4da01]/30' : 'border-slate-200'"
-                                        @click="chooseSchedule(schedule)">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <span class="rounded-full bg-lime-50 px-2.5 py-1 text-[11px] font-bold text-lime-800">{{ schedule.start_time }}–{{ schedule.end_time }}</span>
-                                            <span class="text-xs font-semibold text-slate-500">{{ schedule.available_count }} tempat tersisa pada sesi terdekat</span>
+                                <div class="space-y-3">
+                                    <div v-for="schedule in group.schedules" :key="schedule.id" class="rounded-2xl border p-4 transition"
+                                        :class="selectedSchedule?.id === schedule.id ? 'border-[#a4da01] bg-lime-50/40 ring-2 ring-[#a4da01]/30' : 'border-slate-200'">
+                                        <button type="button" class="w-full text-left" @click="chooseSchedule(schedule)">
+                                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                                <span class="rounded-full bg-lime-50 px-2.5 py-1 text-[11px] font-bold text-lime-800">{{ schedule.start_time }}–{{ schedule.end_time }}</span>
+                                                <span class="text-xs font-semibold text-slate-500">{{ schedule.trainer || 'Trainer akan diumumkan' }}</span>
+                                            </div>
+                                            <div class="mt-3 flex items-center justify-between gap-3">
+                                                <h4 class="font-bold">{{ selectedClass?.name }}</h4>
+                                                <span class="font-bold">{{ money(schedule.price) }}</span>
+                                            </div>
+                                            <p class="mt-1 text-xs text-lime-800">{{ selectedSchedule?.id === schedule.id ? 'Pilih salah satu tanggal di bawah' : 'Klik untuk melihat tanggal yang tersedia' }}</p>
+                                        </button>
+                                        <div v-if="selectedSchedule?.id === schedule.id" class="mt-4 border-t border-lime-200 pt-4">
+                                            <p class="mb-3 text-sm font-semibold text-slate-700">Pilih tanggal untuk jadwal ini</p>
+                                            <div v-if="dates.length" class="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                                                <button v-for="item in dates" :key="item.session_date" type="button" :disabled="item.available_count < 1"
+                                                    class="rounded-xl border bg-white p-3 text-left transition hover:border-lime-300 hover:bg-lime-50/40 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    :class="selectedDate === item.session_date ? 'border-[#a4da01] bg-lime-50 ring-2 ring-[#a4da01]/30' : 'border-slate-200'"
+                                                    @click="chooseDate(item.session_date)">
+                                                    <span class="text-xs font-bold tracking-wider text-lime-800 uppercase">{{ dayLabel(item.day) }}</span>
+                                                    <h3 class="mt-1 text-sm font-bold">{{ dateLabel(item.session_date) }}</h3>
+                                                    <p class="mt-1 text-xs text-slate-500">{{ item.available_count }} tempat tersisa</p>
+                                                    <span class="mt-2 inline-flex items-center text-xs font-semibold text-lime-800">Pilih tanggal <ArrowRight class="ml-1 size-3" /></span>
+                                                </button>
+                                            </div>
+                                            <p v-else class="text-sm text-slate-500">Belum ada tanggal tersedia untuk jadwal ini.</p>
                                         </div>
-                                        <h4 class="mt-3 font-bold">{{ selectedClass?.name }}</h4>
-                                        <p class="mt-1 text-sm text-slate-500">{{ schedule.trainer || 'Trainer akan diumumkan' }}</p>
-                                        <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                                            <span class="text-xs text-slate-500">Harga per peserta</span>
-                                            <span class="font-bold">{{ money(schedule.price) }}</span>
-                                        </div>
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -335,34 +351,6 @@ onMounted(() => {
                         </div>
                         <div class="mt-6 flex border-t border-slate-100 pt-5">
                             <button type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700" @click="goBack"><ArrowLeft class="mr-2 size-4" /> Kembali</button>
-                        </div>
-                    </section>
-
-                    <section v-else-if="step === 4" class="mt-6 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-6">
-                        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <h2 class="font-semibold">Pilih tanggal kelas</h2>
-                                <p class="mt-1 text-xs text-slate-500">{{ selectedFacility?.name }} · {{ selectedClass?.name }} · {{ selectedSchedule ? `${selectedSchedule.start_time}–${selectedSchedule.end_time}` : '' }}</p>
-                            </div>
-                            <span class="rounded-full bg-lime-50 px-3 py-1.5 text-xs font-semibold text-lime-800">{{ dates.length }} tanggal tersedia</span>
-                        </div>
-                        <div v-if="dates.length" class="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                            <button v-for="item in dates" :key="item.session_date" type="button" :disabled="item.available_count < 1"
-                                class="rounded-2xl border p-4 text-left transition hover:border-lime-300 hover:bg-lime-50/40 disabled:cursor-not-allowed disabled:opacity-50"
-                                :class="selectedDate === item.session_date ? 'border-[#a4da01] bg-lime-50 ring-2 ring-[#a4da01]/30' : 'border-slate-200'"
-                                @click="chooseDate(item.session_date)">
-                                <span class="text-xs font-bold tracking-wider text-lime-800 uppercase">{{ dayLabel(item.day) }}</span>
-                                <h3 class="mt-2 text-lg font-bold">{{ dateLabel(item.session_date) }}</h3>
-                                <p class="mt-2 text-xs text-slate-500">{{ item.available_count }} tempat tersisa</p>
-                                <span class="mt-3 inline-flex items-center text-sm font-semibold text-lime-800">Pilih tanggal <ArrowRight class="ml-2 size-4" /></span>
-                            </button>
-                        </div>
-                        <div v-else class="rounded-xl bg-slate-50 px-5 py-12 text-center">
-                            <h3 class="font-semibold text-slate-800">Belum ada tanggal tersedia</h3>
-                            <p class="mt-1 text-sm text-slate-500">Silakan pilih jadwal lain.</p>
-                        </div>
-                        <div class="mt-6 flex border-t border-slate-100 pt-5">
-                            <button type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700" @click="step = 3"><ArrowLeft class="mr-2 size-4" /> Ganti jadwal</button>
                         </div>
                     </section>
 
