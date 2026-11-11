@@ -47,6 +47,7 @@ Route::get('booking/receipt/{booking}', [PublicBookingController::class, 'receip
 
 Route::get('kelas', [MemberClassController::class, 'publicIndex'])->name('classes.public');
 Route::post('kelas/{schedule}/register', [MemberClassController::class, 'storePublic'])->name('classes.public.register');
+Route::get('kelas/receipt/{transaction}', [MemberClassController::class, 'receipt'])->whereNumber('transaction')->name('classes.receipt');
 
 Route::get('verify', [VerifyController::class, 'show'])->name('verify');
 
