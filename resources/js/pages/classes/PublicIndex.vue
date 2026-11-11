@@ -121,6 +121,7 @@ const dayLabel = (value: string) => ({
 function chooseFacility(facility: Facility) {
     selectedFacility.value = facility;
     selectedClass.value = null;
+    selectedDate.value = null;
     selected.value = null;
     form.clearErrors();
 }
@@ -149,7 +150,7 @@ function goBack() {
 }
 function goNext() {
     if (!canContinue.value) return;
-    step.value = Math.min(5, step.value + 1);
+    step.value = Math.min(6, step.value + 1);
 }
 function submit() {
     if (!selected.value || selected.value.available_count < 1) return;
