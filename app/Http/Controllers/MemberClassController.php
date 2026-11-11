@@ -74,55 +74,75 @@ class MemberClassController extends Controller
 
     public function publicIndex(Request $request): Response
     {
-        $schedules = ClassSchedule::query()
-            ->with(['sportClass.facility:id,name', 'trainer:id,name,specialty'])
-            ->where('is_active', true)
-            ->whereHas('sportClass', fn ($query) => $query->where('is_active', true)
-                ->whereHas('facility', fn ($facility) => $facility->where('status', 'active')->where('is_bookable_online', true)))
-            ->orderBy('day')
-            ->orderBy('start_time')
+        $facilities = \\App\\Models\\Facility::query()
+            ->where('status', 'active')
+            ->where('is_bookable_online', true)
+            ->with(['classes' => fn ($query) => $query
+                ->where('is_active', true)
+                ->with(['schedules' => fn ($schedules) => $schedules
+                    ->where('is_active', true)
+                    ->with('trainer:id,name,specialty')
+                    ->orderBy('day')
+                    ->orderBy('start_time')])])
+            ->orderBy('name')
             ->get()
-            ->flatMap(function (ClassSchedule $schedule) {
-                $dayNumber = Carbon::parse('next '.$schedule->day)->dayOfWeekIso;
-                $offset = ($dayNumber - today()->dayOfWeekIso + 7) % 7;
-                $firstDate = today()->copy()->addDays($offset);
+            ->map(function ($facility) {
+                $classes = $facility->classes->map(function ($sportClass) {
+                    $sessions = $sportClass->schedules->flatMap(function (ClassSchedule $schedule) use ($sportClass) {
+                        $dayNumber = Carbon::parse('next '.$schedule->day)->dayOfWeekIso;
+                        $offset = ($dayNumber - today()->dayOfWeekIso + 7) % 7;
+                        $firstDate = today()->copy()->addDays($offset);
 
-                if ($offset === 0 && $schedule->start_time <= now()->format('H:i:s')) {
-                    $firstDate->addWeek();
-                }
+                        if ($offset === 0 && $schedule->start_time <= now()->format('H:i:s')) {
+                            $firstDate->addWeek();
+                        }
 
-                return collect(range(0, 5))->map(function (int $week) use ($schedule, $firstDate) {
-                    $date = $firstDate->copy()->addWeeks($week);
-                    $registered = SessionParticipant::query()
-                        ->where('class_schedule_id', $schedule->id)
-                        ->whereDate('session_date', $date->toDateString())
-                        ->whereIn('status', ['pending', 'confirmed'])
-                        ->count();
-                    $capacity = (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1);
+                        return collect(range(0, 5))->map(function (int $week) use ($schedule, $sportClass, $firstDate) {
+                            $date = $firstDate->copy()->addWeeks($week);
+                            $registered = SessionParticipant::query()
+                                ->where('class_schedule_id', $schedule->id)
+                                ->whereDate('session_date', $date->toDateString())
+                                ->whereIn('status', ['pending', 'confirmed'])
+                                ->count();
+                            $capacity = (int) ($schedule->capacity ?? $sportClass->default_capacity ?? 1);
+
+                            return [
+                                'id' => $schedule->id,
+                                'session_date' => $date->toDateString(),
+                                'day' => $schedule->day,
+                                'start_time' => substr((string) $schedule->start_time, 0, 5),
+                                'end_time' => substr((string) $schedule->end_time, 0, 5),
+                                'trainer' => $schedule->trainer?->name,
+                                'trainer_specialty' => $schedule->trainer?->specialty,
+                                'capacity' => $capacity,
+                                'registered_count' => $registered,
+                                'available_count' => max(0, $capacity - $registered),
+                                'price' => (float) $schedule->price,
+                            ];
+                        });
+                    })->sortBy(fn ($session) => $session['session_date'].' '.$session['start_time'])->values();
 
                     return [
-                        'id' => $schedule->id,
-                        'session_date' => $date->toDateString(),
-                        'class_name' => $schedule->sportClass?->name,
-                        'description' => $schedule->sportClass?->description,
-                        'facility' => $schedule->sportClass?->facility?->name,
-                        'trainer' => $schedule->trainer?->name,
-                        'trainer_specialty' => $schedule->trainer?->specialty,
-                        'day' => $schedule->day,
-                        'start_time' => substr((string) $schedule->start_time, 0, 5),
-                        'end_time' => substr((string) $schedule->end_time, 0, 5),
-                        'capacity' => $capacity,
-                        'registered_count' => $registered,
-                        'available_count' => max(0, $capacity - $registered),
-                        'price' => (float) $schedule->price,
+                        'id' => $sportClass->id,
+                        'name' => $sportClass->name,
+                        'description' => $sportClass->description,
+                        'duration_minutes' => (int) $sportClass->duration_minutes,
+                        'schedules' => $sessions,
                     ];
-                });
+                })->filter(fn ($sportClass) => $sportClass['schedules']->isNotEmpty())->values();
+
+                return [
+                    'id' => $facility->id,
+                    'name' => $facility->name,
+                    'slug' => $facility->slug,
+                    'classes' => $classes,
+                ];
             })
-            ->sortBy(fn ($item) => $item['session_date'].' '.$item['start_time'])
+            ->filter(fn ($facility) => $facility['classes']->isNotEmpty())
             ->values();
 
         return Inertia::render('classes/PublicIndex', [
-            'schedules' => $schedules,
+            'facilities' => $facilities,
             'currentUser' => $request->user() ? [
                 'name' => $request->user()->name,
                 'email' => $request->user()->email,
