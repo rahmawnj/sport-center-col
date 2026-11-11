@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, ArrowRight, Building2, Check, Clock, Loader2, MapPin } from '@lucide/vue';
+import { ArrowLeft, ArrowRight, Building2, Check, Loader2, MapPin } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
