@@ -601,7 +601,7 @@ function formatDuration(minutes: number) {
                                 <p class="text-sm text-slate-600">Centang jam awal dan akhir yang diinginkan. Jam di antaranya otomatis ikut dipilih.</p>
                                 <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                     <label v-for="item in slots" :key="item.start_time" class="flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50 p-3 transition-colors has-[:disabled]:cursor-not-allowed has-[:checked]:bg-lime-100 hover:bg-lime-50" :class="selectedSlots.includes(item.start_time) ? 'ring-2 ring-inset ring-[#a4da01]' : ''">
-                                        <input type="checkbox" :checked="selectedSlots.includes(item.start_time)" :disabled="item.courts.length === 0" class="mt-1 size-4 accent-[#8dbb00] disabled:cursor-not-allowed" @change="chooseSlot(item)" />
+                                        <input type="checkbox" :checked="selectedSlots.includes(item.start_time)" :disabled="!item.courts.some((court) => court.is_available)" class="mt-1 size-4 accent-[#8dbb00] disabled:cursor-not-allowed" @change="chooseSlot(item)" />
                                         <span class="min-w-0">
                                             <span class="block font-semibold text-slate-800">{{ item.start_time }}–{{ item.end_time }}</span>
                                             <span class="block text-sm font-medium text-slate-700">{{ formatIDR(item.price) }}</span>
