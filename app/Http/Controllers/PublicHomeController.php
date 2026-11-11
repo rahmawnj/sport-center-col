@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Facility;
 use App\Models\Package;
+use App\Models\SportClass;
 use App\Models\Trainer;
 use App\Models\TrainerPackage;
 use Illuminate\Support\Facades\DB;
@@ -85,6 +86,40 @@ class PublicHomeController extends Controller
                 ])->values(),
             ])->values();
 
+        $classes = SportClass::query()
+            ->where('is_active', true)
+            ->whereHas('facility', fn ($query) => $query
+                ->where('status', 'active')
+                ->where('is_bookable_online', true))
+            ->with([
+                'facility:id,name',
+                'schedules' => fn ($query) => $query
+                    ->where('is_active', true)
+                    ->with('trainer:id,name')
+                    ->orderByRaw("FIELD(day, 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')")
+                    ->orderBy('start_time'),
+            ])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (SportClass $class) => [
+                'id' => $class->id,
+                'name' => $class->name,
+                'description' => $class->description,
+                'facility' => $class->facility?->name,
+                'duration_minutes' => (int) $class->duration_minutes,
+                'schedules' => $class->schedules->map(fn ($schedule) => [
+                    'id' => $schedule->id,
+                    'day' => $schedule->day,
+                    'start_time' => substr((string) $schedule->start_time, 0, 5),
+                    'end_time' => substr((string) $schedule->end_time, 0, 5),
+                    'trainer' => $schedule->trainer?->name,
+                    'capacity' => (int) ($schedule->capacity ?? $class->default_capacity),
+                    'price' => (float) $schedule->price,
+                ])->values(),
+            ])
+            ->filter(fn ($class) => $class['schedules']->isNotEmpty())
+            ->values();
+
         $trainers = Trainer::query()
             ->whereNull('deleted_at')
             ->orderBy('name')
@@ -134,6 +169,7 @@ class PublicHomeController extends Controller
 
         return Inertia::render('Welcome', [
             'facilities' => $facilities,
+            'classes' => $classes,
             'trainers' => $trainers,
             'membershipPackages' => $membershipPackages,
             'trainerPackages' => $trainerPackages,
