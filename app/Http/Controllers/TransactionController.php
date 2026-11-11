@@ -297,7 +297,7 @@ class TransactionController extends Controller
                 : null;
 
             $booking = $bookingId
-                ? Booking::query()->with('court.facility')->find($bookingId)
+                ? Booking::query()->with(['court.facility', 'trainerAddon.trainer'])->find($bookingId)
                 : null;
 
             if ($booking) {
@@ -313,6 +313,7 @@ class TransactionController extends Controller
                     ['label' => 'Durasi', 'value' => $booking->start_time && $booking->end_time
                         ? (string) max(1, (int) round((strtotime((string) $booking->end_time) - strtotime((string) $booking->start_time)) / 3600)).' jam'
                         : '—'],
+                    ['label' => 'Add-on trainer', 'value' => $booking->trainerAddon?->trainer?->name ?? 'Tidak ada'],
                     ['label' => 'Status booking', 'value' => ucfirst((string) $booking->status)],
                 ];
             } else {
