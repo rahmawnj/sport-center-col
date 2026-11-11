@@ -76,13 +76,12 @@ const canNext = computed(() => {
         case 1: return !!facility.value;
         case 2: return !!date.value && !!slot.value && selectedSlots.value.length > 0 && !!courtId.value;
         case 3:
-            return props.currentUser !== null || (
+            return !!form.guest_phone.trim() && (props.currentUser !== null || (
                 !!form.guest_name.trim()
                 && !!form.guest_email.trim()
                 && form.guest_email.includes('@')
                 && form.guest_email.includes('.')
-                && !!form.guest_phone.trim()
-            );
+            ));
         case 4: return true;
         case 5: return termsAccepted.value;
         default: return false;
@@ -360,12 +359,13 @@ function formatIDR(value: number) {
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div class="grid gap-2"><Label for="guest-name">Nama</Label><Input id="guest-name" v-model="form.guest_name" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" /></div>
                                     <div class="grid gap-2"><Label for="guest-email">Email</Label><Input id="guest-email" v-model="form.guest_email" type="email" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" /></div>
+                                    <div class="grid gap-2 sm:col-span-2"><Label for="guest-phone">No. HP</Label><Input id="guest-phone" v-model="form.guest_phone" type="tel" placeholder="08xxxxxxxxxx" class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" /><p v-if="form.errors.guest_phone" class="text-xs text-destructive">{{ form.errors.guest_phone }}</p></div>
                                 </div>
                             </div>
                             <div v-else class="grid gap-4 sm:grid-cols-2">
                                 <div class="grid gap-2 sm:col-span-2"><Label for="guest-name">Nama</Label><Input id="guest-name" v-model="form.guest_name" placeholder="Nama lengkap" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none" /><p v-if="form.errors.guest_name" class="text-xs text-destructive">{{ form.errors.guest_name }}</p></div>
                                 <div class="grid gap-2"><Label for="guest-email">Email</Label><Input id="guest-email" v-model="form.guest_email" type="email" placeholder="email@contoh.com" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none" /><p v-if="form.errors.guest_email" class="text-xs text-destructive">{{ form.errors.guest_email }}</p></div>
-                                <div class="grid gap-2"><Label for="guest-phone">No. HP</Label><Input id="guest-phone" v-model="form.guest_phone" placeholder="08xxxxxxxxxx" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none" /><p v-if="form.errors.guest_phone" class="text-xs text-destructive">{{ form.errors.guest_phone }}</p></div>
+                                <div class="grid gap-2"><Label for="guest-phone">No. HP</Label><Input id="guest-phone" v-model="form.guest_phone" type="tel" placeholder="08xxxxxxxxxx" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base shadow-none" /><p v-if="form.errors.guest_phone" class="text-xs text-destructive">{{ form.errors.guest_phone }}</p></div>
                             </div>
                         </section>
 
