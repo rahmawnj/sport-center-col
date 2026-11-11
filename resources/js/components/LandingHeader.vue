@@ -23,6 +23,7 @@ const closeMenu = () => {
                 <Link href="/#pelatih" class="public-nav-link">Pelatih</Link>
                 <Link href="/#membership" class="public-nav-link">Paket</Link>
                 <Link href="/book" class="public-nav-link">Booking</Link>
+                <Link href="/kelas" class="public-nav-link">Kelas</Link>
             </nav>
 
             <div class="flex shrink-0 items-center gap-3">
@@ -66,6 +67,7 @@ const closeMenu = () => {
                     <Link href="/#pelatih" class="mobile-nav-link" @click="closeMenu">Pelatih</Link>
                     <Link href="/#membership" class="mobile-nav-link" @click="closeMenu">Paket</Link>
                     <Link href="/book" class="mobile-nav-link" @click="closeMenu">Booking</Link>
+                    <Link href="/kelas" class="mobile-nav-link" @click="closeMenu">Kelas</Link>
                     <Link v-if="$page.props.auth.user" :href="dashboard()" class="mobile-nav-link border-b-0 font-bold" @click="closeMenu">Dasbor</Link>
                 </div>
             </nav>
