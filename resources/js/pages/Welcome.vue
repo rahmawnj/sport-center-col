@@ -480,6 +480,45 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
             </section>
 
 
+            <section v-if="classes.length" id="kelas" class="bg-[#f6f8f2]">
+                <div class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
+                    <div class="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p class="section-kicker">Temukan kelas favoritmu</p>
+                            <h2 class="section-title">Ikuti <span>kelas olahraga</span></h2>
+                            <p class="mt-3 max-w-xl text-slate-500">Pilih kelas yang sesuai dengan minat dan target kebugaranmu, lalu lihat jadwal yang tersedia.</p>
+                        </div>
+                        <Link href="/kelas" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] transition hover:text-[#729700] sm:self-auto">
+                            Lihat semua kelas <i class="fa-solid fa-arrow-right"></i>
+                        </Link>
+                    </div>
+
+                    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                        <article v-for="(item, index) in classes" :key="item.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                            <div class="flex items-start justify-between gap-4 bg-[#001428] p-6 text-white">
+                                <div>
+                                    <span class="inline-flex rounded-full bg-[#a4da01]/15 px-3 py-1.5 text-xs font-extrabold text-[#c7f45b]">{{ item.facility || 'Sport Center' }}</span>
+                                    <h3 class="mt-4 text-xl font-black">{{ item.name }}</h3>
+                                    <p class="mt-2 text-sm leading-6 text-slate-300">{{ item.description || 'Kelas olahraga bersama instruktur.' }}</p>
+                                </div>
+                                <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#b8ec24]">
+                                    <i :class="index % 2 === 0 ? 'fa-solid fa-dumbbell' : 'fa-solid fa-heart-pulse'"></i>
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between gap-4 p-6">
+                                <div>
+                                    <p class="text-xs font-semibold text-slate-500">Durasi kelas</p>
+                                    <p class="mt-1 font-extrabold text-[#001428]">{{ formatDuration(item.duration_minutes) }}</p>
+                                </div>
+                                <Link href="/kelas" class="inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]">
+                                    Lihat kelas <i class="fa-solid fa-arrow-right"></i>
+                                </Link>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
             <Transition name="membership-modal">
                 <div v-if="membershipModalOpen && selectedMembershipPackage" class="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-[#001428]/75 px-4 py-6 backdrop-blur-sm" @click.self="closeMembershipCheckout">
                     <section role="dialog" aria-modal="true" aria-labelledby="membership-checkout-title" class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
