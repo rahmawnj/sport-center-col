@@ -7,6 +7,7 @@ use App\Models\BookingTimeSlot;
 use App\Models\Court;
 use App\Models\Device;
 use App\Models\Facility;
+use App\Models\Package;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -59,11 +60,18 @@ class PublicBookingController extends Controller
     public function availability(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+            'facility_id' => ['nullable', 'required_without:package_id', 'integer', 'exists:facilities,id'],
+            'package_id' => ['nullable', 'required_without:facility_id', 'integer', 'exists:packages,id'],
             'date' => ['required', 'date', 'after_or_equal:today'],
         ]);
 
-        $facility = Facility::with('courts')->findOrFail($data['facility_id']);
+        // Public booking uses facility_id; the admin transaction form may still
+        // request package-based availability, so keep that endpoint compatible.
+        $package = ! empty($data['package_id'])
+            ? Package::with('facility')->findOrFail($data['package_id'])
+            : null;
+        $facility = Facility::with('courts')->findOrFail($data['facility_id'] ?? $package?->facility_id);
+        $slotDuration = $package ? max(1, (int) $package->duration_minutes) : 60;
         $date = Carbon::parse($data['date']);
 
         $bookings = Booking::with(['court:id,name', 'user:id,name'])
@@ -92,7 +100,7 @@ class PublicBookingController extends Controller
             ])->values();
 
         return response()->json([
-            'slots' => $this->buildSlots($facility, $date),
+            'slots' => $this->buildSlots($facility, $date, $slotDuration),
             'bookings' => $bookings,
             'courts' => $courts,
         ]);
@@ -279,10 +287,8 @@ class PublicBookingController extends Controller
     /**
      * @return array<int, array{start_time: string, end_time: string, price: float, courts: array<int, array{id: int, name: string}>}>
      */
-    private function buildSlots(Facility $facility, Carbon $date): array
+    private function buildSlots(Facility $facility, Carbon $date, int $duration = 60): array
     {
-        // Tanpa paket: satu pilihan slot mewakili satu jam booking.
-        $duration = 60;
         $turnaround = max(0, (int) $facility->turnaround_minutes);
         $step = $duration + $turnaround;
         $day = strtolower($date->englishDayOfWeek);
