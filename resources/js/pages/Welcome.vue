@@ -488,8 +488,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <h2 class="section-title">Jelajahi <span>sesi kelas</span></h2>
                             <p class="mt-3 max-w-xl text-slate-500">Temukan kelas olahraga favoritmu, pilih hari dan jam yang cocok, lalu bergabung bersama instruktur kami.</p>
                         </div>
-                        <Link href="/login" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] transition hover:text-[#729700] sm:self-auto">
-                            Login untuk ikut kelas <i class="fa-solid fa-arrow-right"></i>
+                        <Link href="/kelas" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] transition hover:text-[#729700] sm:self-auto">
+                            Daftar kelas tanpa login <i class="fa-solid fa-arrow-right"></i>
                         </Link>
                     </div>
 
