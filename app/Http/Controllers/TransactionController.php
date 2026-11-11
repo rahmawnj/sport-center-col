@@ -287,17 +287,119 @@ class TransactionController extends Controller
     public function show(Transaction $transaction): Response
     {
         $transaction->load(['sessionParticipants.schedule.sportClass.facility', 'sessionParticipants.schedule.trainer']);
-        $classParticipant = $transaction->sessionParticipants->first();
-        $classSchedule = $classParticipant?->schedule;
         $details = [];
+        $itemName = 'Transaksi';
 
-        if ($transaction->transactionable_type === 'class' && $classSchedule) {
+        if ($transaction->transactionable_type === 'booking') {
+            // Booking menyimpan ID-nya di kode BK-xxxx pada invoice transaksi.
+            $bookingId = preg_match('/^BK-(\\d+)$/', (string) $transaction->invoice_number, $matches)
+                ? (int) $matches[1]
+                : null;
+
+            $booking = $bookingId
+                ? Booking::query()->with(['court.facility', 'trainerAddon.trainer'])->find($bookingId)
+                : null;
+
+            if ($booking) {
+                $itemName = 'Booking Lapangan';
+                $details = [
+                    ['label' => 'Jenis pesanan', 'value' => 'Booking lapangan'],
+                    ['label' => 'Fasilitas / olahraga', 'value' => $booking->court?->facility?->name ?? 'Belum ditentukan'],
+                    ['label' => 'Lapangan', 'value' => $booking->court?->name ?? 'Belum ditentukan'],
+                    ['label' => 'Tanggal bermain', 'value' => $booking->date?->translatedFormat('l, d F Y')],
+                    ['label' => 'Jam bermain', 'value' => $booking->start_time && $booking->end_time
+                        ? substr((string) $booking->start_time, 0, 5).' - '.substr((string) $booking->end_time, 0, 5)
+                        : 'Menunggu penjadwalan'],
+                    ['label' => 'Add-on trainer', 'value' => $booking->trainerAddon?->trainer?->name ?? 'Tidak ada'],
+                    ['label' => 'Status booking', 'value' => ucfirst((string) $booking->status)],
+                ];
+            } else {
+                $membership = UserMembership::query()
+                    ->with('package.facility')
+                    ->where('transaction_id', $transaction->id)
+                    ->first();
+
+                if ($membership) {
+                    $itemName = 'Membership';
+                    $details = [
+                        ['label' => 'Jenis pesanan', 'value' => 'Membership'],
+                        ['label' => 'Paket', 'value' => $membership->package?->name],
+                        ['label' => 'Fasilitas / olahraga', 'value' => $membership->package?->facility?->name],
+                        ['label' => 'Masa berlaku', 'value' => $membership->start_date && $membership->end_date
+                            ? $membership->start_date->translatedFormat('d F Y').' - '.$membership->end_date->translatedFormat('d F Y')
+                            : 'Menunggu aktivasi pembayaran'],
+                        ['label' => 'Status membership', 'value' => ucfirst((string) $membership->status)],
+                    ];
+                }
+            }
+        } elseif ($transaction->transactionable_type === 'membership') {
+            $membership = UserMembership::query()
+                ->with('package.facility')
+                ->where('transaction_id', $transaction->id)
+                ->first();
+
+            if ($membership) {
+                $itemName = 'Membership';
+                $details = [
+                    ['label' => 'Jenis pesanan', 'value' => 'Membership'],
+                    ['label' => 'Paket', 'value' => $membership->package?->name],
+                    ['label' => 'Fasilitas / olahraga', 'value' => $membership->package?->facility?->name],
+                    ['label' => 'Masa berlaku', 'value' => $membership->start_date && $membership->end_date
+                        ? $membership->start_date->translatedFormat('d F Y').' - '.$membership->end_date->translatedFormat('d F Y')
+                        : 'Menunggu aktivasi pembayaran'],
+                    ['label' => 'Status membership', 'value' => ucfirst((string) $membership->status)],
+                ];
+            }
+        } elseif ($transaction->transactionable_type === 'trainer_package') {
+            $trainerPurchase = MemberTrainerPackage::query()
+                ->with(['trainerPackage.facility', 'facility', 'trainer'])
+                ->where('transaction_id', $transaction->id)
+                ->first();
+
+            if ($trainerPurchase) {
+                $itemName = 'Paket Personal Trainer';
+                $details = [
+                    ['label' => 'Jenis pesanan', 'value' => 'Paket personal trainer'],
+                    ['label' => 'Paket trainer', 'value' => $trainerPurchase->trainerPackage?->name],
+                    ['label' => 'Fasilitas', 'value' => $trainerPurchase->facility?->name ?? $trainerPurchase->trainerPackage?->facility?->name],
+                    ['label' => 'Trainer', 'value' => $trainerPurchase->trainer?->name ?? 'Belum ditentukan'],
+                    ['label' => 'Jumlah sesi', 'value' => (string) $trainerPurchase->total_sessions],
+                    ['label' => 'Sesi terpakai', 'value' => (string) $trainerPurchase->used_sessions],
+                    ['label' => 'Sisa sesi', 'value' => (string) $trainerPurchase->remaining_sessions],
+                    ['label' => 'Masa berlaku', 'value' => $trainerPurchase->start_date && $trainerPurchase->expires_at
+                        ? $trainerPurchase->start_date->translatedFormat('d F Y').' - '.$trainerPurchase->expires_at->translatedFormat('d F Y')
+                        : 'Menunggu aktivasi pembayaran'],
+                    ['label' => 'Status paket', 'value' => ucfirst((string) $trainerPurchase->status)],
+                ];
+            }
+        } elseif ($transaction->transactionable_type === 'class') {
+            $classParticipant = $transaction->sessionParticipants->first();
+            $classSchedule = $classParticipant?->schedule;
+
+            if ($classSchedule) {
+                $itemName = 'Pendaftaran Kelas';
+                $details = [
+                    ['label' => 'Jenis pesanan', 'value' => 'Pendaftaran kelas'],
+                    ['label' => 'Kelas', 'value' => $classSchedule->sportClass?->name],
+                    ['label' => 'Fasilitas', 'value' => $classSchedule->sportClass?->facility?->name],
+                    ['label' => 'Trainer', 'value' => $classSchedule->trainer?->name ?? 'Belum ditentukan'],
+                    ['label' => 'Tanggal kelas', 'value' => $classParticipant?->session_date?->translatedFormat('l, d F Y')],
+                    ['label' => 'Waktu kelas', 'value' => substr((string) $classSchedule->start_time, 0, 5).' - '.substr((string) $classSchedule->end_time, 0, 5)],
+                    ['label' => 'Status peserta', 'value' => ucfirst((string) $classParticipant->status)],
+                ];
+            }
+        }
+
+        if ($details === []) {
             $details = [
-                ['label' => 'Kelas', 'value' => $classSchedule->sportClass?->name],
-                ['label' => 'Fasilitas', 'value' => $classSchedule->sportClass?->facility?->name],
-                ['label' => 'Trainer', 'value' => $classSchedule->trainer?->name ?? 'Belum ditentukan'],
-                ['label' => 'Tanggal', 'value' => $classParticipant?->session_date?->format('d M Y')],
-                ['label' => 'Waktu', 'value' => substr((string) $classSchedule->start_time, 0, 5).' - '.substr((string) $classSchedule->end_time, 0, 5)],
+                ['label' => 'Jenis transaksi', 'value' => match ($transaction->transactionable_type) {
+                    'booking' => 'Booking / pesanan layanan',
+                    'membership' => 'Membership',
+                    'trainer_package' => 'Paket personal trainer',
+                    'class' => 'Pendaftaran kelas',
+                    default => ucfirst(str_replace('_', ' ', (string) $transaction->transactionable_type)),
+                }],
+                ['label' => 'Informasi pesanan', 'value' => 'Data item pesanan tidak ditemukan untuk transaksi ini.'],
             ];
         }
 
@@ -312,6 +414,7 @@ class TransactionController extends Controller
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
                 'reference' => $this->reference($transaction),
                 'created_at' => $transaction->created_at?->toISOString(),
+                'item_name' => $itemName,
                 'details' => $details,
             ],
         ]);
