@@ -630,9 +630,6 @@ function formatDuration(minutes: number) {
                             <div><p class="text-slate-500">Tanggal</p><p class="mt-1 font-semibold">{{ date || 'Belum dipilih' }}</p></div>
                             <div v-if="hasTimedSession"><p class="text-slate-500">Jam mulai – selesai</p><p class="mt-1 font-semibold">{{ slot ? slot.start_time + '–' + slot.end_time : 'Belum dipilih' }}</p></div>
                             <div v-if="hasTimedSession"><p class="text-slate-500">Durasi sesi</p><p class="mt-1 font-semibold">{{ slot && selectedDurationHours ? selectedDurationLabel : 'Belum dipilih' }}</p></div>
-                            <div v-if="hasTimedSession && slot && selectedDurationHours > 1" class="rounded-xl border border-lime-200 bg-lime-50 p-3 text-xs leading-5 text-lime-900">
-                                Timer perangkat mengikuti keseluruhan durasi {{ selectedDurationLabel }} sampai {{ slot.end_time }}, bukan direset setiap pergantian jam.
-                            </div>
                             <div v-if="hasTimedSession"><p class="text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ slot?.courts.find((court) => court.id === courtId)?.name || 'Belum dipilih' }}</p></div>
                             <div class="border-t border-slate-200 pt-4"><p class="text-slate-500">Total</p><p class="mt-1 text-2xl font-bold text-slate-900">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
                         </div>
