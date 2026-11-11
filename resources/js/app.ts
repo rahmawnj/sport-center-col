@@ -14,6 +14,8 @@ createInertiaApp({
         switch (true) {
             case name === 'Welcome' || name === 'PublicTrainerShow':
                 return null;
+            case name === 'classes/PublicIndex':
+                return null;
             case name.startsWith('membership/'):
                 return null;
             case name === 'trainer-packages/Show':
