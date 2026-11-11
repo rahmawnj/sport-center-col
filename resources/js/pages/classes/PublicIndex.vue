@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
 type Schedule = {
@@ -24,6 +24,7 @@ const props = defineProps<{
     schedules: Schedule[];
     currentUser: { name: string; email: string } | null;
     success?: string | null;
+    selectedScheduleId?: number | null;
 }>();
 
 const selected = ref<Schedule | null>(null);
@@ -45,6 +46,12 @@ const dayLabel = (value: string) => ({
     monday: 'Senin', tuesday: 'Selasa', wednesday: 'Rabu', thursday: 'Kamis',
     friday: 'Jumat', saturday: 'Sabtu', sunday: 'Minggu',
 }[value.toLowerCase()] ?? value);
+
+onMounted(() => {
+    if (!props.selectedScheduleId) return;
+    const target = props.schedules.find((schedule) => schedule.id === props.selectedScheduleId);
+    if (target) openRegistration(target);
+});
 
 function openRegistration(schedule: Schedule) {
     if (schedule.available_count < 1) return;
