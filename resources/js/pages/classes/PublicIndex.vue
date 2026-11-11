@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
 type Schedule = {
