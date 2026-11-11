@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('session_participants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_schedule_id')->constrained('class_schedules')->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('transaction_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('price', 12, 2)->default(0);
             $table->enum('status', ['pending', 'confirmed', 'cancelled', 'attended', 'no_show'])->default('pending');
