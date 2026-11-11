@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\\Database\\Migrations\\Migration;
+use Illuminate\\Database\\Schema\\Blueprint;
+use Illuminate\\Support\\Facades\\DB;
+use Illuminate\\Support\\Facades\\Schema;
 
 return new class extends Migration
 {
@@ -50,44 +50,70 @@ return new class extends Migration
                 ->update(['session_participants.session_date' => DB::raw('class_schedules.session_date')]);
         }
 
-        // The old unique index is also being used by the class_schedule_id FK.
-        // Drop the FK first, replace the index, then restore the FK.
-        Schema::table('session_participants', function (Blueprint $table) {
-            $table->dropForeign(['class_schedule_id']);
-            $table->dropUnique(['class_schedule_id', 'user_id']);
-        });
+        // Replace the old unique index only once. The new composite index starts
+        // with class_schedule_id, so it can continue supporting its foreign key.
+        if (! Schema::hasIndex('session_participants', 'session_participants_schedule_user_date_index')) {
+            Schema::table('session_participants', function (Blueprint $table) {
+                $table->dropForeign(['class_schedule_id']);
 
-        Schema::table('session_participants', function (Blueprint $table) {
-            $table->date('session_date')->nullable(false)->change();
-            $table->index(
-                ['class_schedule_id', 'user_id', 'session_date'],
-                'session_participants_schedule_user_date_index'
-            );
-            $table->index(
-                ['session_date', 'status'],
-                'session_participants_date_status_index'
-            );
-        });
+                if (Schema::hasIndex('session_participants', 'session_participants_class_schedule_id_user_id_unique')) {
+                    $table->dropUnique('session_participants_class_schedule_id_user_id_unique');
+                }
+            });
 
-        Schema::table('session_participants', function (Blueprint $table) {
-            $table->foreign('class_schedule_id')
-                ->references('id')
-                ->on('class_schedules')
-                ->cascadeOnDelete();
-        });
+            Schema::table('session_participants', function (Blueprint $table) {
+                $table->date('session_date')->nullable(false)->change();
+                $table->index(
+                    ['class_schedule_id', 'user_id', 'session_date'],
+                    'session_participants_schedule_user_date_index'
+                );
+            });
+
+            Schema::table('session_participants', function (Blueprint $table) {
+                $table->foreign('class_schedule_id')
+                    ->references('id')
+                    ->on('class_schedules')
+                    ->cascadeOnDelete();
+            });
+        }
+
+        if (! Schema::hasIndex('session_participants', 'session_participants_date_status_index')) {
+            Schema::table('session_participants', function (Blueprint $table) {
+                $table->index(['session_date', 'status'], 'session_participants_date_status_index');
+            });
+        }
+
+        // Create the replacement index before dropping the old one. MySQL needs
+        // an index whose first column is class_id to keep the class_id FK valid.
+        if (! Schema::hasIndex('class_schedules', 'class_schedules_class_day_index')) {
+            Schema::table('class_schedules', function (Blueprint $table) {
+                $table->index(['class_id', 'day'], 'class_schedules_class_day_index');
+            });
+        }
 
         if (Schema::hasColumn('class_schedules', 'session_date')) {
+            if (Schema::hasIndex('class_schedules', 'class_schedules_class_id_session_date_index')) {
+                Schema::table('class_schedules', function (Blueprint $table) {
+                    $table->dropIndex('class_schedules_class_id_session_date_index');
+                });
+            }
+
+            if (Schema::hasIndex('class_schedules', 'class_schedules_session_date_status_index')) {
+                Schema::table('class_schedules', function (Blueprint $table) {
+                    $table->dropIndex('class_schedules_session_date_status_index');
+                });
+            }
+
             Schema::table('class_schedules', function (Blueprint $table) {
-                $table->dropIndex(['session_date', 'status']);
-                $table->dropIndex(['class_id', 'session_date']);
                 $table->dropColumn(['session_date', 'status']);
             });
         }
 
-        Schema::table('class_schedules', function (Blueprint $table) {
-            $table->index(['class_id', 'day'], 'class_schedules_class_day_index');
-            $table->index(['day', 'is_active'], 'class_schedules_day_active_index');
-        });
+        if (! Schema::hasIndex('class_schedules', 'class_schedules_day_active_index')) {
+            Schema::table('class_schedules', function (Blueprint $table) {
+                $table->index(['day', 'is_active'], 'class_schedules_day_active_index');
+            });
+        }
     }
 
     public function down(): void
