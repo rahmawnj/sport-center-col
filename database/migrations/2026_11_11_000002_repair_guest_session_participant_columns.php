@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\\Database\\Migrations\\Migration;
-use Illuminate\\Database\\Schema\\Blueprint;
-use Illuminate\\Support\\Facades\\Schema;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -11,6 +11,15 @@ return new class extends Migration
         if (! Schema::hasTable('session_participants')) {
             return;
         }
+
+        Schema::table('session_participants', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
+            $table->unsignedBigInteger('user_id')->nullable()->change();
+        });
+
+        Schema::table('session_participants', function (Blueprint $table) {
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
+        });
 
         Schema::table('session_participants', function (Blueprint $table) {
             if (! Schema::hasColumn('session_participants', 'guest_name')) {
@@ -34,10 +43,16 @@ return new class extends Migration
         }
 
         Schema::table('session_participants', function (Blueprint $table) {
-            $columns = array_filter(
+            $table->dropForeign(['user_id']);
+            $table->unsignedBigInteger('user_id')->nullable(false)->change();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+        });
+
+        Schema::table('session_participants', function (Blueprint $table) {
+            $columns = array_values(array_filter(
                 ['guest_name', 'guest_email', 'guest_phone'],
                 fn (string $column) => Schema::hasColumn('session_participants', $column)
-            );
+            ));
 
             if ($columns !== []) {
                 $table->dropColumn($columns);
