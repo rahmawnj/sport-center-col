@@ -45,7 +45,7 @@ const courtId = ref<number | null>(null);
 const termsAccepted = ref(false);
 
 const form = useForm({
-    facility_id: facility.value?.id ?? null as number | null,
+    facility_id: (facility.value?.id ?? null) as number | null,
     court_id: null as number | null,
     date: '',
     start_time: '',
