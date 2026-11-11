@@ -11,6 +11,8 @@ type ReceiptData = {
     customerPhone: string | null;
     facility: string;
     court: string;
+    trainer: string | null;
+    trainerAddonPrice: number;
     date: string | null;
     startTime: string;
     endTime: string;
@@ -97,6 +99,11 @@ async function shareLink() {
                                 <div class="rounded-xl bg-slate-50 p-4">
                                     <p class="text-sm text-slate-500">Olahraga</p>
                                     <p class="mt-1 font-semibold">{{ receipt.facility }}</p>
+                                </div>
+                                <div v-if="receipt.trainer" class="rounded-xl bg-lime-50 p-4 sm:col-span-2">
+                                    <p class="text-sm text-slate-500">Trainer add-on</p>
+                                    <p class="mt-1 font-semibold">{{ receipt.trainer }}</p>
+                                    <p class="mt-1 text-sm text-lime-800">{{ formatIDR(receipt.trainerAddonPrice) }}</p>
                                 </div>
                                 <div class="rounded-xl bg-slate-50 p-4">
                                     <p class="text-sm text-slate-500">Tanggal</p>
