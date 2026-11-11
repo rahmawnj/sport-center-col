@@ -112,6 +112,7 @@ function chooseSession(session: Session) {
     selected.value = session;
     form.session_date = session.session_date;
     form.clearErrors();
+    step.value = 4;
 }
 function goBack() {
     step.value = Math.max(1, step.value - 1);
@@ -285,9 +286,9 @@ onMounted(() => {
                             <h3 class="font-semibold text-slate-800">Belum ada sesi untuk kelas ini</h3>
                             <p class="mt-1 text-sm text-slate-500">Silakan pilih kelas lain.</p>
                         </div>
-                        <div class="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-between">
+                        <div class="mt-6 flex border-t border-slate-100 pt-5">
                             <button type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700" @click="goBack"><ArrowLeft class="mr-2 size-4" /> Kembali</button>
-                            <button type="button" :disabled="!canContinue" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] disabled:opacity-40" @click="goNext">Lanjut ke data peserta <ArrowRight class="ml-2 size-4" /></button>
+
                         </div>
                     </section>
 
