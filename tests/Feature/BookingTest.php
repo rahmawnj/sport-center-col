@@ -59,6 +59,29 @@ it('prices a weekday slot by its start hour', function () {
     expect($slots['09:00']['end_time'])->toBe('10:00');
 });
 
+it('keeps booked courts visible but marks them unavailable for the matching date and time', function () {
+    [, $court, $package] = makeBookablePackage();
+    $date = Carbon::parse('next monday');
+
+    Booking::create([
+        'court_id' => $court->id,
+        'date' => $date->toDateString(),
+        'start_time' => '09:00',
+        'end_time' => '10:00',
+        'status' => 'pending',
+    ]);
+
+    $slots = collect($this->getJson("/book/availability?package_id={$package->id}&date={$date->toDateString()}")
+        ->assertOk()
+        ->json('slots'))
+        ->keyBy('start_time');
+
+    expect($slots['09:00']['courts'])->toHaveCount(1);
+    expect($slots['09:00']['courts'][0]['id'])->toBe($court->id);
+    expect($slots['09:00']['courts'][0]['is_available'])->toBeFalse();
+    expect($slots['10:00']['courts'][0]['is_available'])->toBeTrue();
+});
+
 it('applies an active promo rule over the base rate', function () {
     [, , $package] = makeBookablePackage();
     $date = Carbon::parse('next monday');
