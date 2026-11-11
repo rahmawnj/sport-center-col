@@ -44,6 +44,7 @@ type Court = {
     name: string;
     amenities?: string[];
     price_adjustment?: number;
+    is_available: boolean;
 };
 type Slot = {
     window_id: number;
@@ -266,9 +267,12 @@ currentlySelected.delete(slots.value[index].start_time);
         return;
     }
 
-    const commonCourts = chosen[0].courts.filter((court) =>
-        chosen.every((entry) => entry.courts.some((available) => available.id === court.id)),
-    );
+    const commonCourts = chosen[0].courts.map((court) => ({
+        ...court,
+        is_available: chosen.every((entry) =>
+            entry.courts.some((option) => option.id === court.id && option.is_available),
+        ),
+    }));
 
     const [startHour, startMinute] = chosen[0].start_time.split(':').map(Number);
     const bookingEndMinutes = (startHour * 60) + startMinute
@@ -601,7 +605,7 @@ function formatDuration(minutes: number) {
                                         <span class="min-w-0">
                                             <span class="block font-semibold text-slate-800">{{ item.start_time }}–{{ item.end_time }}</span>
                                             <span class="block text-sm font-medium text-slate-700">{{ formatIDR(item.price) }}</span>
-                                            <span class="block text-xs text-slate-500">{{ item.courts.length }} lapangan tersedia</span>
+                                            <span class="block text-xs text-slate-500">{{ item.courts.filter((court) => court.is_available).length }} lapangan tersedia</span>
                                         </span>
                                     </label>
                                 </div>
@@ -614,8 +618,30 @@ function formatDuration(minutes: number) {
                                 <p class="mt-1 text-sm text-slate-500">{{ slot ? slot.start_time + '–' + slot.end_time : 'Pilih jam terlebih dahulu.' }}</p>
                             </div>
                             <div v-if="slot?.courts.length" class="grid gap-3 sm:grid-cols-2">
-                                <button v-for="item in slot.courts" :key="item.id" type="button" class="flex items-center gap-3 rounded-xl bg-slate-50 p-4 text-left transition-colors hover:bg-lime-50" :class="courtId === item.id ? 'bg-lime-100 ring-2 ring-inset ring-[#a4da01]' : ''" @click="chooseCourt(item.id)">
-                                    <MapPin class="size-4 shrink-0 text-primary" /><div class="min-w-0"><span class="block font-medium">{{ item.name }}</span><span v-if="item.amenities?.length" class="mt-0.5 block text-xs text-slate-500">{{ item.amenities.join(' · ') }}</span><span v-if="item.price_adjustment" class="mt-0.5 block text-xs font-medium text-emerald-700">+{{ formatIDR(item.price_adjustment) }}</span></div><Check v-if="courtId === item.id" class="ml-auto size-4 shrink-0 text-primary" />
+                                <button
+                                    v-for="item in slot.courts"
+                                    :key="item.id"
+                                    type="button"
+                                    :disabled="!item.is_available"
+                                    class="flex items-center gap-3 rounded-xl border p-4 text-left transition-colors"
+                                    :class="[
+                                        courtId === item.id
+                                            ? 'border-[#a4da01] bg-lime-100 ring-2 ring-inset ring-[#a4da01]'
+                                            : item.is_available
+                                              ? 'border-slate-100 bg-slate-50 hover:bg-lime-50'
+                                              : 'cursor-not-allowed border-slate-200 bg-slate-100 opacity-60',
+                                    ]"
+                                    @click="chooseCourt(item.id)"
+                                >
+                                    <MapPin class="size-4 shrink-0" :class="item.is_available ? 'text-primary' : 'text-slate-400'" />
+                                    <div class="min-w-0 flex-1">
+                                        <span class="block font-medium" :class="item.is_available ? 'text-slate-800' : 'text-slate-500'">{{ item.name }}</span>
+                                        <span v-if="item.amenities?.length" class="mt-0.5 block text-xs text-slate-500">{{ item.amenities.join(' · ') }}</span>
+                                        <span v-if="item.price_adjustment" class="mt-0.5 block text-xs font-medium text-emerald-700">+{{ formatIDR(item.price_adjustment) }}</span>
+                                        <span v-if="!item.is_available" class="mt-1 block text-xs font-semibold text-rose-600">Sudah dibooking pada jam ini</span>
+                                        <span v-else class="mt-1 block text-xs font-semibold text-emerald-700">Tersedia</span>
+                                    </div>
+                                    <Check v-if="courtId === item.id" class="ml-auto size-4 shrink-0 text-primary" />
                                 </button>
                             </div>
                             <p v-else class="text-sm text-muted-foreground">Pilih tanggal dan jam untuk melihat lapangan yang tersedia.</p>
