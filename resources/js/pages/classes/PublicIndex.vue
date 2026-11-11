@@ -41,14 +41,16 @@ const props = defineProps<{
 const steps = [
     { id: 1, label: 'Pilih olahraga' },
     { id: 2, label: 'Pilih kelas' },
-    { id: 3, label: 'Pilih sesi' },
-    { id: 4, label: 'Data peserta' },
-    { id: 5, label: 'Pembayaran' },
+    { id: 3, label: 'Pilih tanggal' },
+    { id: 4, label: 'Pilih sesi' },
+    { id: 5, label: 'Data peserta' },
+    { id: 6, label: 'Pembayaran' },
 ];
 
 const step = ref(1);
 const selectedFacility = ref<Facility | null>(null);
 const selectedClass = ref<SportClass | null>(null);
+const selectedDate = ref<string | null>(null);
 const selected = ref<Session | null>(null);
 const form = useForm({
     session_date: '',
@@ -60,6 +62,25 @@ const form = useForm({
 
 const isGuest = computed(() => !props.currentUser);
 const sessions = computed(() => selectedClass.value?.schedules ?? []);
+const dates = computed(() => {
+    const uniqueDates = new Map<string, { date: string; day: string; sessionCount: number; availableCount: number }>();
+    for (const session of sessions.value) {
+        const existing = uniqueDates.get(session.session_date);
+        if (existing) {
+            existing.sessionCount += 1;
+            if (session.available_count > 0) existing.availableCount += 1;
+        } else {
+            uniqueDates.set(session.session_date, {
+                date: session.session_date,
+                day: session.day,
+                sessionCount: 1,
+                availableCount: session.available_count > 0 ? 1 : 0,
+            });
+        }
+    }
+    return [...uniqueDates.values()].sort((a, b) => a.date.localeCompare(b.date));
+});
+const sessionsOnSelectedDate = computed(() => sessions.value.filter((session) => session.session_date === selectedDate.value));
 const scheduleError = computed(() => form.errors.schedule ?? '');
 const contactIsValid = computed(() => !isGuest.value || (
     !!form.guest_name.trim()
@@ -69,8 +90,9 @@ const contactIsValid = computed(() => !isGuest.value || (
 const canContinue = computed(() => {
     if (step.value === 1) return !!selectedFacility.value;
     if (step.value === 2) return !!selectedClass.value;
-    if (step.value === 3) return !!selected.value && selected.value.available_count > 0;
-    if (step.value === 4) return contactIsValid.value;
+    if (step.value === 3) return !!selectedDate.value;
+    if (step.value === 4) return !!selected.value && selected.value.available_count > 0;
+    if (step.value === 5) return contactIsValid.value;
     return true;
 });
 
@@ -104,15 +126,23 @@ function chooseFacility(facility: Facility) {
 }
 function chooseClass(sportClass: SportClass) {
     selectedClass.value = sportClass;
+    selectedDate.value = null;
     selected.value = null;
     form.clearErrors();
+}
+function chooseDate(date: string) {
+    selectedDate.value = date;
+    selected.value = null;
+    form.session_date = date;
+    form.clearErrors();
+    step.value = 4;
 }
 function chooseSession(session: Session) {
     if (session.available_count < 1) return;
     selected.value = session;
     form.session_date = session.session_date;
     form.clearErrors();
-    step.value = 4;
+    step.value = 5;
 }
 function goBack() {
     step.value = Math.max(1, step.value - 1);
@@ -151,7 +181,8 @@ onMounted(() => {
                 selectedClass.value = sportClass;
                 selected.value = session;
                 form.session_date = session.session_date;
-                step.value = 4;
+                selectedDate.value = session.session_date;
+                step.value = 5;
                 return;
             }
         }
@@ -256,45 +287,70 @@ onMounted(() => {
                     <section v-else-if="step === 3" class="mt-6 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-6">
                         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h2 class="font-semibold">Pilih sesi kelas</h2>
+                                <h2 class="font-semibold">Pilih tanggal kelas</h2>
                                 <p class="mt-1 text-xs text-slate-500">{{ selectedFacility?.name }} · {{ selectedClass?.name }}</p>
                             </div>
-                            <span class="rounded-full bg-lime-50 px-3 py-1.5 text-xs font-semibold text-lime-800">{{ sessions.length }} sesi tersedia</span>
+                            <span class="rounded-full bg-lime-50 px-3 py-1.5 text-xs font-semibold text-lime-800">{{ dates.length }} tanggal tersedia</span>
                         </div>
-                        <p v-if="scheduleError" role="alert" class="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{{ scheduleError }} Pilih sesi lain yang masih tersedia.</p>
-                        <div v-if="sessions.length" class="grid gap-3 md:grid-cols-2">
-                            <button v-for="session in sessions" :key="session.id + '-' + session.session_date" type="button" :disabled="session.available_count < 1"
-                                class="rounded-2xl border p-4 text-left transition hover:border-lime-300 hover:bg-lime-50/40 disabled:cursor-not-allowed disabled:opacity-60"
-                                :class="selected?.id === session.id && selected?.session_date === session.session_date ? 'border-[#a4da01] bg-lime-50 ring-2 ring-[#a4da01]/30' : 'border-slate-200'"
-                                @click="chooseSession(session)">
-                                <div class="flex items-start justify-between gap-3">
-                                    <span class="rounded-full bg-lime-50 px-2.5 py-1 text-[11px] font-bold text-lime-800">{{ dayLabel(session.day) }}</span>
-                                    <span v-if="session.available_count < 1" class="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">Kuota penuh</span>
-                                    <span v-else class="text-xs font-semibold text-slate-500">{{ session.available_count }} tempat tersisa</span>
-                                </div>
-                                <h3 class="mt-3 text-lg font-bold">{{ dateLabel(session.session_date) }}</h3>
-                                <p class="mt-1 flex items-center gap-2 text-sm text-slate-600"><Clock class="size-4 text-slate-400" />{{ session.start_time }}–{{ session.end_time }}</p>
-                                <p class="mt-2 flex items-center gap-2 text-sm text-slate-600"><MapPin class="size-4 text-slate-400" />{{ session.trainer || 'Trainer akan diumumkan' }}<span v-if="session.trainer_specialty" class="text-slate-400">· {{ session.trainer_specialty }}</span></p>
-                                <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                                    <div><p class="text-xs text-slate-400">Harga per peserta</p><p class="font-bold">{{ money(session.price) }}</p></div>
-                                    <span v-if="selected?.id === session.id && selected?.session_date === session.session_date" class="inline-flex items-center gap-1 text-sm font-semibold text-lime-800"><Check class="size-4" /> Dipilih</span>
-                                    <span v-else class="text-sm font-semibold text-lime-800">{{ session.available_count < 1 ? 'Tidak tersedia' : 'Pilih sesi' }}</span>
-                                </div>
+                        <div v-if="dates.length" class="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                            <button v-for="item in dates" :key="item.date" type="button" :disabled="item.availableCount < 1"
+                                class="rounded-2xl border p-4 text-left transition hover:border-lime-300 hover:bg-lime-50/40 disabled:cursor-not-allowed disabled:opacity-50"
+                                :class="selectedDate === item.date ? 'border-[#a4da01] bg-lime-50 ring-2 ring-[#a4da01]/30' : 'border-slate-200'"
+                                @click="chooseDate(item.date)">
+                                <span class="text-xs font-bold tracking-wider text-lime-800 uppercase">{{ dayLabel(item.day) }}</span>
+                                <h3 class="mt-2 text-lg font-bold">{{ dateLabel(item.date) }}</h3>
+                                <p class="mt-2 text-xs text-slate-500">{{ item.availableCount }} sesi tersedia</p>
+                                <span class="mt-3 inline-flex items-center text-sm font-semibold text-lime-800">Pilih tanggal <ArrowRight class="ml-2 size-4" /></span>
                             </button>
                         </div>
                         <div v-else class="rounded-xl bg-slate-50 px-5 py-12 text-center">
-                            <h3 class="font-semibold text-slate-800">Belum ada sesi untuk kelas ini</h3>
+                            <h3 class="font-semibold text-slate-800">Belum ada tanggal kelas</h3>
                             <p class="mt-1 text-sm text-slate-500">Silakan pilih kelas lain.</p>
                         </div>
                         <div class="mt-6 flex border-t border-slate-100 pt-5">
                             <button type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700" @click="goBack"><ArrowLeft class="mr-2 size-4" /> Kembali</button>
+                        </div>
+                    </section>
 
+                    <section v-else-if="step === 4" class="mt-6 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-6">
+                        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="font-semibold">Pilih sesi kelas</h2>
+                                <p class="mt-1 text-xs text-slate-500">{{ selectedFacility?.name }} · {{ selectedClass?.name }} · {{ selectedDate ? dateLabel(selectedDate) : '' }}</p>
+                            </div>
+                            <span class="rounded-full bg-lime-50 px-3 py-1.5 text-xs font-semibold text-lime-800">{{ sessionsOnSelectedDate.length }} sesi tersedia</span>
+                        </div>
+                        <p v-if="scheduleError" role="alert" class="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{{ scheduleError }} Pilih sesi lain yang masih tersedia.</p>
+                        <div v-if="sessionsOnSelectedDate.length" class="grid gap-3 md:grid-cols-2">
+                            <button v-for="session in sessionsOnSelectedDate" :key="session.id + '-' + session.session_date" type="button" :disabled="session.available_count < 1"
+                                class="rounded-2xl border p-4 text-left transition hover:border-lime-300 hover:bg-lime-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                :class="selected?.id === session.id && selected?.session_date === session.session_date ? 'border-[#a4da01] bg-lime-50 ring-2 ring-[#a4da01]/30' : 'border-slate-200'"
+                                @click="chooseSession(session)">
+                                <div class="flex items-start justify-between gap-3">
+                                    <span class="rounded-full bg-lime-50 px-2.5 py-1 text-[11px] font-bold text-lime-800">{{ session.start_time }}–{{ session.end_time }}</span>
+                                    <span v-if="session.available_count < 1" class="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">Kuota penuh</span>
+                                    <span v-else class="text-xs font-semibold text-slate-500">{{ session.available_count }} tempat tersisa</span>
+                                </div>
+                                <h3 class="mt-3 text-lg font-bold">{{ session.trainer || 'Trainer akan diumumkan' }}</h3>
+                                <p v-if="session.trainer_specialty" class="mt-1 text-sm text-slate-500">{{ session.trainer_specialty }}</p>
+                                <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                                    <div><p class="text-xs text-slate-400">Harga per peserta</p><p class="font-bold">{{ money(session.price) }}</p></div>
+                                    <span class="text-sm font-semibold text-lime-800">{{ session.available_count < 1 ? 'Tidak tersedia' : 'Pilih sesi' }}</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div v-else class="rounded-xl bg-slate-50 px-5 py-12 text-center">
+                            <h3 class="font-semibold text-slate-800">Tidak ada sesi tersedia pada tanggal ini</h3>
+                            <p class="mt-1 text-sm text-slate-500">Silakan pilih tanggal lain.</p>
+                        </div>
+                        <div class="mt-6 flex border-t border-slate-100 pt-5">
+                            <button type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700" @click="step = 3"><ArrowLeft class="mr-2 size-4" /> Ganti tanggal</button>
                         </div>
                     </section>
 
                     <div v-else class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                         <section class="rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-6">
-                            <div v-if="step === 4" class="space-y-5">
+                            <div v-if="step === 5" class="space-y-5">
                                 <div>
                                     <h2 class="font-semibold">Data peserta</h2>
                                     <p class="mt-1 text-sm text-slate-500">Masukkan data peserta untuk pendaftaran kelas.</p>
@@ -343,7 +399,7 @@ onMounted(() => {
 
                             <div class="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-between">
                                 <button type="button" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700" @click="goBack"><ArrowLeft class="mr-2 size-4" /> Kembali</button>
-                                <button v-if="step === 4" type="button" :disabled="!canContinue" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] disabled:opacity-40" @click="goNext">Lanjut ke pembayaran <ArrowRight class="ml-2 size-4" /></button>
+                                <button v-if="step === 5" type="button" :disabled="!canContinue" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] disabled:opacity-40" @click="goNext">Lanjut ke pembayaran <ArrowRight class="ml-2 size-4" /></button>
                                 <button v-else type="button" :disabled="form.processing" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#a4da01] px-6 py-3 text-sm font-bold text-[#001428] disabled:opacity-50" @click="submit">
                                     <Loader2 v-if="form.processing" class="mr-2 size-4 animate-spin" />
                                     {{ form.processing ? 'Memproses pendaftaran...' : 'Konfirmasi pendaftaran' }}
@@ -360,7 +416,7 @@ onMounted(() => {
                                 <div><p class="text-slate-500">Kelas</p><p class="mt-1 font-semibold">{{ selectedClass?.name }}</p></div>
                                 <div><p class="text-slate-500">Tanggal & waktu</p><p class="mt-1 font-semibold">{{ dateLabel(selected.session_date) }}</p><p class="mt-0.5 text-slate-500">{{ dayLabel(selected.day) }} · {{ selected.start_time }}–{{ selected.end_time }}</p></div>
                                 <div><p class="text-slate-500">Instruktur</p><p class="mt-1 font-semibold">{{ selected.trainer || 'Trainer akan diumumkan' }}</p></div>
-                                <div v-if="step === 5"><p class="text-slate-500">Peserta</p><p class="mt-1 font-semibold">{{ form.guest_name || 'Belum diisi' }}</p><p class="mt-0.5 text-slate-500">{{ form.guest_email || 'Email belum diisi' }}</p></div>
+                                <div v-if="step === 6"><p class="text-slate-500">Peserta</p><p class="mt-1 font-semibold">{{ form.guest_name || 'Belum diisi' }}</p><p class="mt-0.5 text-slate-500">{{ form.guest_email || 'Email belum diisi' }}</p></div>
                                 <div class="border-t border-slate-200 pt-4"><p class="text-slate-500">Total pembayaran</p><p class="mt-1 text-2xl font-bold">{{ money(selected.price) }}</p><p class="mt-1 text-xs text-slate-500">Harga untuk satu peserta</p></div>
                             </div>
                             <p v-else class="mt-4 text-sm text-slate-500">Pilih olahraga, kelas, dan sesi terlebih dahulu.</p>
