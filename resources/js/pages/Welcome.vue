@@ -90,6 +90,17 @@ const props = defineProps<{
 }>();
 
 const featuredFacilities = computed(() => props.facilities);
+const trainerPackageSports = computed(() =>
+    Array.from(new Set(props.trainerPackages.flatMap((item) => item.sports).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, 'id'),
+    ),
+);
+const selectedTrainerSport = ref('Semua');
+const visibleTrainerPackages = computed(() =>
+    selectedTrainerSport.value === 'Semua'
+        ? props.trainerPackages
+        : props.trainerPackages.filter((item) => item.sports.includes(selectedTrainerSport.value)),
+);
 
 const selectedMembershipPackage = ref<MembershipPackage | null>(null);
 const selectedMembershipTrainerPackage = ref<TrainerPackageItem | null>(null);
@@ -104,19 +115,28 @@ const openMembershipCheckout = (item: MembershipPackage) => {
     membershipPaymentMethod.value = 'bank_transfer';
     membershipModalOpen.value = true;
 };
-const closeMembershipCheckout = () => { membershipModalOpen.value = false; };
+const closeMembershipCheckout = () => {
+    membershipModalOpen.value = false;
+};
 const continueMembershipCheckout = () => {
-    if (!selectedMembershipPackage.value) return;
-    if (selectedMembershipTrainerPackage.value && !selectedMembershipTrainer.value) return;
+    if (!selectedMembershipPackage.value) {
+        return;
+    }
+
+    if (selectedMembershipTrainerPackage.value && !selectedMembershipTrainer.value) {
+        return;
+}
 
     const params = new URLSearchParams({
         package_id: String(selectedMembershipPackage.value.id),
         payment_method: membershipPaymentMethod.value,
     });
+
     if (selectedMembershipTrainerPackage.value) {
         params.set('trainer_package_id', String(selectedMembershipTrainerPackage.value.id));
         params.set('trainer_id', String(selectedMembershipTrainer.value!.id));
     }
+
     router.get(`/membership/register?${params.toString()}`);
 };
 
@@ -130,9 +150,14 @@ const openTrainerCheckout = (item: TrainerPackageItem) => {
     trainerPaymentMethod.value = 'bank_transfer';
     trainerModalOpen.value = true;
 };
-const closeTrainerCheckout = () => { trainerModalOpen.value = false; };
+const closeTrainerCheckout = () => {
+    trainerModalOpen.value = false;
+};
 const continueTrainerCheckout = () => {
-    if (!selectedTrainerPackage.value || !selectedTrainer.value) return;
+    if (!selectedTrainerPackage.value || !selectedTrainer.value) {
+        return;
+    }
+
     router.get('/membership/register', {
         purchase_type: 'trainer',
         trainer_package_id: selectedTrainerPackage.value.id,
@@ -224,8 +249,14 @@ const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
 
-    if (hours && remainingMinutes) return `${hours} jam ${remainingMinutes} menit`;
-    if (hours) return `${hours} jam`;
+    if (hours && remainingMinutes) {
+return `${hours} jam ${remainingMinutes} menit`;
+}
+
+    if (hours) {
+return `${hours} jam`;
+}
+
     return `${remainingMinutes} menit`;
 };
 
@@ -355,6 +386,36 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                 </div>
             </section>
 
+            <section aria-labelledby="pilih-layanan-title" class="mx-auto max-w-7xl px-5 pt-16 lg:px-8 lg:pt-20">
+                <div class="mb-6">
+                    <p class="section-kicker">Mulai dari yang kamu butuhkan</p>
+                    <h2 id="pilih-layanan-title" class="section-title">Mau <span>olahraga seperti apa?</span></h2>
+                </div>
+                <div class="grid gap-4 md:grid-cols-3">
+                    <a href="#kelas" class="group rounded-2xl border border-sky-100 bg-sky-50/70 p-5 transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-lg">
+                        <span class="grid size-11 place-items-center rounded-xl bg-sky-100 text-sky-700"><i class="fa-solid fa-calendar-days"></i></span>
+                        <p class="mt-4 text-xs font-black uppercase tracking-wider text-sky-700">Kelas terjadwal</p>
+                        <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Ikut kelas di jam tertentu</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Cek hari, jam, durasi, dan harga kelas sebelum memilih jadwal.</p>
+                        <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-sky-800">Lihat jadwal kelas <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                    </a>
+                    <a href="#membership" class="group rounded-2xl border border-lime-200 bg-lime-50/70 p-5 transition hover:-translate-y-1 hover:border-lime-300 hover:shadow-lg">
+                        <span class="grid size-11 place-items-center rounded-xl bg-lime-100 text-lime-800"><i class="fa-solid fa-id-card"></i></span>
+                        <p class="mt-4 text-xs font-black uppercase tracking-wider text-lime-800">Membership</p>
+                        <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Akses dengan masa aktif</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Pilih paket keanggotaan berdasarkan fasilitas dan lama berlakunya.</p>
+                        <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-lime-900">Lihat membership <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                    </a>
+                    <a href="#paket-trainer" class="group rounded-2xl border border-violet-100 bg-violet-50/70 p-5 transition hover:-translate-y-1 hover:border-violet-200 hover:shadow-lg">
+                        <span class="grid size-11 place-items-center rounded-xl bg-violet-100 text-violet-700"><i class="fa-solid fa-user-tie"></i></span>
+                        <p class="mt-4 text-xs font-black uppercase tracking-wider text-violet-700">Paket personal trainer</p>
+                        <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Latihan privat per sesi</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Paket berisi sejumlah sesi latihan bersama trainer pilihanmu.</p>
+                        <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-violet-800">Lihat paket trainer <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                    </a>
+                </div>
+            </section>
+
             <section id="olahraga" class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-28">
                 <div class="section-heading mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -421,13 +482,13 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     <div>
                         <p class="section-kicker">Mulai perjalanan olahragamu</p>
                         <h2 class="section-title">Pilih <span>paket membership</span></h2>
-                        <p class="mt-3 max-w-xl text-slate-500">Temukan paket keanggotaan sesuai olahraga dan durasi yang kamu butuhkan.</p>
+                        <p class="mt-3 max-w-xl text-slate-500">Membership memberi akses ke fasilitas pilihan selama masa aktif paket. Paket trainer adalah pilihan sesi latihan terpisah.</p>
                     </div>
                 </div>
                 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     <article v-for="(item, index) in membershipPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                         <div class="flex items-start justify-between gap-3">
-                            <span class="rounded-full bg-[#f2f7df] px-3 py-1.5 text-xs font-extrabold text-[#6e9000]">{{ item.facility || 'Membership' }}</span>
+                            <span class="rounded-full bg-lime-100 px-3 py-1.5 text-xs font-extrabold text-lime-900"><i class="fa-solid fa-id-card mr-1"></i> Membership · {{ item.facility || 'Sport Center' }}</span>
                             <span class="text-xs font-bold text-slate-400">{{ String(index + 1).padStart(2, '0') }}</span>
                         </div>
                         <h3 class="mt-5 text-xl font-extrabold text-[#001428]">{{ item.name }}</h3>
@@ -453,12 +514,16 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     <div class="mb-10">
                         <p class="section-kicker">Latihan lebih terarah</p>
                         <h2 class="section-title">Pilih <span>paket personal trainer</span></h2>
-                        <p class="mt-3 max-w-xl text-slate-500">Pilih program latihan, tentukan trainer, lalu lanjutkan checkout.</p>
+                        <p class="mt-3 max-w-xl text-slate-500">Setiap paket berisi beberapa sesi latihan privat. Pilih jumlah sesi, masa berlaku, dan trainer yang cocok untukmu.</p>
+                    </div>
+                    <div class="mb-6 flex flex-wrap gap-2" aria-label="Saring paket trainer berdasarkan olahraga">
+                        <button type="button" @click="selectedTrainerSport = 'Semua'" :aria-pressed="selectedTrainerSport === 'Semua'" class="rounded-full border px-4 py-2 text-sm font-bold transition" :class="selectedTrainerSport === 'Semua' ? 'border-violet-700 bg-violet-700 text-white' : 'border-violet-100 bg-white text-slate-600 hover:border-violet-300'">Semua olahraga</button>
+                        <button v-for="sport in trainerPackageSports" :key="sport" type="button" @click="selectedTrainerSport = sport" :aria-pressed="selectedTrainerSport === sport" class="rounded-full border px-4 py-2 text-sm font-bold transition" :class="selectedTrainerSport === sport ? 'border-violet-700 bg-violet-700 text-white' : 'border-violet-100 bg-white text-slate-600 hover:border-violet-300'">{{ sport }}</button>
                     </div>
                     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                        <article v-for="(item, index) in trainerPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                        <article v-for="(item, index) in visibleTrainerPackages" :key="item.id" class="group overflow-hidden rounded-2xl border border-violet-100 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                             <div class="flex items-start justify-between gap-3">
-                                <span class="rounded-full bg-[#f2f7df] px-3 py-1.5 text-xs font-extrabold text-[#6e9000]">{{ item.sports[0] || 'Personal Trainer' }}</span>
+                                <span class="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-extrabold text-violet-800"><i class="fa-solid fa-user-tie mr-1"></i> Sesi trainer · {{ item.sports[0] || 'Personal Trainer' }}</span>
                                 <span class="text-xs font-bold text-slate-400">{{ String(index + 1).padStart(2, '0') }}</span>
                             </div>
                             <h3 class="mt-5 text-xl font-extrabold text-[#001428]">{{ item.name }}</h3>
@@ -468,7 +533,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                                 <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa berlaku</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.duration_days }} hari</p></div>
                             </div>
                             <div class="mt-5 border-t border-slate-100 pt-5">
-                                <p class="text-xs font-semibold text-slate-500">Harga paket</p>
+                                <p class="text-xs font-semibold text-slate-500">Total paket<span v-if="item.total_sessions > 0"> · rata-rata {{ formatCurrency(item.price / item.total_sessions) }} / sesi</span></p>
                                 <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price) }}</p>
                                 <button type="button" @click="openTrainerCheckout(item)" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]">
                                     Pilih Paket Trainer <i class="fa-solid fa-arrow-right"></i>
@@ -484,9 +549,9 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                 <div class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
                     <div class="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <p class="section-kicker">Temukan kelas favoritmu</p>
+                            <p class="section-kicker">Kelas terjadwal · bukan paket sesi trainer</p>
                             <h2 class="section-title">Ikuti <span>kelas olahraga</span></h2>
-                            <p class="mt-3 max-w-xl text-slate-500">Pilih kelas yang sesuai dengan minat dan target kebugaranmu, lalu lihat jadwal yang tersedia.</p>
+                            <p class="mt-3 max-w-xl text-slate-500">Setiap kelas punya jadwal rutin sendiri. Cek hari, jam, dan harga per jadwal untuk memilih kelas yang pas.</p>
                         </div>
                         <Link href="/kelas" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] transition hover:text-[#729700] sm:self-auto">
                             Lihat semua kelas <i class="fa-solid fa-arrow-right"></i>
@@ -497,7 +562,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         <article v-for="(item, index) in classes" :key="item.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                             <div class="flex items-start justify-between gap-4 bg-[#001428] p-6 text-white">
                                 <div>
-                                    <span class="inline-flex rounded-full bg-[#a4da01]/15 px-3 py-1.5 text-xs font-extrabold text-[#c7f45b]">{{ item.facility || 'Sport Center' }}</span>
+                                    <span class="inline-flex rounded-full bg-sky-300/15 px-3 py-1.5 text-xs font-extrabold text-sky-200"><i class="fa-solid fa-calendar-days mr-1"></i> Kelas · {{ item.facility || 'Sport Center' }}</span>
                                     <h3 class="mt-4 text-xl font-black">{{ item.name }}</h3>
                                     <p class="mt-2 text-sm leading-6 text-slate-300">{{ item.description || 'Kelas olahraga bersama instruktur.' }}</p>
                                 </div>
@@ -505,14 +570,24 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                                     <i :class="index % 2 === 0 ? 'fa-solid fa-dumbbell' : 'fa-solid fa-heart-pulse'"></i>
                                 </span>
                             </div>
-                            <div class="flex items-center justify-between gap-4 p-6">
-                                <div>
-                                    <p class="text-xs font-semibold text-slate-500">Durasi kelas</p>
-                                    <p class="mt-1 font-extrabold text-[#001428]">{{ formatDuration(item.duration_minutes) }}</p>
+                            <div class="p-6">
+                                <div class="mb-4 flex items-center justify-between gap-3">
+                                    <p class="text-sm font-extrabold text-[#001428]">Jadwal kelas</p>
+                                    <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-800">{{ item.schedules.length }} jadwal</span>
                                 </div>
-                                <Link href="/kelas" class="inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24]">
-                                    Lihat kelas <i class="fa-solid fa-arrow-right"></i>
-                                </Link>
+                                <div class="space-y-2">
+                                    <div v-for="schedule in item.schedules.slice(0, 2)" :key="schedule.id" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-slate-50 px-3 py-2.5 text-sm">
+                                        <span class="font-bold text-slate-700">{{ dayLabel(schedule.day) }} · {{ schedule.start_time }}–{{ schedule.end_time }}</span>
+                                        <span class="font-extrabold text-[#001428]">{{ formatCurrency(schedule.price) }}</span>
+                                    </div>
+                                    <p v-if="item.schedules.length > 2" class="px-1 text-xs font-semibold text-slate-500">+{{ item.schedules.length - 2 }} jadwal lainnya</p>
+                                </div>
+                                <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                                    <p class="text-xs text-slate-500">Durasi <span class="font-bold text-[#001428]">{{ formatDuration(item.duration_minutes) }}</span></p>
+                                    <Link href="/kelas" class="inline-flex items-center gap-2 rounded-full bg-sky-100 px-5 py-3 text-sm font-black text-sky-900 transition hover:bg-sky-200">
+                                        Pilih kelas <i class="fa-solid fa-arrow-right"></i>
+                                    </Link>
+                                </div>
                             </div>
                         </article>
                     </div>
@@ -572,7 +647,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         <div class="mt-7 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <p class="text-xs text-slate-500">Total checkout</p>
-                                <p class="text-2xl font-black text-[#001428]">{{ formatCurrency(selectedMembershipPackage.price + (selectedMembershipTrainerPackage?.price || 0)) }}</p>
+                                <p class="text-2xl font-black text-[#001428]">{{ formatCurrency((selectedMembershipPackage.price ?? 0) + (selectedMembershipTrainerPackage?.price || 0)) }}</p>
                             </div>
                             <button type="button" :disabled="!!selectedMembershipTrainerPackage && (!selectedMembershipTrainer || !selectedMembershipTrainerPackage.trainers.length)" @click="continueMembershipCheckout" class="rounded-full bg-[#a4da01] px-6 py-3 font-black text-[#001428] disabled:cursor-not-allowed disabled:opacity-40">Lanjut checkout <i class="fa-solid fa-arrow-right ml-1"></i></button>
                         </div>
