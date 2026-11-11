@@ -350,7 +350,7 @@ class PublicBookingController extends Controller
                     'window_id' => $window->id,
                     'start_time' => $this->toTime($cursor),
                     'end_time' => $this->toTime($slotEnd),
-                    'price' => (float) $window->price,
+                    'price' => (float) $window->price * ($duration / 60),
                     'courts' => $courtOptions,
                 ];
 
