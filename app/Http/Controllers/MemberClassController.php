@@ -128,6 +128,7 @@ class MemberClassController extends Controller
                 'email' => $request->user()->email,
             ] : null,
             'success' => $request->session()->get('success'),
+            'selectedScheduleId' => $request->integer('schedule') ?: null,
         ]);
     }
 
