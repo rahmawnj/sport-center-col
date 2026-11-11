@@ -172,7 +172,7 @@ class MemberClassController extends Controller
             'payment_method' => ['required', 'in:cash,bank_transfer'],
         ], $contactRules));
 
-        DB::transaction(function () use ($request, $schedule, $data) {
+        $transaction = DB::transaction(function () use ($request, $schedule, $data) {
             $lockedSchedule = ClassSchedule::query()
                 ->with('sportClass.facility')
                 ->lockForUpdate()
@@ -247,10 +247,52 @@ class MemberClassController extends Controller
                 'price' => $price,
                 'status' => 'pending',
             ]);
+
+            return $transaction;
         });
 
-        return redirect()->route('classes.public')
-            ->with('success', 'Pendaftaran kelas berhasil dibuat. Simpan bukti transaksi dan tunggu konfirmasi pembayaran dari pengelola.');
+        return redirect()->route('classes.receipt', ['transaction' => $transaction->id]);
+    }
+
+
+    public function receipt(Transaction $transaction): Response
+    {
+        abort_unless($transaction->transactionable_type === 'class', 404);
+
+        $transaction->load([
+            'user:id,name,email',
+            'sessionParticipants.schedule.sportClass.facility',
+            'sessionParticipants.schedule.trainer',
+        ]);
+
+        $participant = $transaction->sessionParticipants->first();
+        abort_unless($participant, 404);
+
+        $schedule = $participant->schedule;
+        $sportClass = $schedule?->sportClass;
+
+        return Inertia::render('classes/Receipt', [
+            'receiptUrl' => route('classes.receipt', ['transaction' => $transaction->id]),
+            'receipt' => [
+                'code' => $transaction->invoice_number,
+                'customerName' => $participant->user?->name ?? $participant->guest_name ?? $transaction->user?->name ?? $transaction->guest_name,
+                'customerEmail' => $participant->user?->email ?? $participant->guest_email ?? $transaction->user?->email,
+                'customerPhone' => $participant->guest_phone,
+                'facility' => $sportClass?->facility?->name ?? 'Sport Center',
+                'className' => $sportClass?->name ?? 'Kelas',
+                'description' => $sportClass?->description,
+                'trainer' => $schedule?->trainer?->name,
+                'date' => $participant->session_date?->translatedFormat('l, d F Y'),
+                'day' => ucfirst((string) $schedule?->day),
+                'startTime' => substr((string) $schedule?->start_time, 0, 5),
+                'endTime' => substr((string) $schedule?->end_time, 0, 5),
+                'duration' => (int) ($sportClass?->duration_minutes ?? 0),
+                'participantStatus' => (string) $participant->status,
+                'paymentMethod' => (string) $transaction->payment_method,
+                'paymentStatus' => (string) $transaction->payment_status,
+                'total' => (int) ($transaction->total_amount ?? $participant->price ?? 0),
+            ],
+        ]);
     }
 
     public function store(Request $request, ClassSchedule $schedule): RedirectResponse
