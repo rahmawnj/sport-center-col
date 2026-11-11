@@ -52,8 +52,9 @@ class ClassManagementController extends Controller
                     'is_active' => (bool) $schedule->is_active,
                     'participants' => $schedule->participants->map(fn (SessionParticipant $participant) => [
                         'id' => $participant->id,
-                        'name' => $participant->user?->name ?? 'Member',
-                        'email' => $participant->user?->email,
+                        'name' => $participant->guest_name ?? $participant->user?->name ?? 'Guest',
+                        'email' => $participant->guest_email ?? $participant->user?->email,
+                        'phone' => $participant->guest_phone,
                         'session_date' => $participant->session_date?->toDateString(),
                         'status' => $participant->status,
                     ])->values(),
