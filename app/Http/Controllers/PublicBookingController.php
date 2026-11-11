@@ -504,23 +504,27 @@ class PublicBookingController extends Controller
                 }
 
                 $slotEnd = $cursor + $duration;
-                $available = $courts
-                    ->reject(fn ($court) => $bookings->contains(
-                        fn ($booking) => (int) $booking->court_id === $court->id
-                            && $this->windowsOverlap(
-                                $cursor,
-                                $slotEnd,
-                                $this->toMinutes((string) $booking->start_time),
-                                $this->toMinutes((string) $booking->end_time),
-                                $turnaround,
-                            )
-                    ))
-                    ->map(fn ($court) => [
-                        'id' => $court->id,
-                        'name' => $court->name,
-                        'amenities' => $court->amenities ?? [],
-                        'price_adjustment' => (float) $court->price_adjustment,
-                    ])
+                $courtOptions = $courts
+                    ->map(function ($court) use ($bookings, $cursor, $slotEnd, $turnaround) {
+                        $isAvailable = ! $bookings->contains(
+                            fn ($booking) => (int) $booking->court_id === $court->id
+                                && $this->windowsOverlap(
+                                    $cursor,
+                                    $slotEnd,
+                                    $this->toMinutes((string) $booking->start_time),
+                                    $this->toMinutes((string) $booking->end_time),
+                                    $turnaround,
+                                )
+                        );
+
+                        return [
+                            'id' => $court->id,
+                            'name' => $court->name,
+                            'amenities' => $court->amenities ?? [],
+                            'price_adjustment' => (float) $court->price_adjustment,
+                            'is_available' => $isAvailable,
+                        ];
+                    })
                     ->values();
 
                 $slots[] = [
@@ -528,7 +532,7 @@ class PublicBookingController extends Controller
                     'start_time' => $this->toTime($cursor),
                     'end_time' => $this->toTime($slotEnd),
                     'price' => (float) $window->price * ($duration / 60),
-                    'courts' => $available,
+                    'courts' => $courtOptions,
                 ];
 
                 $cursor += $step;
