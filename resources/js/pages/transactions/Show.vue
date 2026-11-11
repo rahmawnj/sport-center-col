@@ -26,6 +26,7 @@ type Props = {
         payment_status: PaymentStatus;
         reference: string;
         created_at: string | null;
+        item_name: string;
         details: Detail[];
     };
 };
@@ -271,8 +272,9 @@ function formatDateTime(value: string | null) {
             v-if="meta.details.length"
             class="overflow-hidden rounded-2xl border bg-card shadow-sm"
         >
-            <div class="border-b bg-muted/40 px-4 py-3 font-semibold">
-                Detail item
+            <div class="border-b bg-muted/40 px-4 py-3">
+                <p class="text-xs text-muted-foreground">Yang dipesan</p>
+                <p class="mt-1 font-semibold">{{ meta.item_name }}</p>
             </div>
             <dl class="divide-y">
                 <div
