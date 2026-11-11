@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowUpRight, CalendarDays, CreditCard, ReceiptText } from 'lucide-vue-next';
+import { ArrowUpRight, CalendarDays, CreditCard, ReceiptText } from '@lucide/vue';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
 defineOptions({ layout: MemberDashboardLayout });
