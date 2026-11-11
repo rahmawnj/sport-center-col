@@ -128,6 +128,7 @@ const dayLabel = (value: string) => ({
 function chooseFacility(facility: Facility) {
     selectedFacility.value = facility;
     selectedClass.value = null;
+    selectedSchedule.value = null;
     selectedDate.value = null;
     selected.value = null;
     form.clearErrors();
@@ -170,6 +171,8 @@ function submit() {
         onSuccess: () => {
             selectedFacility.value = null;
             selectedClass.value = null;
+            selectedSchedule.value = null;
+            selectedDate.value = null;
             selected.value = null;
             step.value = 1;
             form.reset('guest_phone');
@@ -286,7 +289,7 @@ onMounted(() => {
                                 <p class="text-xs font-bold tracking-wider text-lime-800 uppercase">{{ selectedFacility.name }}</p>
                                 <h3 class="mt-2 text-xl font-bold">{{ sportClass.name }}</h3>
                                 <p v-if="sportClass.description" class="mt-2 line-clamp-2 text-sm leading-5 text-slate-500">{{ sportClass.description }}</p>
-                                <p class="mt-3 text-xs text-slate-500">{{ sportClass.schedules.length }} sesi tersedia dalam 6 minggu ke depan</p>
+                                <p class="mt-3 text-xs text-slate-500">{{ new Set(sportClass.schedules.map((schedule) => schedule.id)).size }} jadwal mingguan tersedia</p>
                                 <span class="mt-4 inline-flex items-center text-sm font-semibold text-lime-800">Pilih kelas <ArrowRight class="ml-2 size-4" /></span>
                             </button>
                         </div>
