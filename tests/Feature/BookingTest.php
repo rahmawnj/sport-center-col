@@ -154,9 +154,9 @@ it('spaces hourly choices by the facility turnaround time', function () {
         ->json('slots'))
         ->keyBy('start_time');
 
-    expect($slots)->toHaveKey('07:00');
-    expect($slots)->toHaveKey('08:05');
-    expect($slots)->not->toHaveKey('08:00');
+    expect($slots)->toHaveKey('09:00');
+    expect($slots)->toHaveKey('10:05');
+    expect($slots)->not->toHaveKey('10:00');
 });
 
 it('enforces the turnaround gap and accepts the next valid booking start', function () {
