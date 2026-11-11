@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClassSchedule;
+use App\Models\Facility;
 use App\Models\SessionParticipant;
 use App\Models\Transaction;
 use Carbon\Carbon;
@@ -74,7 +75,7 @@ class MemberClassController extends Controller
 
     public function publicIndex(Request $request): Response
     {
-        $facilities = \\App\\Models\\Facility::query()
+        $facilities = Facility::query()
             ->where('status', 'active')
             ->where('is_bookable_online', true)
             ->with(['classes' => fn ($query) => $query
