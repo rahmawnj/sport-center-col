@@ -114,9 +114,6 @@ function chooseSession(session: Session) {
     form.clearErrors();
 }
 function goBack() {
-    if (step.value === 3 && selected) {
-        // Keep the selected class when returning to the class list.
-    }
     step.value = Math.max(1, step.value - 1);
 }
 function goNext() {
