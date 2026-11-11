@@ -174,7 +174,7 @@ class MemberClassController extends Controller
             $duplicate = SessionParticipant::query()
                 ->where('class_schedule_id', $lockedSchedule->id)
                 ->whereDate('session_date', $sessionDate->toDateString())
-                ->whereNot('status', 'cancelled')
+                ->where('status', '!=', 'cancelled')
                 ->where(function ($query) use ($user, $guestPhone) {
                     if ($user) {
                         $query->where('user_id', $user->id);
