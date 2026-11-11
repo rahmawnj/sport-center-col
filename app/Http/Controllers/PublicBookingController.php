@@ -108,17 +108,15 @@ class PublicBookingController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $contactRules = $request->user()
-            ? [
-                'guest_name' => ['nullable', 'string', 'max:255'],
-                'guest_email' => ['nullable', 'email', 'max:255'],
-                'guest_phone' => ['nullable', 'string', 'max:50'],
-            ]
-            : [
-                'guest_name' => ['required', 'string', 'max:255'],
-                'guest_email' => ['required', 'email', 'max:255'],
-                'guest_phone' => ['required', 'string', 'max:50'],
-            ];
+        $contactRules = [
+            'guest_name' => $request->user()
+                ? ['nullable', 'string', 'max:255']
+                : ['required', 'string', 'max:255'],
+            'guest_email' => $request->user()
+                ? ['nullable', 'email', 'max:255']
+                : ['required', 'email', 'max:255'],
+            'guest_phone' => ['required', 'string', 'max:50'],
+        ];
 
         $data = $request->validate(array_merge([
             'facility_id' => ['required', 'integer', 'exists:facilities,id'],
@@ -275,7 +273,7 @@ class PublicBookingController extends Controller
                 'user_id' => $user?->id,
                 'guest_name' => $user ? $user->name : $data['guest_name'],
                 'guest_email' => $user ? $user->email : $data['guest_email'],
-                'guest_phone' => $user ? null : $data['guest_phone'],
+                'guest_phone' => $data['guest_phone'],
                 'court_id' => $data['court_id'],
                 'device_id' => Device::forCourt($data['court_id'])?->id,
                 'date' => $date->toDateString(),
