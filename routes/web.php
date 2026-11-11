@@ -45,6 +45,9 @@ Route::get('book/availability', [PublicBookingController::class, 'availability']
 Route::post('book', [PublicBookingController::class, 'store'])->name('booking.store');
 Route::get('booking/receipt/{booking}', [PublicBookingController::class, 'receipt'])->name('booking.receipt');
 
+Route::get('kelas', [MemberClassController::class, 'publicIndex'])->name('classes.public');
+Route::post('kelas/{schedule}/register', [MemberClassController::class, 'storePublic'])->name('classes.public.register');
+
 Route::get('verify', [VerifyController::class, 'show'])->name('verify');
 
 Route::middleware(['auth'])->group(function () {
