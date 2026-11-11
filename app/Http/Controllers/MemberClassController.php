@@ -18,60 +18,42 @@ class MemberClassController extends Controller
 {
     public function index(): Response
     {
-        $schedules = ClassSchedule::query()
-            ->with(['sportClass.facility:id,name', 'trainer:id,name,specialty'])
-            ->where('is_active', true)
-            ->whereHas('sportClass', fn ($query) => $query->where('is_active', true)
-                ->whereHas('facility', fn ($facility) => $facility->where('status', 'active')))
-            ->orderBy('day')
-            ->orderBy('start_time')
+        $participants = SessionParticipant::query()
+            ->with([
+                'schedule.sportClass.facility:id,name',
+                'schedule.trainer:id,name,specialty',
+                'transaction:id,payment_status,payment_method,invoice_number',
+            ])
+            ->where('user_id', auth()->id())
+            ->where('status', '!=', 'cancelled')
+            ->whereHas('transaction', fn ($query) => $query
+                ->where('transactionable_type', 'class')
+                ->where('payment_status', 'fully_paid'))
+            ->orderByDesc('session_date')
             ->get()
-            ->flatMap(function (ClassSchedule $schedule) {
-                $dates = collect();
-                $today = today();
-                $dayNumber = Carbon::parse('next '.$schedule->day)->dayOfWeekIso;
-                $offset = ($dayNumber - $today->dayOfWeekIso + 7) % 7;
-                $firstDate = $today->copy()->addDays($offset);
+            ->map(function (SessionParticipant $participant) {
+                $schedule = $participant->schedule;
+                $sportClass = $schedule?->sportClass;
 
-                if ($offset === 0 && $schedule->start_time <= now()->format('H:i:s')) {
-                    $firstDate->addWeek();
-                }
-
-                for ($week = 0; $week < 6; $week++) {
-                    $date = $firstDate->copy()->addWeeks($week);
-                    $registered = SessionParticipant::query()
-                        ->where('class_schedule_id', $schedule->id)
-                        ->whereDate('session_date', $date->toDateString())
-                        ->whereIn('status', ['pending', 'confirmed'])
-                        ->count();
-                    $capacity = (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1);
-
-                    $dates->push([
-                        'id' => $schedule->id,
-                        'session_date' => $date->toDateString(),
-                        'class_name' => $schedule->sportClass?->name,
-                        'description' => $schedule->sportClass?->description,
-                        'facility' => $schedule->sportClass?->facility?->name,
-                        'trainer' => $schedule->trainer?->name,
-                        'trainer_specialty' => $schedule->trainer?->specialty,
-                        'day' => $schedule->day,
-                        'start_time' => substr((string) $schedule->start_time, 0, 5),
-                        'end_time' => substr((string) $schedule->end_time, 0, 5),
-                        'capacity' => $capacity,
-                        'registered_count' => $registered,
-                        'available_count' => max(0, $capacity - $registered),
-                        'price' => (float) $schedule->price,
-                    ]);
-                }
-
-                return $dates;
+                return [
+                    'id' => $participant->id,
+                    'session_date' => $participant->session_date?->toDateString(),
+                    'class_name' => $sportClass?->name ?? 'Kelas',
+                    'description' => $sportClass?->description,
+                    'facility' => $sportClass?->facility?->name,
+                    'trainer' => $schedule?->trainer?->name,
+                    'start_time' => substr((string) $schedule?->start_time, 0, 5),
+                    'end_time' => substr((string) $schedule?->end_time, 0, 5),
+                    'price' => (float) ($participant->price ?? 0),
+                    'status' => $participant->status,
+                    'payment_method' => $participant->transaction?->payment_method,
+                    'invoice_number' => $participant->transaction?->invoice_number,
+                ];
             })
-            ->sortBy(fn ($item) => $item['session_date'].' '.$item['start_time'])
             ->values();
 
-        return Inertia::render('member/Classes', ['schedules' => $schedules]);
+        return Inertia::render('member/Classes', ['schedules' => $participants]);
     }
-
 
     public function publicIndex(Request $request): Response
     {
