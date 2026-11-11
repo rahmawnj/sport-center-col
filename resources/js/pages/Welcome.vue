@@ -480,61 +480,6 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
             </section>
 
 
-            <section v-if="classes.length" id="sesi-kelas" class="bg-[#f6f8f2]">
-                <div class="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
-                    <div class="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <p class="section-kicker">Latihan rutin setiap minggu</p>
-                            <h2 class="section-title">Jelajahi <span>sesi kelas</span></h2>
-                            <p class="mt-3 max-w-xl text-slate-500">Temukan kelas olahraga favoritmu, pilih hari dan jam yang cocok, lalu bergabung bersama instruktur kami.</p>
-                        </div>
-                        <Link href="/kelas" class="inline-flex items-center gap-2 self-start text-sm font-extrabold text-[#001428] transition hover:text-[#729700] sm:self-auto">
-                            Daftar kelas tanpa login <i class="fa-solid fa-arrow-right"></i>
-                        </Link>
-                    </div>
-
-                    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                        <article v-for="item in classes" :key="item.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-                            <div class="flex items-start justify-between gap-4 bg-[#001428] p-6 text-white">
-                                <div>
-                                    <span class="inline-flex rounded-full bg-[#a4da01]/15 px-3 py-1.5 text-xs font-extrabold text-[#c7f45b]">{{ item.facility || 'Sport Center' }}</span>
-                                    <h3 class="mt-4 text-xl font-black">{{ item.name }}</h3>
-                                    <p class="mt-2 text-sm text-slate-300">{{ item.description || 'Kelas olahraga bersama instruktur.' }}</p>
-                                </div>
-                                <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#b8ec24]">
-                                    <i class="fa-solid fa-dumbbell"></i>
-                                </span>
-                            </div>
-                            <div class="p-6">
-                                <div class="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
-                                    <i class="fa-regular fa-clock text-[#789900]"></i>
-                                    Durasi {{ formatDuration(item.duration_minutes) }}
-                                </div>
-                                <p class="mb-3 text-xs font-black uppercase tracking-[.15em] text-[#789900]">Jadwal mingguan</p>
-                                <div class="space-y-3">
-                                    <div v-for="schedule in item.schedules" :key="schedule.id" class="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                                        <div class="flex flex-wrap items-center justify-between gap-2">
-                                            <span class="font-extrabold text-[#001428]">{{ dayLabel(schedule.day) }}</span>
-                                            <span class="rounded-full bg-[#f2f7df] px-3 py-1 text-xs font-bold text-[#668500]">{{ schedule.start_time }}–{{ schedule.end_time }}</span>
-                                        </div>
-                                        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                                            <span><i class="fa-solid fa-user-tie mr-1.5"></i>{{ schedule.trainer || 'Instruktur akan ditentukan' }}</span>
-                                            <span><i class="fa-solid fa-users mr-1.5"></i>{{ schedule.capacity }} peserta</span>
-                                        </div>
-                                        <div class="mt-3 flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
-                                            <p class="text-sm font-black text-[#001428]">{{ formatCurrency(schedule.price) }} <span class="font-medium text-slate-400">/ peserta</span></p>
-                                            <Link :href="`/kelas?schedule=${schedule.id}`" class="inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-4 py-2 text-xs font-black text-[#001428] transition hover:bg-[#b8ec24]">
-                                                Daftar sesi <i class="fa-solid fa-arrow-right"></i>
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
-                </div>
-            </section>
-
             <Transition name="membership-modal">
                 <div v-if="membershipModalOpen && selectedMembershipPackage" class="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-[#001428]/75 px-4 py-6 backdrop-blur-sm" @click.self="closeMembershipCheckout">
                     <section role="dialog" aria-modal="true" aria-labelledby="membership-checkout-title" class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
