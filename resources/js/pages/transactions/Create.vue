@@ -398,7 +398,16 @@ function submit() {
         form.start_time = bookingStartTime.value;
         form.user_id = null;
         form.amount = total.value;
-        form.post('/transactions');
+        console.group('[KASIR] Submit booking');
+        console.log('Payload:', form.data());
+        console.groupEnd();
+        form.post('/transactions', {
+            onError: (errors) => {
+                console.error('[KASIR] Submit booking gagal:', errors);
+                console.error('[KASIR] Payload gagal:', form.data());
+            },
+            onSuccess: () => console.info('[KASIR] Booking berhasil disimpan.'),
+        });
         return;
     }
     if (activeService.value === 'session' && isClassFacility.value) {
