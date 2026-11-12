@@ -281,7 +281,7 @@ watch(date, () => {
 
     loadingSlots.value = true;
     const availabilityQuery = isBooking.value
-        ? `facility_id=${facilityId.value}`
+        ? `facility_id=${facilityId.value}&duration_hours=1`
         : `package_id=${selected.value?.id}`;
     fetch(
         `/book/availability?${availabilityQuery}&date=${date.value}`,
