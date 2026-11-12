@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { CheckCircle2, Clock, Eye, Pencil, Receipt, Wallet } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -33,6 +33,9 @@ type Props = {
 };
 
 const props = defineProps<Props>();
+
+const page = usePage();
+const flash = computed(() => (page.props.flash ?? {}) as { success?: string | null; error?: string | null });
 
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'all');
@@ -164,6 +167,15 @@ function formatDateTime(value: string | null) {
                 </Link>
             </Button>
         </PageHeader>
+
+        <div v-if="flash.success || flash.error" class="space-y-2" aria-live="polite">
+            <div v-if="flash.success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+                {{ flash.success }}
+            </div>
+            <div v-if="flash.error" class="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                {{ flash.error }}
+            </div>
+        </div>
 
         <SummaryCards :items="statCards" />
 
