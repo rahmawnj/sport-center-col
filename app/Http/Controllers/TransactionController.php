@@ -437,6 +437,7 @@ class TransactionController extends Controller
                     'membership' => 'Membership',
                     'trainer_package' => 'Paket personal trainer',
                     'class' => 'Pendaftaran kelas',
+                    'entry' => 'Tiket masuk',
                     default => ucfirst(str_replace('_', ' ', (string) $transaction->transactionable_type)),
                 }],
                 ['label' => 'Informasi pesanan', 'value' => 'Data item pesanan tidak ditemukan untuk transaksi ini.'],
@@ -528,7 +529,7 @@ class TransactionController extends Controller
         DB::transaction(function () use ($data, $names) {
             $schedule = ClassSchedule::query()->with(['sportClass.facility'])->lockForUpdate()->findOrFail($data['class_schedule_id']);
             abort_unless($schedule->is_active && $schedule->sportClass?->is_active && $schedule->sportClass?->facility?->status === 'active' && $schedule->sportClass?->facility?->has_session, 422, 'Jadwal kelas tidak tersedia.');
-            $date = Carbon::parse($data['date'] ?? '')->startOfDay();
+            if (empty($data['date'])) {\n                throw ValidationException::withMessages(['date' => 'Tanggal kelas wajib dipilih.']);\n            }\n            $date = Carbon::parse($data['date'])->startOfDay();
             abort_unless($date->gte(today()) && strtolower($date->englishDayOfWeek) === $schedule->day, 422, 'Tanggal tidak sesuai hari jadwal kelas.');
             abort_if($date->isToday() && $schedule->start_time <= now()->format('H:i:s'), 422, 'Jadwal kelas sudah dimulai atau terlewat.');
             $capacity = (int) ($schedule->capacity ?? $schedule->sportClass->default_capacity ?? 1);
@@ -552,7 +553,7 @@ class TransactionController extends Controller
                     'guest_name' => $name === 'Umum' ? null : $name,
                     'transaction_id' => $transaction->id,
                     'price' => $price,
-                    'status' => $paid ? 'confirmed' : 'pending',
+                    'status' => 'pending',
                 ]);
             }
         });
@@ -732,7 +733,7 @@ class TransactionController extends Controller
                 'transactionable_type' => 'booking',
                 'guest_name' => $data['customer_name'] ?: 'Umum',
                 'amount' => $amount,
-                'invoice_number' => 'BK-'.$booking->id,
+                'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),\n                'booking_status' => $paid ? 'confirmed' : 'pending',
                 'payment_method' => $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
             ]);
