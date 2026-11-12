@@ -37,6 +37,7 @@ type Facility = {
     packages: SellPackage[];
 };
 type Member = { id: number; name: string };
+type CashierClassSchedule = { id: number; class_name: string; facility_id: number; day: string; start_time: string; end_time: string; trainer: string | null; capacity: number; registered_count: number; price: number };
 type Slot = {
     start_time: string;
     end_time: string;
@@ -52,7 +53,7 @@ type ExistingBooking = {
     customer_name: string | null;
 };
 
-const props = defineProps<{ facilities: Facility[]; members: Member[] }>();
+const props = defineProps<{ facilities: Facility[]; members: Member[]; classSchedules: CashierClassSchedule[] }>();
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -90,6 +91,11 @@ const selected = ref<SellPackage | null>(null);
 const ruleId = ref<string>('');
 const quantity = ref(1);
 const memberId = ref<string>('');
+const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
+const sessionMode = ref<'entry' | 'class'>('entry');
+const classDate = ref('');
+const classScheduleId = ref<number | null>(null);
+const participantNamesText = ref('');
 
 const date = ref('');
 const slots = ref<Slot[]>([]);
@@ -110,6 +116,8 @@ const form = useForm({
     date: '',
     start_time: '',
     user_id: null as number | null,
+    class_schedule_id: null as number | null,
+    participants: [] as string[],
 });
 
 const methodOptions = [
@@ -130,6 +138,25 @@ const packageTypeLabel: Record<string, string> = {
 const activeFacility = computed(
     () => props.facilities.find((item) => item.id === facilityId.value) ?? null,
 );
+const activeServices = computed(() => {
+    if (!activeFacility.value) return [];
+    return [
+        ...(activeFacility.value.has_booking ? [{ value: 'booking' as const, label: 'Booking' }] : []),
+        ...(activeFacility.value.has_session ? [{ value: 'session' as const, label: 'Sesi' }] : []),
+        ...(activeFacility.value.has_membership ? [{ value: 'membership' as const, label: 'Membership' }] : []),
+    ];
+});
+const visiblePackages = computed(() => {
+    const type = activeService.value === 'booking' ? 'session' : activeService.value === 'membership' ? 'membership' : 'entry';
+    return activeFacility.value?.packages.filter((item) => item.type === type) ?? [];
+});
+const participantNames = computed(() => participantNamesText.value.split(/\\r?\\n/).map((name) => name.trim()).filter(Boolean));
+const visibleClassSchedules = computed(() => {
+    if (!activeFacility.value || !classDate.value) return [];
+    const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
+    return props.classSchedules.filter((item) => item.facility_id === activeFacility.value?.id && item.day === day && item.capacity > item.registered_count);
+});
+const selectedClassSchedule = computed(() => props.classSchedules.find((item) => item.id === classScheduleId.value) ?? null);
 const activeRule = computed(
     () =>
         selected.value?.pricing_rules.find(
@@ -157,17 +184,18 @@ const membershipPeriod = computed(() => {
     return { start: formatDate(start), end: formatDate(end) };
 });
 const unitPrice = computed(() => {
+    if (activeService.value === 'session' && sessionMode.value === 'class') return selectedClassSchedule.value?.price ?? 0;
     if (isSession.value) return selectedSlot.value?.price ?? 0;
     if (isMembership.value) return selected.value?.price ?? 0;
     return activeRule.value?.price ?? 0;
 });
-const total = computed(() =>
-    isSession.value ? unitPrice.value : unitPrice.value * quantity.value,
+const total = computed(() => activeService.value === 'session' && sessionMode.value === 'class'
+    ? unitPrice.value * participantNames.value.length
+    : isSession.value ? unitPrice.value : unitPrice.value * quantity.value,
 );
 const canSubmit = computed(() => {
-    if (!selected.value) {
-        return false;
-    }
+    if (activeService.value === 'session' && sessionMode.value === 'class') return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0;
+    if (!selected.value) return false;
 
     if (isSession.value) {
         return !!selectedSlot.value && !!courtId.value;
@@ -181,7 +209,13 @@ const canSubmit = computed(() => {
 });
 
 watch(facilityId, () => {
+    const facility = activeFacility.value;
+    activeService.value = facility?.has_booking ? 'booking' : facility?.has_session ? 'session' : 'membership';
     selected.value = null;
+    sessionMode.value = 'entry';
+    classScheduleId.value = null;
+    classDate.value = '';
+    participantNamesText.value = '';
     ruleId.value = '';
     quantity.value = 1;
     memberId.value = '';
@@ -189,6 +223,24 @@ watch(facilityId, () => {
 
 watch([unitPrice, quantity], () => {
     form.amount = total.value;
+});
+
+watch(activeService, () => {
+    selected.value = null;
+    ruleId.value = '';
+    quantity.value = 1;
+    memberId.value = '';
+    classScheduleId.value = null;
+    classDate.value = '';
+    participantNamesText.value = '';
+    sessionMode.value = 'entry';
+});
+
+watch(sessionMode, () => {
+    selected.value = null;
+    classScheduleId.value = null;
+    classDate.value = '';
+    participantNamesText.value = '';
 });
 
 watch(selected, () => {
@@ -253,10 +305,23 @@ function changeQty(delta: number) {
 }
 
 function submit() {
-    if (!selected.value) {
+    if (activeService.value === 'session' && sessionMode.value === 'class') {
+        form.package_id = null;
+        form.class_schedule_id = classScheduleId.value;
+        form.participants = participantNames.value;
+        form.date = classDate.value;
+        form.quantity = participantNames.value.length;
+        form.amount = total.value;
+        form.pricing_rule_id = null;
+        form.court_id = null;
+        form.start_time = '';
+        form.user_id = null;
+        form.post('/transactions');
         return;
     }
-
+    if (!selected.value) return;
+    form.class_schedule_id = null;
+    form.participants = [];
     form.package_id = selected.value.id;
     form.pricing_rule_id = !isSession.value && !isMembership.value && ruleId.value
         ? Number(ruleId.value)
@@ -328,19 +393,25 @@ function formatDate(value: Date) {
                             {{ item.name }}
                         </button>
                     </div>
-                    <div v-if="activeFacility" class="flex flex-wrap gap-1.5">
-                        <span v-if="activeFacility.has_booking" class="rounded-md bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-700 dark:text-blue-300">Booking</span>
-                        <span v-if="activeFacility.has_session" class="rounded-md bg-violet-500/10 px-2 py-1 text-[11px] font-medium text-violet-700 dark:text-violet-300">Sesi</span>
-                        <span v-if="activeFacility.has_membership" class="rounded-md bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">Membership</span>
+                    <div v-if="activeServices.length" class="flex flex-wrap gap-2">
+                        <button v-for="service in activeServices" :key="service.value" type="button"
+                            class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all"
+                            :class="activeService === service.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:border-primary'"
+                            @click="activeService = service.value">{{ service.label }}</button>
                     </div>
                 </section>
 
+                <div v-if="activeService === 'session'" class="flex gap-2">
+                    <button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium" :class="sessionMode === 'entry' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'" @click="sessionMode = 'entry'">Tiket masuk</button>
+                    <button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium" :class="sessionMode === 'class' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'" @click="sessionMode = 'class'">Kelas terjadwal</button>
+                </div>
+
                 <div
-                    v-if="activeFacility?.packages.length"
+                    v-if="visiblePackages.length && !(activeService === 'session' && sessionMode === 'class')"
                     class="grid gap-3 sm:grid-cols-2"
                 >
                     <button
-                        v-for="item in activeFacility.packages"
+                        v-for="item in visiblePackages"
                         :key="item.id"
                         type="button"
                         class="flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-sm"
@@ -380,9 +451,32 @@ function formatDate(value: Date) {
                         </div>
                     </button>
                 </div>
-                <p v-else class="text-sm text-muted-foreground">
-                    Olahraga ini belum punya paket untuk dijual.
+                <p v-else-if="!(activeService === 'session' && sessionMode === 'class')" class="text-sm text-muted-foreground">
+                    Belum ada paket untuk layanan ini.
                 </p>
+
+                <div v-if="activeService === 'session' && sessionMode === 'class'" class="space-y-4 rounded-2xl border bg-card p-4">
+                    <div class="grid max-w-xs gap-2">
+                        <Label for="class-date">Tanggal kelas</Label>
+                        <Input id="class-date" v-model="classDate" type="date" :min="today" />
+                    </div>
+                    <div v-if="classDate" class="grid gap-2 sm:grid-cols-2">
+                        <button v-for="item in visibleClassSchedules" :key="item.id" type="button"
+                            class="rounded-xl border p-3 text-left transition-colors hover:border-primary"
+                            :class="classScheduleId === item.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''"
+                            @click="classScheduleId = item.id">
+                            <div class="font-semibold">{{ item.class_name }}</div>
+                            <div class="text-xs text-muted-foreground">{{ item.start_time }}–{{ item.end_time }} · {{ item.trainer || 'Tanpa trainer' }}</div>
+                            <div class="mt-1 text-sm font-semibold">{{ formatIDR(item.price) }}</div>
+                            <div class="text-xs text-muted-foreground">{{ item.capacity - item.registered_count }} slot tersisa</div>
+                        </button>
+                    </div>
+                    <p v-if="classDate && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada kelas tersedia pada tanggal ini.</p>
+                    <div v-if="classScheduleId" class="grid gap-2">
+                        <Label for="class-participants">Peserta (satu nama per baris, ketik Umum jika tanpa nama)</Label>
+                        <textarea id="class-participants" v-model="participantNamesText" rows="4" class="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="Umum&#10;Nama peserta 2"></textarea>
+                    </div>
+                </div>
 
                 <!-- Schedule for session packages -->
                 <div
@@ -555,7 +649,23 @@ function formatDate(value: Date) {
                     <h2 class="font-semibold">Ringkasan</h2>
                 </div>
 
-                <div v-if="selected" class="space-y-4 pt-4">
+                <div v-if="activeService === 'session' && sessionMode === 'class'" class="space-y-4 pt-4">
+                    <div class="font-medium">{{ selectedClassSchedule?.class_name || 'Pendaftaran kelas' }}</div>
+                    <div class="text-xs text-muted-foreground">{{ classDate || '—' }} · {{ participantNames.length }} peserta</div>
+                    <div class="flex justify-between text-sm"><span>Harga / peserta</span><span>{{ formatIDR(unitPrice) }}</span></div>
+                    <div class="flex justify-between border-t pt-2 font-semibold"><span>Total</span><span>{{ formatIDR(total) }}</span></div>
+                    <div class="grid gap-2">
+                        <Label class="text-xs">Metode pembayaran</Label>
+                        <FormSelect v-model="form.payment_method" :options="methodOptions" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label class="text-xs">Status pembayaran</Label>
+                        <FormSelect v-model="form.payment_status" :options="statusOptions" />
+                    </div>
+                    <Button class="w-full" :disabled="form.processing || !canSubmit" @click="submit">{{ form.processing ? 'Menyimpan...' : 'Simpan transaksi' }}</Button>
+                </div>
+
+                <div v-else-if="selected" class="space-y-4 pt-4">
                     <div>
                         <div class="font-medium">{{ selected.name }}</div>
                         <div class="text-xs text-muted-foreground">
