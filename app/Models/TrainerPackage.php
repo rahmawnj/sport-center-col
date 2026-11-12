@@ -14,6 +14,7 @@ class TrainerPackage extends Model
         'total_sessions',
         'duration_days',
         'price',
+        'trainer_share_percentage',
         'description',
         'is_active',
     ];
@@ -24,6 +25,7 @@ class TrainerPackage extends Model
             'total_sessions' => 'integer',
             'duration_days' => 'integer',
             'price' => 'decimal:2',
+            'trainer_share_percentage' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }
