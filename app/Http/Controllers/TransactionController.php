@@ -439,7 +439,13 @@ class TransactionController extends Controller
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
-        $package = Package::findOrFail($data['package_id']);
+        $package = Package::with('facility')->findOrFail($data['package_id']);
+
+        if ($package->type === 'session') {
+            abort_unless($package->facility?->has_session, 422, 'Sesi untuk olahraga ini sedang dinonaktifkan.');
+        } else {
+            abort_unless($package->facility?->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
+        }
 
         if ($package->type === 'membership') {
             $data['amount'] = (float) $package->price;
@@ -567,6 +573,7 @@ class TransactionController extends Controller
         }
 
         $package->loadMissing('facility');
+        abort_unless($package->facility?->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
         $turnaround = max(0, (int) $package->facility->turnaround_minutes);
         $date = Carbon::parse($data['date']);
         $startMinutes = $this->toMinutes($data['start_time']);
