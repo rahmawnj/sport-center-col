@@ -497,8 +497,10 @@ class TransactionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'package_id' => ['nullable', 'required_without:class_schedule_id', 'integer', 'exists:packages,id'],
-            'class_schedule_id' => ['nullable', 'required_without:package_id', 'integer', 'exists:class_schedules,id'],
+            'package_id' => ['nullable', 'required_without_all:class_schedule_id,facility_id', 'integer', 'exists:packages,id'],
+            'facility_id' => ['nullable', 'required_without_all:package_id,class_schedule_id', 'integer', 'exists:facilities,id'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
+            'class_schedule_id' => ['nullable', 'required_without_all:package_id,facility_id', 'integer', 'exists:class_schedules,id'],
             'participants' => ['nullable', 'array', 'min:1'],
             'participants.*' => ['required', 'string', 'max:255'],
             'pricing_rule_id' => ['nullable', 'integer', 'exists:package_pricing_rules,id'],
@@ -516,6 +518,12 @@ class TransactionController extends Controller
         if (! empty($data['class_schedule_id'])) {
             $this->storeClassSession($data);
             return redirect()->route('transactions.index')->with('success', 'Pendaftaran kelas berhasil disimpan.');
+        }
+
+        if (! empty($data['facility_id']) && empty($data['package_id'])) {
+            $facility = Facility::query()->with('courts')->findOrFail($data['facility_id']);
+            $this->storeCashierBooking($facility, $data);
+            return redirect()->route('transactions.index')->with('success', 'Booking dan transaksi pembayaran berhasil disimpan.');
         }
 
         $package = Package::with('facility')->findOrFail($data['package_id']);
@@ -767,6 +775,93 @@ class TransactionController extends Controller
                 'status' => $paid ? 'confirmed' : 'pending',
             ]);
 
+            Transaction::create([
+                'transactionable_type' => 'booking',
+                'guest_name' => $data['customer_name'] ?: 'Umum',
+                'amount' => $amount,
+                'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
+                'booking_status' => $paid ? 'confirmed' : 'pending',
+                'payment_method' => $data['payment_method'],
+                'payment_status' => $paid ? 'fully_paid' : 'unpaid',
+            ]);
+        });
+    }
+
+    /**
+     * Store a walk-in booking directly from facility, court, date, time and duration.
+     * No package record is involved; pricing comes from BookingTimeSlot.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function storeCashierBooking(Facility $facility, array $data): void
+    {
+        abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
+
+        if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time']) || empty($data['duration_hours'])) {
+            throw ValidationException::withMessages(['court_id' => 'Lapangan, tanggal, jam, dan durasi wajib dipilih.']);
+        }
+
+        $date = Carbon::parse($data['date']);
+        $startMinutes = $this->toMinutes($data['start_time']);
+        $durationHours = max(1, (int) $data['duration_hours']);
+        $durationMinutes = $durationHours * 60;
+        $endMinutes = $startMinutes + $durationMinutes;
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
+
+        $window = BookingTimeSlot::query()
+            ->where('facility_id', $facility->id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->get()
+            ->first(fn (BookingTimeSlot $slot) => $startMinutes >= $this->toMinutes((string) $slot->start_time)
+                && $endMinutes <= $this->toMinutes((string) $slot->end_time));
+
+        if (! $window) {
+            throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
+        }
+
+        if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
+            throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
+        }
+
+        DB::transaction(function () use ($facility, $data, $date, $startMinutes, $endMinutes, $durationHours, $turnaround, $window) {
+            $court = \App\Models\Court::query()
+                ->lockForUpdate()
+                ->whereKey($data['court_id'])
+                ->where('facility_id', $facility->id)
+                ->where('status', 'available')
+                ->firstOrFail();
+
+            $conflict = Booking::query()
+                ->where('court_id', $court->id)
+                ->whereDate('date', $date->toDateString())
+                ->whereNotIn('status', ['cancelled'])
+                ->lockForUpdate()
+                ->get(['start_time', 'end_time'])
+                ->contains(fn (Booking $booking) => $this->windowsOverlap(
+                    $startMinutes,
+                    $endMinutes,
+                    $this->toMinutes((string) $booking->start_time),
+                    $this->toMinutes((string) $booking->end_time),
+                    $turnaround,
+                ));
+
+            if ($conflict) {
+                throw ValidationException::withMessages(['start_time' => 'Lapangan sudah terisi pada jam tersebut. Pilih jam atau lapangan lain.']);
+            }
+
+            $paid = ($data['payment_status'] ?? 'paid') === 'paid';
+            $booking = Booking::create([
+                'guest_name' => $data['customer_name'] ?: 'Umum',
+                'court_id' => $court->id,
+                'device_id' => Device::forCourt($court->id)?->id,
+                'date' => $date->toDateString(),
+                'start_time' => $this->toTime($startMinutes),
+                'end_time' => $this->toTime($endMinutes),
+                'status' => $paid ? 'confirmed' : 'pending',
+            ]);
+
+            $amount = ((float) $window->price * $durationHours) + (float) $court->price_adjustment;
             Transaction::create([
                 'transactionable_type' => 'booking',
                 'guest_name' => $data['customer_name'] ?: 'Umum',
