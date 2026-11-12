@@ -13,6 +13,8 @@ class Facility extends Model
         'slug',
         'is_bookable_online',
         'has_membership',
+        'has_booking',
+        'has_session',
         'turnaround_minutes',
         'status',
     ];
@@ -22,6 +24,8 @@ class Facility extends Model
         return [
             'is_bookable_online' => 'boolean',
             'has_membership' => 'boolean',
+            'has_booking' => 'boolean',
+            'has_session' => 'boolean',
             'turnaround_minutes' => 'integer',
         ];
     }
