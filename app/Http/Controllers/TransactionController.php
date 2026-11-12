@@ -742,7 +742,7 @@ class TransactionController extends Controller
                 'date' => $date->toDateString(),
                 'start_time' => $startTime,
                 'end_time' => $endTime,
-                'status' => 'pending',
+                'status' => $paid ? 'confirmed' : 'pending',
             ]);
 
             Transaction::create([
