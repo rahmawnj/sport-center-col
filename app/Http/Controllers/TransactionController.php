@@ -237,8 +237,11 @@ class TransactionController extends Controller
 
                         // Gunakan antrean global: membership maupun trainer,
                         // dari fasilitas mana pun, tidak boleh berjalan bersamaan.
-                        $purchaseStart = $this->nextPurchaseStartDate($locked->user_id, $membership->id);
-                        $start = $purchaseStart;
+                        // Keep the activation date selected at the cashier; fall back to the queue only when none was stored.
+                        $start = $membership->start_date
+                            ? Carbon::parse($membership->start_date)
+                            : $this->nextPurchaseStartDate($locked->user_id, $membership->id);
+                        $purchaseStart = $start;
                         $end = $start->copy()->addDays(max(1, (int) ($membership->package?->duration_days ?? 30)) - 1);
 
                         $membership->update([
@@ -524,6 +527,7 @@ class TransactionController extends Controller
             'amount' => ['required', 'numeric', 'min:0'],
             'court_id' => ['nullable', 'integer', 'exists:courts,id'],
             'date' => ['nullable', 'date', 'after_or_equal:today'],
+            'membership_start_date' => ['nullable', 'date'],
             'start_time' => ['nullable', 'date_format:H:i'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
@@ -672,8 +676,10 @@ class TransactionController extends Controller
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
             ]);
 
-            // Pembelian manual juga mengikuti antrean global member.
-            $start = $this->nextPurchaseStartDate($member->id);
+            // Kasir boleh menentukan tanggal mulai sendiri; jika kosong, gunakan antrean global member.
+            $start = ! empty($data['membership_start_date'])
+                ? Carbon::parse($data['membership_start_date'])->startOfDay()
+                : $this->nextPurchaseStartDate($member->id);
 
             $end = $start->copy()->addDays(max(1, (int) ($package->duration_days ?? 30)) - 1);
 
