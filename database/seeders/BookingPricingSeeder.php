@@ -21,6 +21,12 @@ class BookingPricingSeeder extends Seeder
             ->with('pricingRules')
             ->get()
             ->each(function (Package $package): void {
+                // BookingLandingPageSeeder already defines zone-specific tariffs.
+                // Preserve those rules instead of replacing them with generic bands.
+                if ($package->pricingRules->isNotEmpty()) {
+                    return;
+                }
+
                 $basePrice = (float) ($package->pricingRules->where('priority', '<', 100)->min('price') ?? $package->price);
 
                 if ($basePrice <= 0) {
