@@ -98,6 +98,9 @@ class TransactionController extends Controller
             ->map(fn (Facility $facility) => [
                 'id' => $facility->id,
                 'name' => $facility->name,
+                'has_booking' => (bool) $facility->has_booking,
+                'has_session' => (bool) $facility->has_session,
+                'has_membership' => (bool) $facility->has_membership,
                 'packages' => $facility->packages
                     ->filter(fn (Package $package) => match ($package->type) {
                         'membership' => (bool) $facility->has_membership,
