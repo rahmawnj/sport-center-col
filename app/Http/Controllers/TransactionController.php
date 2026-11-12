@@ -498,11 +498,19 @@ class TransactionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $isCashierBooking = $request->filled('facility_id')
+            && ! $request->filled('package_id')
+            && ! $request->filled('class_schedule_id');
+
         $data = $request->validate([
             'package_id' => ['nullable', 'required_without_all:class_schedule_id,facility_id', 'integer', 'exists:packages,id'],
             'facility_id' => ['nullable', 'required_without_all:package_id,class_schedule_id', 'integer', 'exists:facilities,id'],
             'end_time' => ['nullable', 'date_format:H:i'],
-            'selected_slots' => ['nullable', 'array', 'min:1'],
+            // Slot hanya diwajibkan untuk transaksi booking. Form kasir
+            // mengirim array kosong pada transaksi kelas dan membership.
+            'selected_slots' => $isCashierBooking
+                ? ['required', 'array', 'min:1']
+                : ['nullable', 'array'],
             'selected_slots.*.start_time' => ['required_with:selected_slots', 'date_format:H:i'],
             'selected_slots.*.end_time' => ['required_with:selected_slots', 'date_format:H:i'],
             'class_schedule_id' => ['nullable', 'required_without_all:package_id,facility_id', 'integer', 'exists:class_schedules,id'],
