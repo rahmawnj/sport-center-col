@@ -248,6 +248,7 @@ class PublicMembershipRegistrationController extends Controller
                     'expires_at' => $trainerEnd->toDateString(),
                     'total_sessions' => $trainerPackage->total_sessions,
                     'used_sessions' => 0,
+                    'trainer_share_percentage' => $trainerPackage->trainer_share_percentage,
                     'status' => 'pending',
                     'transaction_id' => $transaction->id,
                 ]);
