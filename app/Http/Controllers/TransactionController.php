@@ -155,6 +155,7 @@ class TransactionController extends Controller
             ->get()
             ->map(fn (ClassSchedule $schedule) => [
                 'id' => $schedule->id,
+                'class_id' => (int) $schedule->sport_class_id,
                 'class_name' => $schedule->sportClass?->name ?? 'Kelas',
                 'facility_id' => $schedule->sportClass?->facility_id,
                 'day' => $schedule->day,
