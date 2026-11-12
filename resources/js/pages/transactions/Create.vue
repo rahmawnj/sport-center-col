@@ -379,16 +379,24 @@ function formatDate(value: Date) {
         <div class="grid gap-6 lg:grid-cols-3">
             <!-- Catalog + schedule -->
             <div class="space-y-4 lg:col-span-2">
-                <section class="rounded-2xl border bg-card p-4 shadow-sm">
-                    <div class="grid gap-4 md:grid-cols-[minmax(180px,0.8fr)_2fr] md:items-end">
-                        <div class="grid gap-2">
-                            <Label for="cashier-facility" class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Olahraga</Label>
-                            <select id="cashier-facility" v-model.number="facilityId"
-                                class="h-11 w-full rounded-xl border bg-background px-3 text-sm font-semibold outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15">
-                                <option v-for="item in props.facilities" :key="item.id" :value="item.id">{{ item.name }}</option>
-                            </select>
+                <section class="space-y-4 rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="space-y-2">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pilih olahraga</div>
+                        <div class="flex flex-wrap gap-2">
+                            <button v-for="item in props.facilities" :key="item.id" type="button"
+                                class="min-w-28 rounded-xl border px-4 py-3 text-left transition-all"
+                                :class="facilityId === item.id ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-background hover:border-primary/50 hover:bg-muted/40'"
+                                @click="facilityId = item.id">
+                                <span class="block text-sm font-semibold">{{ item.name }}</span>
+                                <span class="mt-1 block text-[10px]" :class="facilityId === item.id ? 'text-primary-foreground/75' : 'text-muted-foreground'">
+                                    {{ [item.has_booking && 'Booking', item.has_session && 'Sesi', item.has_membership && 'Membership'].filter(Boolean).join(' · ') }}
+                                </span>
+                            </button>
                         </div>
-                        <div v-if="activeServices.length" class="grid gap-2 sm:grid-cols-3">
+                    </div>
+                    <div v-if="activeServices.length" class="space-y-2 border-t pt-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Jenis transaksi</div>
+                        <div class="grid gap-2 sm:grid-cols-3">
                             <button v-for="service in activeServices" :key="service.value" type="button"
                                 class="group flex min-h-16 items-center gap-3 rounded-xl border p-3 text-left transition-all"
                                 :class="activeService === service.value ? 'border-primary bg-primary/[0.07] shadow-sm ring-1 ring-primary/30' : 'border-border bg-background hover:border-primary/50 hover:bg-muted/40'"
