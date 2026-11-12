@@ -64,16 +64,18 @@ class PublicBookingController extends Controller
             'facility_id' => ['nullable', 'required_without:package_id', 'integer', 'exists:facilities,id'],
             'package_id' => ['nullable', 'required_without:facility_id', 'integer', 'exists:packages,id'],
             'date' => ['required', 'date', 'after_or_equal:today'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
         ]);
 
-        // Public booking uses facility_id; the admin transaction form may still
-        // request package-based availability, so keep that endpoint compatible.
+        // Availability can be requested by facility and duration without a package.
         $package = ! empty($data['package_id'])
             ? Package::with('facility')->findOrFail($data['package_id'])
             : null;
         $facility = Facility::with('courts')->findOrFail($data['facility_id'] ?? $package?->facility_id);
         abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
-        $slotDuration = $package ? max(1, (int) $package->duration_minutes) : 60;
+        $slotDuration = $package
+            ? max(1, (int) $package->duration_minutes)
+            : max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
         $date = Carbon::parse($data['date']);
 
         $bookings = Booking::with(['court:id,name', 'user:id,name'])
