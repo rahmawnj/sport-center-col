@@ -95,6 +95,7 @@ const facilityId = ref<number | null>(props.facilities[0]?.id ?? null);
 const selected = ref<SellPackage | null>(null);
 const ruleId = ref<string>('');
 const memberId = ref<string>('');
+const membershipMemberType = ref<'existing' | 'new'>('existing');
 const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
 const classDate = ref(today);
 const classScheduleId = ref<number | null>(null);
@@ -125,6 +126,11 @@ const form = useForm({
     end_time: '',
     selected_slots: [] as { start_time: string; end_time: string }[],
     user_id: null as number | null,
+    membership_member_type: 'existing' as 'existing' | 'new',
+    new_member_name: '',
+    new_member_email: '',
+    new_member_phone: '',
+    new_member_password: '',
     class_schedule_id: null as number | null,
     participants: [] as string[],
 });
@@ -268,7 +274,12 @@ const canSubmit = computed(() => {
     }
 
     if (isMembership.value) {
-        return !!memberId.value;
+        return membershipMemberType.value === 'existing'
+            ? !!memberId.value
+            : !!form.new_member_name.trim()
+                && !!form.new_member_email.trim()
+                && !!form.new_member_phone.trim()
+                && form.new_member_password.length >= 8;
     }
 
     return !!activeRule.value;
@@ -290,6 +301,12 @@ watch(facilityId, () => {
     classDate.value = today
     ruleId.value = '';
     memberId.value = '';
+    membershipMemberType.value = 'existing';
+    form.membership_member_type = 'existing';
+    form.new_member_name = '';
+    form.new_member_email = '';
+    form.new_member_phone = '';
+    form.new_member_password = '';
     form.membership_start_date = '';
 });
 
@@ -306,6 +323,12 @@ watch(activeService, () => {
     courtId.value = null;
     ruleId.value = '';
     memberId.value = '';
+    membershipMemberType.value = 'existing';
+    form.membership_member_type = 'existing';
+    form.new_member_name = '';
+    form.new_member_email = '';
+    form.new_member_phone = '';
+    form.new_member_password = '';
     form.membership_start_date = '';
     classScheduleId.value = null;
     selectedClassId.value = null;
@@ -332,6 +355,16 @@ watch(selected, () => {
     selectedSlots.value = [];
     courtId.value = null;
     memberId.value = '';
+});
+
+watch(membershipMemberType, (value) => {
+    form.membership_member_type = value;
+    memberId.value = '';
+    if (value === 'new') form.customer_name = form.new_member_name;
+});
+
+watch(() => form.new_member_name, (value) => {
+    if (membershipMemberType.value === 'new') form.customer_name = value;
 });
 
 watch(memberId, (value) => {
@@ -524,8 +557,13 @@ function submit() {
     form.start_time = isSession.value
         ? (selectedSlot.value?.start_time ?? '')
         : '';
-    form.user_id =
-        isMembership.value && memberId.value ? Number(memberId.value) : null;
+    form.membership_member_type = membershipMemberType.value;
+    form.user_id = isMembership.value && membershipMemberType.value === 'existing' && memberId.value
+        ? Number(memberId.value)
+        : null;
+    if (isMembership.value && membershipMemberType.value === 'new') {
+        form.customer_name = form.new_member_name.trim();
+    }
     form.membership_start_date = isMembership.value ? form.membership_start_date : '';
     form.post('/transactions');
 }
@@ -991,19 +1029,40 @@ function formatDate(value: Date) {
                         />
                     </div>
 
-                    <div v-if="isMembership" class="grid gap-2">
-                        <Label class="text-xs">Member</Label>
-                        <FormSelect
-                            v-model="memberId"
-                            placeholder="Pilih member"
-                            :options="memberOptions"
-                        />
-                        <p
-                            v-if="!memberOptions.length"
-                            class="text-xs text-muted-foreground"
-                        >
-                            Belum ada member. Tambahkan dulu di menu Member.
-                        </p>
+                    <div v-if="isMembership" class="space-y-3">
+                        <Label class="text-xs">Pendaftaran member</Label>
+                        <div class="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
+                            <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="membershipMemberType === 'existing' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="membershipMemberType = 'existing'">Member lama</button>
+                            <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="membershipMemberType === 'new' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="membershipMemberType = 'new'">Member baru</button>
+                        </div>
+                        <div v-if="membershipMemberType === 'existing'" class="grid gap-2">
+                            <Label for="membership-existing-member" class="text-xs">Pilih member</Label>
+                            <FormSelect id="membership-existing-member" v-model="memberId" placeholder="Cari / pilih member" :options="memberOptions" />
+                            <p v-if="!memberOptions.length" class="text-xs text-muted-foreground">Belum ada akun member terdaftar.</p>
+                            <p v-if="form.errors.user_id" class="text-xs text-destructive">{{ form.errors.user_id }}</p>
+                        </div>
+                        <div v-else class="grid gap-3">
+                            <div class="grid gap-1.5">
+                                <Label for="new-member-name" class="text-xs">Nama lengkap</Label>
+                                <Input id="new-member-name" v-model="form.new_member_name" placeholder="Nama member" />
+                                <p v-if="form.errors.new_member_name" class="text-xs text-destructive">{{ form.errors.new_member_name }}</p>
+                            </div>
+                            <div class="grid gap-1.5">
+                                <Label for="new-member-email" class="text-xs">Email akun</Label>
+                                <Input id="new-member-email" v-model="form.new_member_email" type="email" placeholder="nama@email.com" />
+                                <p v-if="form.errors.new_member_email" class="text-xs text-destructive">{{ form.errors.new_member_email }}</p>
+                            </div>
+                            <div class="grid gap-1.5">
+                                <Label for="new-member-phone" class="text-xs">Nomor HP</Label>
+                                <Input id="new-member-phone" v-model="form.new_member_phone" placeholder="08xxxxxxxxxx" />
+                                <p v-if="form.errors.new_member_phone" class="text-xs text-destructive">{{ form.errors.new_member_phone }}</p>
+                            </div>
+                            <div class="grid gap-1.5">
+                                <Label for="new-member-password" class="text-xs">Password awal (min. 8 karakter)</Label>
+                                <Input id="new-member-password" v-model="form.new_member_password" type="password" placeholder="Buat password akun" />
+                                <p v-if="form.errors.new_member_password" class="text-xs text-destructive">{{ form.errors.new_member_password }}</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div
