@@ -6,9 +6,7 @@ import {
     Clock,
     Loader2,
     MapPin,
-    Minus,
     Package as PackageIcon,
-    Plus,
     ShoppingCart,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -89,7 +87,6 @@ function isSlotPast(slot: Slot) {
 const facilityId = ref<number | null>(props.facilities[0]?.id ?? null);
 const selected = ref<SellPackage | null>(null);
 const ruleId = ref<string>('');
-const quantity = ref(1);
 const memberId = ref<string>('');
 const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
 const sessionMode = ref<'entry' | 'class'>('entry');
@@ -107,7 +104,6 @@ const courtId = ref<number | null>(null);
 const form = useForm({
     package_id: null as number | null,
     pricing_rule_id: null as number | null,
-    quantity: 1,
     customer_name: '',
     payment_method: 'cash',
     payment_status: 'paid',
@@ -194,7 +190,7 @@ const unitPrice = computed(() => {
 });
 const total = computed(() => activeService.value === 'session' && sessionMode.value === 'class'
     ? unitPrice.value * participantNames.value.length
-    : isSession.value ? unitPrice.value : unitPrice.value * quantity.value,
+    : unitPrice.value,
 );
 const canSubmit = computed(() => {
     if (activeService.value === 'session' && sessionMode.value === 'class') return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0 && participantNames.value.length <= classRemaining.value;
@@ -220,18 +216,16 @@ watch(facilityId, () => {
     classDate.value = '';
     participantNamesText.value = '';
     ruleId.value = '';
-    quantity.value = 1;
     memberId.value = '';
 });
 
-watch([unitPrice, quantity], () => {
+watch(unitPrice, () => {
     form.amount = total.value;
 });
 
 watch(activeService, () => {
     selected.value = null;
     ruleId.value = '';
-    quantity.value = 1;
     memberId.value = '';
     classScheduleId.value = null;
     classDate.value = '';
@@ -308,10 +302,6 @@ function chooseCourt(id: number) {
     courtId.value = id;
 }
 
-function changeQty(delta: number) {
-    quantity.value = Math.max(1, quantity.value + delta);
-}
-
 function submit() {
     if (activeService.value === 'session' && sessionMode.value === 'class') {
         form.package_id = null;
@@ -334,7 +324,7 @@ function submit() {
     form.pricing_rule_id = !isSession.value && !isMembership.value && ruleId.value
         ? Number(ruleId.value)
         : null;
-    form.quantity = isSession.value ? 1 : quantity.value;
+    form.quantity = 1;
     form.court_id = isSession.value ? courtId.value : null;
     form.date = isSession.value ? date.value : '';
     form.start_time = isSession.value
@@ -828,13 +818,6 @@ function formatDate(value: Date) {
                         <div class="flex justify-between text-sm">
                             <span class="text-muted-foreground">Harga</span>
                             <span>{{ formatIDR(unitPrice) }}</span>
-                        </div>
-                        <div
-                            v-if="!isSession"
-                            class="flex justify-between text-sm"
-                        >
-                            <span class="text-muted-foreground">Qty</span>
-                            <span>{{ quantity }}</span>
                         </div>
                         <div
                             class="flex items-center justify-between border-t pt-2"
