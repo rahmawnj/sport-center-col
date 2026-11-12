@@ -96,11 +96,11 @@ const selected = ref<SellPackage | null>(null);
 const ruleId = ref<string>('');
 const memberId = ref<string>('');
 const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
-const classDate = ref('');
+const classDate = ref(today);
 const classScheduleId = ref<number | null>(null);
 const participantNamesText = ref('');
 
-const date = ref('');
+const date = ref(today);
 const slots = ref<Slot[]>([]);
 const existingBookings = ref<ExistingBooking[]>([]);
 const loadingSlots = ref(false);
@@ -228,7 +228,7 @@ watch(facilityId, () => {
     const facility = activeFacility.value;
     activeService.value = facility?.has_booking ? 'booking' : facility?.has_session ? 'session' : 'membership';
     selected.value = null;
-    date.value = '';
+    date.value = today
     slots.value = [];
     existingBookings.value = [];
     selectedSlot.value = null;
@@ -236,7 +236,7 @@ watch(facilityId, () => {
     slotSelectionError.value = '';
     courtId.value = null;
     classScheduleId.value = null;
-    classDate.value = '';
+    classDate.value = today
     participantNamesText.value = '';
     ruleId.value = '';
     memberId.value = '';
@@ -248,7 +248,7 @@ watch(unitPrice, () => {
 
 watch(activeService, () => {
     selected.value = null;
-    date.value = '';
+    date.value = today
     slots.value = [];
     selectedSlot.value = null;
     selectedSlots.value = [];
@@ -256,17 +256,17 @@ watch(activeService, () => {
     ruleId.value = '';
     memberId.value = '';
     classScheduleId.value = null;
-    classDate.value = '';
+    classDate.value = today
     participantNamesText.value = '';
 });
 
 watch(classDate, () => {
     classScheduleId.value = null;
     participantNamesText.value = '';
-});
+}, { immediate: true });
 
 watch(selected, () => {
-    date.value = '';
+    date.value = today
     slots.value = [];
     existingBookings.value = [];
     selectedSlot.value = null;
@@ -310,7 +310,7 @@ watch(date, () => {
         .finally(() => {
             loadingSlots.value = false;
         });
-});
+}, { immediate: true });
 
 function choosePackage(item: SellPackage) {
     selected.value = item;
@@ -373,14 +373,17 @@ function chooseSlot(slot: Slot) {
     courtId.value = null;
 }
 
-const availableBookingCourts = computed(() => {
-    if (!selectedSlots.value.length) return [];
-    return selectedSlots.value[0].courts.filter((court) =>
-        court.is_available !== false && selectedSlots.value.every((slot) =>
-            slot.courts.some((option) => option.id === court.id && option.is_available !== false)
-        )
-    );
-});
+const bookingCourts = computed(() => selectedSlots.value[0]?.courts ?? []);
+
+function isCourtAvailable(id: number) {
+    if (isBooking.value) {
+        return selectedSlots.value.length > 0 && selectedSlots.value.every((slot) =>
+            slot.courts.some((court) => court.id === id && court.is_available !== false)
+        );
+    }
+
+    return selectedSlot.value?.courts.some((court) => court.id === id && court.is_available !== false) ?? false;
+}
 const bookingStartTime = computed(() => selectedSlots.value[0]?.start_time ?? '');
 const bookingEndTime = computed(() => selectedSlots.value[selectedSlots.value.length - 1]?.end_time ?? '');
 
@@ -719,20 +722,23 @@ function formatDate(value: Date) {
                                     </span>
                                 </div>
                                 <span class="text-xs text-muted-foreground">
-                                    {{ isBooking ? availableBookingCourts.length : (selectedSlot?.courts ?? []).filter((court) => court.is_available !== false).length }} tersedia
+                                    {{ isBooking ? bookingCourts.filter((court) => isCourtAvailable(court.id)).length : (selectedSlot?.courts ?? []).filter((court) => isCourtAvailable(court.id)).length }} tersedia
                                 </span>
                             </div>
                             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 <button
-                                    v-for="court in (isBooking ? availableBookingCourts : (selectedSlot?.courts ?? []).filter((item) => item.is_available !== false))"
+                                    v-for="court in (isBooking ? bookingCourts : (selectedSlot?.courts ?? []))"
                                     :key="court.id"
                                     type="button"
                                     class="flex items-center justify-between gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all"
-                                    :class="
+                                    :disabled="!isCourtAvailable(court.id)"
+                                    :class="[
                                         courtId === court.id
                                             ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                                            : 'border-border bg-background hover:border-primary hover:bg-primary/5'
-                                    "
+                                            : isCourtAvailable(court.id)
+                                                ? 'border-border bg-background hover:border-primary hover:bg-primary/5'
+                                                : 'cursor-not-allowed border-dashed border-slate-200 bg-slate-100/70 text-slate-400 opacity-60',
+                                    ]"
                                     @click="chooseCourt(court.id)"
                                 >
                                     <span
@@ -821,7 +827,7 @@ function formatDate(value: Date) {
                     </div>
                     <div class="space-y-1 rounded-xl bg-muted/40 p-3 text-sm">
                         <div class="flex justify-between gap-2"><span class="text-muted-foreground">Jam</span><span class="font-medium">{{ isBooking ? (selectedSlots.length ? `${bookingStartTime}–${bookingEndTime}` : '—') : (selectedSlot ? `${selectedSlot.start_time}–${selectedSlot.end_time}` : '—') }}</span></div>
-                        <div class="flex justify-between gap-2"><span class="text-muted-foreground">Lapangan / meja</span><span class="font-medium">{{ (isBooking ? availableBookingCourts : (selectedSlot?.courts ?? [])).find((court) => court.id === courtId)?.name ?? '—' }}</span></div>
+                        <div class="flex justify-between gap-2"><span class="text-muted-foreground">Lapangan / meja</span><span class="font-medium">{{ (isBooking ? bookingCourts : (selectedSlot?.courts ?? [])).find((court) => court.id === courtId)?.name ?? '—' }}</span></div>
                     </div>
                     <div class="grid gap-2">
                         <Label for="pos-customer-booking" class="text-xs">Nama pelanggan (opsional)</Label>
