@@ -12,7 +12,9 @@ class TrainerPackageSeeder extends Seeder
     {
         $facilities = Facility::query()
             ->where('status', 'active')
+            ->where('slug', 'gym')
             ->where('has_membership', true)
+            ->where('has_session', true)
             ->orderBy('id')
             ->get();
 
