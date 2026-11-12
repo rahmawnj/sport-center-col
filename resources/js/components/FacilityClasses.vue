@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,14 @@ const classForm=useForm({name:'',description:'',duration_minutes:'60',default_ca
 const scheduleDialog=ref(false); const editingSchedule=ref<number|null>(null); const scheduleClassId=ref<number|null>(null);
 const scheduleForm=useForm({trainer_id:'',day:'monday',start_time:'08:00',end_time:'09:00',capacity:'',price:'0',is_active:true});
 const money=(v:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(v);
+const groupedParticipants = (participants: Participant[]) => {
+  const groups = new Map<string, Participant[]>();
+  for (const participant of [...participants].sort((a,b) => a.session_date.localeCompare(b.session_date) || a.name.localeCompare(b.name))) {
+    const key = participant.session_date;
+    groups.set(key, [...(groups.get(key) ?? []), participant]);
+  }
+  return [...groups.entries()].map(([date, people]) => ({ date, people }));
+};
 const dateLabel=(v:string)=>new Date(v+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});
 function endTime(start:string,duration:number){const [h,m]=start.split(':').map(Number);const t=h*60+m+duration;return String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
 function openClass(item?:SportClass){editingClass.value=item?.id??null;classForm.clearErrors();classForm.name=item?.name??'';classForm.description=item?.description??'';classForm.duration_minutes=String(item?.duration_minutes??60);classForm.default_capacity=String(item?.default_capacity??10);classForm.is_active=item?.is_active??true;classDialog.value=true;}
@@ -36,20 +44,59 @@ function setAttendance(id:number,status:'attended'|'no_show'){router.put('/sessi
     <Button size="sm" @click="openClass()"><span class="mr-1">+</span>Tambah kelas</Button>
   </div>
   <div v-if="!classes.length" class="rounded-2xl border border-dashed bg-card p-8 text-center"><p class="font-medium">Belum ada kelas</p><p class="mt-1 text-sm text-muted-foreground">Tambahkan kelas seperti Yoga, Zumba, atau Swimming.</p></div>
-  <div v-for="item in classes" :key="item.id" class="overflow-hidden rounded-2xl border bg-card shadow-sm">
-    <div class="flex flex-wrap items-start justify-between gap-3 border-b p-4">
-      <div><div class="flex flex-wrap items-center gap-2"><h3 class="font-semibold">{{item.name}}</h3><span class="rounded-full px-2 py-1 text-xs" :class="item.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{item.is_active?'Aktif':'Nonaktif'}}</span></div><p class="mt-1 text-sm text-muted-foreground">{{item.duration_minutes}} menit · Kapasitas default {{item.default_capacity}}</p><p v-if="item.description" class="mt-1 text-sm text-muted-foreground">{{item.description}}</p></div>
-      <div class="flex gap-2"><Button size="sm" variant="outline" @click="openClass(item)">Edit kelas</Button><Button size="sm" variant="ghost" class="text-destructive" @click="removeClass(item)">Hapus</Button></div>
-    </div>
-    <div class="space-y-3 p-4">
-      <div class="flex items-center justify-between gap-2"><h4 class="text-sm font-semibold">Jadwal rutin ({{item.schedules.length}})</h4><Button size="sm" variant="outline" @click="openSchedule(item)">Tambah jadwal</Button></div>
-      <div v-if="!item.schedules.length" class="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">Belum ada jadwal untuk kelas ini.</div>
-      <div v-for="s in item.schedules" :key="s.id" class="rounded-xl border p-3">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div><p class="font-medium">{{dayLabel(s.day)}} · {{s.start_time}}–{{s.end_time}}</p><p class="mt-1 text-sm text-muted-foreground">{{s.trainer||'Trainer belum ditentukan'}} · {{s.registered_count}} total pendaftaran · {{money(s.price)}}/peserta</p><span class="mt-2 inline-flex rounded-full px-2 py-1 text-xs" :class="s.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{s.is_active?'Aktif setiap minggu':'Nonaktif'}}</span></div>
-          <div class="flex flex-wrap gap-1"><Button size="sm" variant="outline" @click="openSchedule(item,s)">Edit</Button><Button size="sm" variant="outline" @click="setActive(s,!s.is_active)">{{s.is_active?'Nonaktifkan':'Aktifkan'}}</Button><Button size="sm" variant="ghost" class="text-destructive" @click="removeSchedule(s)">Hapus</Button></div>
+  <div v-for="item in classes" :key="item.id" class="rounded-xl border bg-card">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2.5">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="font-semibold">{{item.name}}</h3>
+          <span class="rounded-full px-2 py-0.5 text-[11px] font-medium" :class="item.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{item.is_active?'Aktif':'Nonaktif'}}</span>
+          <span class="text-xs text-muted-foreground">{{item.duration_minutes}} menit · Kapasitas {{item.default_capacity}}</span>
         </div>
-        <div v-if="s.participants.length" class="mt-3 border-t pt-3"><p class="mb-2 text-xs font-semibold text-muted-foreground">Pendaftaran per tanggal</p><div v-for="p in s.participants" :key="p.id" class="flex flex-wrap items-center justify-between gap-2 py-1 text-sm"><span>{{p.name}} <span class="text-xs text-muted-foreground">· {{dateLabel(p.session_date)}} · {{p.status}}</span></span><div v-if="['confirmed','attended','no_show'].includes(p.status)" class="flex gap-1"><Button size="sm" variant="outline" @click="setAttendance(p.id,'attended')">Hadir</Button><Button size="sm" variant="outline" @click="setAttendance(p.id,'no_show')">Tidak hadir</Button></div></div></div>
+        <p v-if="item.description" class="mt-0.5 text-xs text-muted-foreground">{{item.description}}</p>
+      </div>
+      <div class="flex shrink-0 gap-1">
+        <Button size="sm" variant="outline" @click="openClass(item)">Edit</Button>
+        <Button size="sm" variant="ghost" class="text-destructive" @click="removeClass(item)">Hapus</Button>
+      </div>
+    </div>
+    <div class="p-3">
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Jadwal rutin · {{item.schedules.length}}</h4>
+        <Button size="sm" variant="outline" @click="openSchedule(item)">+ Jadwal</Button>
+      </div>
+      <p v-if="!item.schedules.length" class="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">Belum ada jadwal untuk kelas ini.</p>
+      <div v-else class="grid gap-2 sm:grid-cols-2">
+        <div v-for="s in item.schedules" :key="s.id" class="rounded-lg border bg-background p-2.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold">{{dayLabel(s.day)}} <span class="font-medium text-muted-foreground">{{s.start_time}}–{{s.end_time}}</span></p>
+              <p class="mt-0.5 truncate text-xs text-muted-foreground">{{s.trainer||'Trainer belum ditentukan'}}</p>
+              <p class="mt-1 text-xs text-muted-foreground">{{s.registered_count}} pendaftar · {{money(s.price)}}/peserta</p>
+            </div>
+            <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium" :class="s.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{s.is_active?'Aktif':'Nonaktif'}}</span>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1 border-t pt-2">
+            <Button size="sm" variant="outline" @click="openSchedule(item,s)">Edit</Button>
+            <Button size="sm" variant="outline" @click="setActive(s,!s.is_active)">{{s.is_active?'Matikan':'Aktifkan'}}</Button>
+            <Button size="sm" variant="ghost" class="text-destructive" @click="removeSchedule(s)">Hapus</Button>
+          </div>
+          <div v-if="s.participants.length" class="mt-2 space-y-2 border-t pt-2">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Peserta per tanggal</p>
+            <div v-for="group in groupedParticipants(s.participants)" :key="group.date" class="rounded-md bg-muted/35 p-2">
+              <div class="mb-1 flex items-center justify-between gap-2">
+                <p class="text-xs font-semibold">{{dateLabel(group.date)}}</p>
+                <span class="text-[10px] text-muted-foreground">{{group.people.length}} peserta</span>
+              </div>
+              <div v-for="p in group.people" :key="p.id" class="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 py-1.5 first:border-0">
+                <span class="text-xs">{{p.name}} <span class="text-muted-foreground">· {{p.status}}</span></span>
+                <div v-if="['confirmed','attended','no_show'].includes(p.status)" class="flex gap-1">
+                  <Button size="sm" variant="outline" class="h-7 px-2 text-[11px]" @click="setAttendance(p.id,'attended')">Hadir</Button>
+                  <Button size="sm" variant="outline" class="h-7 px-2 text-[11px]" @click="setAttendance(p.id,'no_show')">Tidak hadir</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
