@@ -499,7 +499,7 @@ class TransactionController extends Controller
         $data = $request->validate([
             'package_id' => ['nullable', 'required_without_all:class_schedule_id,facility_id', 'integer', 'exists:packages,id'],
             'facility_id' => ['nullable', 'required_without_all:package_id,class_schedule_id', 'integer', 'exists:facilities,id'],
-            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'class_schedule_id' => ['nullable', 'required_without_all:package_id,facility_id', 'integer', 'exists:class_schedules,id'],
             'participants' => ['nullable', 'array', 'min:1'],
             'participants.*' => ['required', 'string', 'max:255'],
@@ -797,34 +797,33 @@ class TransactionController extends Controller
     {
         abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
 
-        if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time']) || empty($data['duration_hours'])) {
-            throw ValidationException::withMessages(['court_id' => 'Lapangan, tanggal, jam, dan durasi wajib dipilih.']);
+        if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time']) || empty($data['end_time'])) {
+            throw ValidationException::withMessages(['court_id' => 'Lapangan, tanggal, dan slot jam wajib dipilih.']);
         }
 
         $date = Carbon::parse($data['date']);
         $startMinutes = $this->toMinutes($data['start_time']);
-        $durationHours = max(1, (int) $data['duration_hours']);
-        $durationMinutes = $durationHours * 60;
-        $endMinutes = $startMinutes + $durationMinutes;
-        $turnaround = max(0, (int) $facility->turnaround_minutes);
+        $endMinutes = $this->toMinutes($data['end_time']);
+        $durationMinutes = $endMinutes - $startMinutes;
 
+        if ($durationMinutes <= 0) {
+            throw ValidationException::withMessages(['end_time' => 'Rentang slot booking tidak valid.']);
+        }
+
+        $durationHours = $durationMinutes / 60;
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
         $window = BookingTimeSlot::query()
             ->where('facility_id', $facility->id)
             ->where('day', strtolower($date->englishDayOfWeek))
             ->where('is_active', true)
             ->get()
-            ->first(function (BookingTimeSlot $slot) use ($startMinutes, $endMinutes, $durationMinutes, $turnaround) {
-                $windowStart = $this->toMinutes((string) $slot->start_time);
-                $windowEnd = $this->toMinutes((string) $slot->end_time);
-                $step = $durationMinutes + $turnaround;
-
-                return $startMinutes >= $windowStart
-                    && $endMinutes <= $windowEnd
-                    && ($startMinutes - $windowStart) % $step === 0;
-            });
+            ->first(fn (BookingTimeSlot $slot) =>
+                $this->toMinutes((string) $slot->start_time) === $startMinutes
+                && $this->toMinutes((string) $slot->end_time) === $endMinutes
+            );
 
         if (! $window) {
-            throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
+            throw ValidationException::withMessages(['start_time' => 'Slot tidak sesuai Master Jam Booking. Silakan pilih slot yang tersedia.']);
         }
 
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
