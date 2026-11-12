@@ -560,7 +560,7 @@ function formatDate(value: Date) {
                     </div>
                 </div>
 
-                <!-- Booking without package: facility, duration, date and availability -->
+                <!-- Booking without package: choose date, multiple time slots and court -->
                 <div
                     v-if="isBooking || (selected && isSession)"
                     class="space-y-4 rounded-2xl border bg-card p-4 shadow-sm"
