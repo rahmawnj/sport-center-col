@@ -31,6 +31,9 @@ type SellPackage = {
 type Facility = {
     id: number;
     name: string;
+    has_booking: boolean;
+    has_session: boolean;
+    has_membership: boolean;
     packages: SellPackage[];
 };
 type Member = { id: number; name: string };
@@ -312,22 +315,31 @@ function formatDate(value: Date) {
         <div class="grid gap-6 lg:grid-cols-3">
             <!-- Catalog + schedule -->
             <div class="space-y-4 lg:col-span-2">
-                <div class="flex flex-wrap gap-2">
-                    <button
-                        v-for="item in props.facilities"
-                        :key="item.id"
-                        type="button"
-                        class="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
-                        :class="
-                            facilityId === item.id
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'hover:border-primary hover:text-primary'
-                        "
-                        @click="facilityId = item.id"
-                    >
-                        {{ item.name }}
-                    </button>
-                </div>
+                <section class="space-y-3">
+                    <div>
+                        <h2 class="text-sm font-semibold">Pilih zona olahraga</h2>
+                        <p class="text-xs text-muted-foreground">Pilih olahraga untuk membuka kasir sesuai layanan yang tersedia.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button
+                            v-for="item in props.facilities"
+                            :key="item.id"
+                            type="button"
+                            class="rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all"
+                            :class="facilityId === item.id ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'bg-card hover:border-primary hover:text-primary'"
+                            @click="facilityId = item.id"
+                        >
+                            {{ item.name }}
+                        </button>
+                    </div>
+                    <div v-if="activeFacility" class="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2.5">
+                        <span class="mr-1 text-xs font-medium text-muted-foreground">Layanan:</span>
+                        <span v-if="activeFacility.has_booking" class="rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">Booking</span>
+                        <span v-if="activeFacility.has_session" class="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300">Sesi</span>
+                        <span v-if="activeFacility.has_membership" class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Membership</span>
+                        <span v-if="!activeFacility.has_booking && !activeFacility.has_session && !activeFacility.has_membership" class="text-xs text-muted-foreground">Belum ada layanan kasir aktif.</span>
+                    </div>
+                </section>
 
                 <div
                     v-if="activeFacility?.packages.length"
