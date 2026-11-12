@@ -37,7 +37,7 @@ type Facility = {
     packages: SellPackage[];
 };
 type Member = { id: number; name: string };
-type CashierClassSchedule = { id: number; class_name: string; facility_id: number; day: string; start_time: string; end_time: string; trainer: string | null; capacity: number; registered_count: number; price: number };
+type CashierClassSchedule = { id: number; class_name: string; facility_id: number; day: string; start_time: string; end_time: string; trainer: string | null; capacity: number; registered_count: number; registered_by_date: Record<string, number>; price: number };
 type Slot = {
     start_time: string;
     end_time: string;
@@ -154,7 +154,7 @@ const participantNames = computed(() => participantNamesText.value.split(/\r?\n/
 const visibleClassSchedules = computed(() => {
     if (!activeFacility.value || !classDate.value) return [];
     const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
-    return props.classSchedules.filter((item) => item.facility_id === activeFacility.value?.id && item.day === day);
+    return props.classSchedules.filter((item) => item.facility_id === activeFacility.value?.id && item.day === day && (item.capacity - (item.registered_by_date?.[classDate.value] ?? 0)) > 0);
 });
 const selectedClassSchedule = computed(() => props.classSchedules.find((item) => item.id === classScheduleId.value) ?? null);
 const activeRule = computed(
@@ -468,7 +468,7 @@ function formatDate(value: Date) {
                             <div class="font-semibold">{{ item.class_name }}</div>
                             <div class="text-xs text-muted-foreground">{{ item.start_time }}–{{ item.end_time }} · {{ item.trainer || 'Tanpa trainer' }}</div>
                             <div class="mt-1 text-sm font-semibold">{{ formatIDR(item.price) }}</div>
-                            <div class="text-xs text-muted-foreground">Kapasitas {{ item.capacity }} peserta</div>
+                            <div class="text-xs text-muted-foreground">{{ item.capacity - (item.registered_by_date?.[classDate] ?? 0) }} slot tersisa</div>
                         </button>
                     </div>
                     <p v-if="classDate && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada kelas tersedia pada tanggal ini.</p>
