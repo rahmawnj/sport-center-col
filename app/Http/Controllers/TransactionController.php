@@ -281,6 +281,19 @@ class TransactionController extends Controller
                         $trainerPurchase->update(['status' => $childStatus]);
                     }
                 }
+            } elseif ($locked->transactionable_type === 'booking') {
+                if (preg_match('/^BK-(\\d+)$/', (string) $locked->invoice_number, $matches)) {
+                    $booking = Booking::query()->lockForUpdate()->find((int) $matches[1]);
+                    if ($booking) {
+                        $booking->update([
+                            'status' => match ($childStatus) {
+                                'active' => 'confirmed',
+                                'cancelled' => 'cancelled',
+                                default => 'pending',
+                            },
+                        ]);
+                    }
+                }
             } elseif ($locked->transactionable_type === 'class') {
                 $participants = SessionParticipant::query()
                     ->with('schedule')
