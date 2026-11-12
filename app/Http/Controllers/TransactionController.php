@@ -537,7 +537,8 @@ class TransactionController extends Controller
             if (! $rule) {
                 throw ValidationException::withMessages(['pricing_rule_id' => 'Pilih aturan harga yang sesuai dengan paket.']);
             }
-            $amount = (float) $rule->price * (int) $data['quantity'];
+            // Satu transaksi kasir untuk tiket masuk selalu satu item.
+            $amount = (float) $rule->price;
             Transaction::create([
                 'user_id' => null,
                 'transactionable_type' => 'entry',
