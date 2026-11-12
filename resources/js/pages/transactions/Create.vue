@@ -37,6 +37,7 @@ type Facility = {
 type Member = { id: number; name: string };
 type CashierClassSchedule = { id: number; class_name: string; facility_id: number; day: string; start_time: string; end_time: string; trainer: string | null; capacity: number; registered_count: number; registered_by_date: Record<string, number>; price: number };
 type Slot = {
+    window_id?: number;
     start_time: string;
     end_time: string;
     price: number;
@@ -99,6 +100,7 @@ const existingBookings = ref<ExistingBooking[]>([]);
 const loadingSlots = ref(false);
 const selectedSlot = ref<Slot | null>(null);
 const selectedSlots = ref<Slot[]>([]);
+const slotSelectionError = ref('');
 const courtId = ref<number | null>(null);
 
 const form = useForm({
@@ -225,6 +227,7 @@ watch(facilityId, () => {
     existingBookings.value = [];
     selectedSlot.value = null;
     selectedSlots.value = [];
+    slotSelectionError.value = '';
     courtId.value = null;
     classScheduleId.value = null;
     classDate.value = '';
@@ -312,32 +315,59 @@ function isSlotSelected(slot: Slot) {
     return selectedSlots.value.some((item) => item.start_time === slot.start_time);
 }
 
-function canSelectSlot(slot: Slot) {
-    if (isSlotSelected(slot)) {
-        if (selectedSlots.value.length <= 1) return true;
-        const selectedIndexes = selectedSlots.value.map((item) => slots.value.findIndex((entry) => entry.start_time === item.start_time));
-        const index = slots.value.findIndex((item) => item.start_time === slot.start_time);
-        return index === Math.min(...selectedIndexes) || index === Math.max(...selectedIndexes);
-    }
-
-    if (!selectedSlots.value.length) return true;
-    const selectedIndexes = selectedSlots.value.map((item) => slots.value.findIndex((entry) => entry.start_time === item.start_time));
-    const index = slots.value.findIndex((item) => item.start_time === slot.start_time);
-    if (index !== Math.min(...selectedIndexes) - 1 && index !== Math.max(...selectedIndexes) + 1) return false;
-
-    const candidateCourts = slot.courts.filter((court) => court.is_available !== false).map((court) => court.id);
-    return candidateCourts.some((id) => selectedSlots.value.every((chosen) =>
-        chosen.courts.some((court) => court.id === id && court.is_available !== false)
-    ));
-}
-
 function chooseSlot(slot: Slot) {
-    if (!canSelectSlot(slot)) return;
-    if (isSlotSelected(slot)) {
-        selectedSlots.value = selectedSlots.value.filter((item) => item.start_time !== slot.start_time);
+    slotSelectionError.value = '';
+    const selected = new Set(selectedSlots.value.map((item) => item.start_time));
+    const clickedIndex = slots.value.findIndex((item) => item.start_time === slot.start_time);
+
+    if (selected.has(slot.start_time)) {
+        const indexes = [...selected]
+            .map((time) => slots.value.findIndex((item) => item.start_time === time))
+            .filter((index) => index >= 0)
+            .sort((a, b) => a - b);
+        const first = indexes[0];
+        const last = indexes[indexes.length - 1];
+
+        if (clickedIndex === first || clickedIndex === last) {
+            selected.delete(slot.start_time);
+        } else {
+            indexes.filter((index) => index >= clickedIndex)
+                .forEach((index) => selected.delete(slots.value[index].start_time));
+        }
     } else {
-        selectedSlots.value = [...selectedSlots.value, slot].sort((a, b) => a.start_time.localeCompare(b.start_time));
+        const indexes = [...selected]
+            .map((time) => slots.value.findIndex((item) => item.start_time === time))
+            .filter((index) => index >= 0);
+        const first = indexes.length ? Math.min(...indexes, clickedIndex) : clickedIndex;
+        const last = indexes.length ? Math.max(...indexes, clickedIndex) : clickedIndex;
+
+        for (let index = first; index <= last; index++) {
+            selected.add(slots.value[index].start_time);
+        }
     }
+
+    const chosen = [...selected]
+        .map((time) => slots.value.find((item) => item.start_time === time))
+        .filter((item): item is Slot => !!item)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    if (new Set(chosen.map((item) => item.window_id)).size > 1) {
+        slotSelectionError.value = 'Booking tidak bisa melewati pergantian rentang jadwal. Pilih jam dalam satu rentang.';
+        return;
+    }
+
+    const commonCourtIds = chosen.length
+        ? chosen[0].courts
+            .filter((court) => court.is_available !== false)
+            .filter((court) => chosen.every((item) =>
+                item.courts.some((option) => option.id === court.id && option.is_available !== false)
+            ))
+            .map((court) => court.id)
+        : [];
+
+    selectedSlots.value = chosen.filter((item) =>
+        item.courts.some((court) => commonCourtIds.includes(court.id) && court.is_available !== false)
+    );
     selectedSlot.value = selectedSlots.value[0] ?? null;
     courtId.value = null;
 }
@@ -589,35 +619,30 @@ function formatDate(value: Date) {
                     </div>
 
                     <template v-else-if="date">
-                        <div
-                            v-if="slots.length"
-                            class="grid gap-2 sm:grid-cols-3 lg:grid-cols-4"
-                        >
-                            <button
-                                v-for="item in slots"
-                                :key="item.start_time"
-                                type="button"
-                                :disabled="
-                                    !item.courts.some((court) => court.is_available !== false) || isSlotPast(item) || !canSelectSlot(item)
-                                "
-                                class="rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                                :class="
-                                    isSlotSelected(item)
-                                        ? 'border-primary bg-primary/5'
-                                        : canSelectSlot(item) ? 'hover:border-primary hover:bg-primary/5' : 'opacity-40'
-                                "
-                                @click="chooseSlot(item)"
-                            >
-                                <div class="font-medium">
-                                    {{ item.start_time }}–{{ item.end_time }}
-                                </div>
-                                <div class="text-sm text-primary">
-                                    {{ formatIDR(item.price) }}
-                                </div>
-                                <div class="text-xs text-muted-foreground">
-                                    {{ item.courts.filter((court) => court.is_available !== false).length }} tersedia
-                                </div>
-                            </button>
+                        <div v-if="slots.length" class="space-y-3">
+                            <p class="text-sm text-muted-foreground">Pilih jam. Jam di antaranya otomatis ikut dipilih.</p>
+                            <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                                <label
+                                    v-for="item in slots"
+                                    :key="item.start_time"
+                                    class="flex cursor-pointer items-start gap-3 rounded-xl bg-muted/30 p-3 transition-colors has-[:disabled]:cursor-not-allowed has-[:checked]:bg-primary/10 hover:bg-primary/5"
+                                    :class="isSlotSelected(item) ? 'ring-2 ring-inset ring-primary' : ''"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="isSlotSelected(item)"
+                                        :disabled="!item.courts.some((court) => court.is_available !== false) || isSlotPast(item)"
+                                        class="mt-1 size-4 accent-primary disabled:cursor-not-allowed"
+                                        @change="chooseSlot(item)"
+                                    />
+                                    <span class="min-w-0">
+                                        <span class="block font-semibold">{{ item.start_time }}–{{ item.end_time }}</span>
+                                        <span class="block text-sm font-medium text-primary">{{ formatIDR(item.price) }}</span>
+                                        <span class="block text-xs text-muted-foreground">{{ item.courts.filter((court) => court.is_available !== false).length }} lapangan tersedia</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <p v-if="slotSelectionError" class="text-xs text-destructive">{{ slotSelectionError }}</p>
                         </div>
                         <p v-else class="text-sm text-muted-foreground">
                             Tidak ada jadwal tersedia pada tanggal ini.
