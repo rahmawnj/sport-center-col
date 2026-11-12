@@ -99,7 +99,6 @@ const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities
 const classDate = ref(today);
 const classScheduleId = ref<number | null>(null);
 const selectedClassId = ref<number | null>(null);
-const selectedClassDay = ref<string>('');
 const participantNamesText = ref('');
 
 const date = ref(today);
@@ -284,7 +283,6 @@ watch(facilityId, () => {
     courtId.value = null;
     classScheduleId.value = null;
     selectedClassId.value = null;
-    selectedClassDay.value = '';
     classDate.value = today
     participantNamesText.value = '';
     ruleId.value = '';
@@ -306,7 +304,6 @@ watch(activeService, () => {
     memberId.value = '';
     classScheduleId.value = null;
     selectedClassId.value = null;
-    selectedClassDay.value = '';
     classDate.value = today
     participantNamesText.value = '';
 });
