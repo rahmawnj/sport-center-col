@@ -17,6 +17,7 @@ class MemberTrainerPackage extends Model
         'expires_at',
         'total_sessions',
         'used_sessions',
+        'trainer_share_percentage',
         'status',
     ];
 
@@ -27,6 +28,7 @@ class MemberTrainerPackage extends Model
             'expires_at' => 'date',
             'total_sessions' => 'integer',
             'used_sessions' => 'integer',
+            'trainer_share_percentage' => 'decimal:2',
         ];
     }
 
