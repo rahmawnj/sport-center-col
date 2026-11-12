@@ -16,6 +16,7 @@ class BookingTimeSlotSeeder extends Seeder
     public function run(): void
     {
         Facility::query()
+            ->where('has_booking', true)
             ->each(function (Facility $facility): void {
                 $basePrice = $this->basePriceFor($facility->name);
                 $turnaround = max(0, (int) $facility->turnaround_minutes);
