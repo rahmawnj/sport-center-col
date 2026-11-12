@@ -59,8 +59,9 @@ class MemberClassController extends Controller
     {
         $facilities = Facility::query()
             ->where('status', 'active')
+            ->where('has_session', true)
             ->where('is_bookable_online', true)
-            ->with(['classes' => fn ($query) => $query
+            ->with(['classes => fn ($query) => $query
                 ->where('is_active', true)
                 ->with(['schedules' => fn ($schedules) => $schedules
                     ->where('is_active', true)
@@ -164,6 +165,7 @@ class MemberClassController extends Controller
             abort_unless(
                 $lockedSchedule->sportClass?->is_active
                     && $lockedSchedule->sportClass?->facility?->status === 'active'
+                    && $lockedSchedule->sportClass?->facility?->has_session
                     && $lockedSchedule->sportClass?->facility?->is_bookable_online,
                 422,
                 'Kelas atau fasilitas sedang tidak tersedia untuk pendaftaran online.'
@@ -291,7 +293,7 @@ class MemberClassController extends Controller
                 ->findOrFail($schedule->id);
 
             abort_unless($lockedSchedule->is_active, 422, 'Jadwal kelas sedang tidak aktif.');
-            abort_unless($lockedSchedule->sportClass?->is_active && $lockedSchedule->sportClass?->facility?->status === 'active', 422, 'Kelas atau fasilitas sedang tidak aktif.');
+            abort_unless($lockedSchedule->sportClass?->is_active && $lockedSchedule->sportClass?->facility?->status === 'active' && $lockedSchedule->sportClass?->facility?->has_session, 422, 'Sesi pada olahraga ini sedang dinonaktifkan.');
 
             $sessionDate = Carbon::parse($data['session_date'])->startOfDay();
             abort_unless(strtolower($sessionDate->englishDayOfWeek) === $lockedSchedule->day, 422, 'Tanggal tidak sesuai dengan hari jadwal kelas.');
