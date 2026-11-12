@@ -343,6 +343,12 @@ watch(memberId, (value) => {
 });
 
 watch(date, () => {
+    // This watcher also runs during Inertia SSR. Relative fetch URLs only work
+    // in the browser, so defer availability requests until client hydration.
+    if (typeof window === 'undefined') {
+        return;
+    }
+
     selectedSlot.value = null;
     selectedSlots.value = [];
     courtId.value = null;
@@ -361,10 +367,21 @@ watch(date, () => {
         `/book/availability?${availabilityQuery}&date=${date.value}`,
         { headers: { Accept: 'application/json' } },
     )
-        .then((response) => response.json())
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Gagal memuat ketersediaan (${response.status})`);
+            }
+
+            return response.json();
+        })
         .then((data) => {
             slots.value = data.slots ?? [];
             existingBookings.value = data.bookings ?? [];
+        })
+        .catch((error: unknown) => {
+            console.error('[KASIR] Gagal memuat ketersediaan:', error);
+            slots.value = [];
+            existingBookings.value = [];
         })
         .finally(() => {
             loadingSlots.value = false;
