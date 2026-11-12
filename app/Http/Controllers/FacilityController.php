@@ -33,6 +33,8 @@ class FacilityController extends Controller
                 'slug' => $facility->slug,
                 'is_bookable_online' => (bool) $facility->is_bookable_online,
                 'has_membership' => (bool) $facility->has_membership,
+                'has_booking' => (bool) $facility->has_booking,
+                'has_session' => (bool) $facility->has_session,
                 'turnaround_minutes' => $facility->turnaround_minutes,
                 'status' => $facility->status,
                 'courts_count' => $facility->courts_count,
@@ -171,6 +173,8 @@ class FacilityController extends Controller
         $data['slug'] = $this->uniqueSlug($data['name']);
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
         $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
+        $data['has_booking'] = (bool) ($data['has_booking'] ?? false);
+        $data['has_session'] = (bool) ($data['has_session'] ?? false);
 
         Facility::create($data);
 
@@ -182,6 +186,9 @@ class FacilityController extends Controller
         $data = $request->validate($this->rules());
         $data['slug'] = $this->uniqueSlug($data['name'], $facility->id);
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
+        $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
+        $data['has_booking'] = (bool) ($data['has_booking'] ?? false);
+        $data['has_session'] = (bool) ($data['has_session'] ?? false);
 
         $facility->update($data);
 
@@ -211,6 +218,8 @@ class FacilityController extends Controller
             'status' => ['required', Rule::in(['active', 'maintenance', 'inactive'])],
             'is_bookable_online' => ['boolean'],
             'has_membership' => ['boolean'],
+            'has_booking' => ['boolean'],
+            'has_session' => ['boolean'],
             'turnaround_minutes' => ['required', 'integer', 'min:0', 'max:120'],
         ];
     }
