@@ -13,9 +13,9 @@ const days=[{value:'monday',label:'Senin'},{value:'tuesday',label:'Selasa'},{val
 const dayLabel=(day:string)=>days.find(d=>d.value===day)?.label??day;
 const timeToMinutes=(value:string)=>{const [h,m]=value.slice(0,5).split(':').map(Number);return h*60+m;};
 const hourLabel=(hour:number)=>String(hour).padStart(2,'0')+':00';
-const timeSlots=(item:SportClass)=>[...new Set(item.schedules.map(s=>Math.floor(timeToMinutes(s.start_time)/60)))].sort((a,b)=>a-b).map(hourLabel);
+const timeSlots=(item:SportClass)=>{if(!item.schedules.length)return[];const starts=item.schedules.map(s=>timeToMinutes(s.start_time));const ends=item.schedules.map(s=>{const start=timeToMinutes(s.start_time);let end=timeToMinutes(s.end_time);if(end<=start)end+=24*60;return end;});const first=Math.floor(Math.min(...starts)/60);const last=Math.ceil(Math.max(...ends)/60);return Array.from({length:Math.max(1,last-first)},(_,i)=>hourLabel(first+i));};
 const schedulesAt=(item:SportClass,day:string,time:string)=>item.schedules.filter(s=>s.day===day&&Math.floor(timeToMinutes(s.start_time)/60)===Number(time.slice(0,2))).sort((a,b)=>a.start_time.localeCompare(b.start_time));
-const scheduleBlockStyle=(s:Schedule)=>{const start=timeToMinutes(s.start_time);let end=timeToMinutes(s.end_time);if(end<=start)end+=24*60;const duration=end-start;const offset=start%60;return {marginTop:offset+'px',minHeight:Math.max(48,duration)+'px'};};
+const scheduleBlockStyle=(s:Schedule)=>{const start=timeToMinutes(s.start_time);let end=timeToMinutes(s.end_time);if(end<=start)end+=24*60;const duration=end-start;const offset=start%60;return {position:'absolute',top:(offset*2)+'px',left:'4px',right:'4px',height:Math.max(80,duration*2)+'px',zIndex:20};};
 const classDialog=ref(false); const editingClass=ref<number|null>(null);
 const classForm=useForm({name:'',description:'',duration_minutes:'60',default_capacity:'10',is_active:true});
 const scheduleDialog=ref(false); const editingSchedule=ref<number|null>(null); const scheduleClassId=ref<number|null>(null);
@@ -79,11 +79,11 @@ function setAttendance(id:number,status:'attended'|'no_show'){router.put('/sessi
             </tr>
           </thead>
           <tbody>
-            <tr v-for="time in timeSlots(item)" :key="time" class="align-top">
+            <tr v-for="time in timeSlots(item)" :key="time" class="h-[120px] align-top">
               <th class="sticky left-0 z-10 border-b border-r bg-muted/40 px-3 py-3 text-xs font-semibold tabular-nums">{{time}}</th>
-              <td v-for="d in days" :key="d.value" class="w-[12.5%] border-b border-r p-1.5 last:border-r-0">
-                <div v-if="schedulesAt(item,d.value,time).length" class="space-y-2">
-                  <div v-for="s in schedulesAt(item,d.value,time)" :key="s.id" class="rounded-md border bg-background p-2" :style="scheduleBlockStyle(s)">
+              <td v-for="d in days" :key="d.value" class="relative h-[120px] w-[12.5%] overflow-visible border-b border-r p-0 last:border-r-0">
+                <div v-if="schedulesAt(item,d.value,time).length" class="relative h-full overflow-visible">
+                  <div v-for="s in schedulesAt(item,d.value,time)" :key="s.id" class="rounded-md border bg-background p-2 shadow-sm" :style="scheduleBlockStyle(s)">
                     <div class="flex items-center justify-between gap-1">
                       <span class="text-[11px] font-semibold tabular-nums">{{s.start_time.slice(0,5)}}–{{s.end_time.slice(0,5)}}</span>
                       <span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium" :class="s.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{s.is_active?'Aktif':'Off'}}</span>
@@ -112,7 +112,7 @@ function setAttendance(id:number,status:'attended'|'no_show'){router.put('/sessi
                     </details>
                   </div>
                 </div>
-                <div v-else class="min-h-12 rounded-md bg-muted/15"></div>
+                <div v-else class="h-full bg-muted/10"></div>
               </td>
             </tr>
           </tbody>
