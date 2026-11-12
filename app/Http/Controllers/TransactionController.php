@@ -101,8 +101,8 @@ class TransactionController extends Controller
                 'packages' => $facility->packages
                     ->filter(fn (Package $package) => match ($package->type) {
                         'membership' => (bool) $facility->has_membership,
-                        'session' => (bool) $facility->has_session,
-                        default => (bool) $facility->has_booking,
+                        'session' => (bool) $facility->has_booking,
+                        default => (bool) $facility->has_session,
                     })
                     ->map(fn (Package $package) => [
                     'id' => $package->id,
@@ -448,11 +448,13 @@ class TransactionController extends Controller
         $package = Package::with('facility')->findOrFail($data['package_id']);
 
         if ($package->type === 'session') {
-            abort_unless($package->facility?->has_session, 422, 'Sesi untuk olahraga ini sedang dinonaktifkan.');
+            // "session" packages represent court/table reservations in the cashier flow.
+            abort_unless($package->facility?->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
         } elseif ($package->type === 'membership') {
             abort_unless($package->facility?->has_membership, 422, 'Membership untuk olahraga ini sedang dinonaktifkan.');
         } else {
-            abort_unless($package->facility?->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
+            // "entry" packages represent per-person admission or class/room entry.
+            abort_unless($package->facility?->has_session, 422, 'Sesi / tiket masuk untuk olahraga ini sedang dinonaktifkan.');
         }
 
         if ($package->type === 'membership') {
