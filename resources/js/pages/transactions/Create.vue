@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     Check,
@@ -53,6 +53,12 @@ type ExistingBooking = {
 };
 
 const props = withDefaults(defineProps<{ facilities: Facility[]; members: Member[]; classSchedules?: CashierClassSchedule[] }>(), { classSchedules: () => [] });
+
+const page = usePage();
+const flash = computed(() => (page.props.flash ?? {}) as { success?: string | null; error?: string | null });
+const validationErrors = computed(() => Object.entries(form.errors)
+    .filter(([, message]) => Boolean(message))
+    .map(([field, message]) => ({ field: field.replaceAll('_', ' '), message })));
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -483,6 +489,24 @@ function formatDate(value: Date) {
             title="Kasir"
             description="Catat penjualan langsung (on the spot) di counter."
         />
+
+        <div v-if="flash.success || flash.error || validationErrors.length" class="space-y-2" aria-live="polite">
+            <div v-if="flash.success" class="flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+                <Check class="mt-0.5 size-4 shrink-0" />
+                <span>{{ flash.success }}</span>
+            </div>
+            <div v-if="flash.error" class="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                {{ flash.error }}
+            </div>
+            <div v-if="validationErrors.length" class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+                <p class="mb-2 font-semibold text-amber-700 dark:text-amber-300">Periksa kembali data kasir:</p>
+                <ul class="list-inside list-disc space-y-1 text-foreground">
+                    <li v-for="item in validationErrors" :key="item.field">
+                        <span class="font-medium capitalize">{{ item.field }}:</span> {{ item.message }}
+                    </li>
+                </ul>
+            </div>
+        </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
             <!-- Catalog + schedule -->
