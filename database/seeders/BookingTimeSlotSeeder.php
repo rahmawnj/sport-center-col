@@ -15,6 +15,11 @@ class BookingTimeSlotSeeder extends Seeder
 
     public function run(): void
     {
+        // Turn off old master slots left behind for facilities that no longer use booking.
+        BookingTimeSlot::query()
+            ->whereHas('facility', fn ($query) => $query->where('has_booking', false))
+            ->update(['is_active' => false]);
+
         Facility::query()
             ->where('has_booking', true)
             ->each(function (Facility $facility): void {
