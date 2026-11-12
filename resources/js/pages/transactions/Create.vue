@@ -154,7 +154,7 @@ const participantNames = computed(() => participantNamesText.value.split(/\r?\n/
 const visibleClassSchedules = computed(() => {
     if (!activeFacility.value || !classDate.value) return [];
     const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
-    return props.classSchedules.filter((item) => item.facility_id === activeFacility.value?.id && item.day === day && item.capacity > item.registered_count);
+    return props.classSchedules.filter((item) => item.facility_id === activeFacility.value?.id && item.day === day);
 });
 const selectedClassSchedule = computed(() => props.classSchedules.find((item) => item.id === classScheduleId.value) ?? null);
 const activeRule = computed(
