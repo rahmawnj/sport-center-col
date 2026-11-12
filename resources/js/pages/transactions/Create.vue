@@ -90,7 +90,6 @@ const ruleId = ref<string>('');
 const memberId = ref<string>('');
 const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
 const classDate = ref('');
-const durationHours = ref(1);
 const classScheduleId = ref<number | null>(null);
 const participantNamesText = ref('');
 
@@ -105,7 +104,6 @@ const form = useForm({
     package_id: null as number | null,
     facility_id: null as number | null,
     quantity: 1,
-    duration_hours: 1,
     pricing_rule_id: null as number | null,
     customer_name: '',
     payment_method: 'cash',
@@ -114,6 +112,7 @@ const form = useForm({
     court_id: null as number | null,
     date: '',
     start_time: '',
+    end_time: '',
     user_id: null as number | null,
     class_schedule_id: null as number | null,
     participants: [] as string[],
@@ -270,7 +269,7 @@ watch(memberId, (value) => {
     }
 });
 
-watch([date, durationHours], () => {
+watch(date, () => {
     selectedSlot.value = null;
     courtId.value = null;
     slots.value = [];
@@ -282,7 +281,7 @@ watch([date, durationHours], () => {
 
     loadingSlots.value = true;
     const availabilityQuery = isBooking.value
-        ? `facility_id=${facilityId.value}&duration_hours=${durationHours.value}`
+        ? `facility_id=${facilityId.value}`
         : `package_id=${selected.value?.id}`;
     fetch(
         `/book/availability?${availabilityQuery}&date=${date.value}`,
@@ -316,7 +315,7 @@ function submit() {
     if (isBooking.value) {
         form.package_id = null;
         form.facility_id = facilityId.value;
-        form.duration_hours = durationHours.value;
+        form.end_time = selectedSlot.value?.end_time ?? '';
         form.class_schedule_id = null;
         form.participants = [];
         form.quantity = 1;
@@ -523,18 +522,6 @@ function formatDate(value: Date) {
                         <h2 class="font-semibold">{{ isBooking ? 'Jadwal booking' : 'Jadwal & lapangan' }}</h2>
                     </div>
 
-                    <div v-if="isBooking" class="space-y-2">
-                        <Label>Durasi booking</Label>
-                        <div class="flex flex-wrap gap-2">
-                            <button v-for="hours in [1, 2, 3, 4, 5, 6]" :key="hours" type="button"
-                                class="rounded-lg border px-4 py-2 text-sm font-medium transition-all"
-                                :class="durationHours === hours ? 'border-primary bg-primary text-primary-foreground' : 'bg-background hover:border-primary/50'"
-                                @click="durationHours = hours">
-                                {{ hours }} jam
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="grid max-w-xs gap-2">
                         <Label for="pos-date">Tanggal</Label>
                         <Input
@@ -715,7 +702,7 @@ function formatDate(value: Date) {
                 <div v-else-if="activeService === 'booking'" class="space-y-4 pt-4">
                     <div>
                         <div class="font-semibold">{{ activeFacility?.name }} · Booking</div>
-                        <div class="text-xs text-muted-foreground">{{ date || 'Pilih tanggal' }} · {{ durationHours }} jam</div>
+                        <div class="text-xs text-muted-foreground">{{ date || 'Pilih tanggal' }}</div>
                     </div>
                     <div class="space-y-1 rounded-xl bg-muted/40 p-3 text-sm">
                         <div class="flex justify-between gap-2"><span class="text-muted-foreground">Jam</span><span class="font-medium">{{ selectedSlot ? `${selectedSlot.start_time}–${selectedSlot.end_time}` : '—' }}</span></div>
