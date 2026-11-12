@@ -208,7 +208,7 @@ const canSubmit = computed(() => {
         return !!memberId.value;
     }
 
-    return true;
+    return !!activeRule.value;
 });
 
 watch(facilityId, () => {
