@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\BookingTimeSlot;
+use App\Models\ClassSchedule;
 use App\Models\MemberTrainerPackage;
 use App\Models\Device;
 use App\Models\Facility;
@@ -128,9 +129,36 @@ class TransactionController extends Controller
             ->get(['id', 'name'])
             ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name]);
 
+        $classSchedules = ClassSchedule::query()
+            ->with(['sportClass.facility', 'trainer'])
+            ->where('is_active', true)
+            ->whereHas('sportClass', fn ($query) => $query
+                ->where('is_active', true)
+                ->whereHas('facility', fn ($facility) => $facility
+                    ->where('status', 'active')
+                    ->where('has_session', true)))
+            ->withCount(['participants as registered_count' => fn ($query) => $query
+                ->whereIn('status', ['pending', 'confirmed'])])
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get()
+            ->map(fn (ClassSchedule $schedule) => [
+                'id' => $schedule->id,
+                'class_name' => $schedule->sportClass?->name ?? 'Kelas',
+                'facility_id' => $schedule->sportClass?->facility_id,
+                'day' => $schedule->day,
+                'start_time' => substr((string) $schedule->start_time, 0, 5),
+                'end_time' => substr((string) $schedule->end_time, 0, 5),
+                'trainer' => $schedule->trainer?->name,
+                'capacity' => (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1),
+                'registered_count' => (int) $schedule->registered_count,
+                'price' => (float) $schedule->price,
+            ])->values();
+
         return Inertia::render('transactions/Create', [
             'facilities' => $facilities,
             'members' => $members,
+            'classSchedules' => $classSchedules,
         ]);
     }
 
@@ -435,9 +463,12 @@ class TransactionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'package_id' => ['required', 'integer', 'exists:packages,id'],
+            'package_id' => ['nullable', 'required_without:class_schedule_id', 'integer', 'exists:packages,id'],
+            'class_schedule_id' => ['nullable', 'required_without:package_id', 'integer', 'exists:class_schedules,id'],
+            'participants' => ['nullable', 'array', 'min:1'],
+            'participants.*' => ['required', 'string', 'max:255'],
             'pricing_rule_id' => ['nullable', 'integer', 'exists:package_pricing_rules,id'],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:500'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
             'payment_status' => ['required', Rule::in(['paid', 'pending'])],
@@ -448,57 +479,83 @@ class TransactionController extends Controller
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
+        if (! empty($data['class_schedule_id'])) {
+            $this->storeClassSession($data);
+            return redirect()->route('transactions.index')->with('success', 'Pendaftaran kelas berhasil disimpan.');
+        }
+
         $package = Package::with('facility')->findOrFail($data['package_id']);
-
         if ($package->type === 'session') {
-            // "session" packages represent court/table reservations in the cashier flow.
             abort_unless($package->facility?->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
-        } elseif ($package->type === 'membership') {
-            abort_unless($package->facility?->has_membership, 422, 'Membership untuk olahraga ini sedang dinonaktifkan.');
-        } else {
-            // "entry" packages represent per-person admission or class/room entry.
-            abort_unless($package->facility?->has_session, 422, 'Sesi / tiket masuk untuk olahraga ini sedang dinonaktifkan.');
-        }
-
-        if ($package->type === 'membership') {
-            $data['amount'] = (float) $package->price;
-        } elseif ($package->type !== 'session') {
-            $ruleId = $data['pricing_rule_id'] ?? null;
-            $rule = $ruleId
-                ? PackagePricingRule::query()->where('package_id', $package->id)->find($ruleId)
-                : null;
-
-            if (! $rule) {
-                throw ValidationException::withMessages([
-                    'pricing_rule_id' => 'Pilih aturan harga yang sesuai dengan paket.',
-                ]);
-            }
-
-            $data['amount'] = (float) $rule->price * (int) $data['quantity'];
-        }
-
-        if ($package->type === 'session') {
             $this->storeBooking($package, $data);
-
-            return redirect()->route('transactions.index')->with(
-                'success',
-                'Booking berhasil disimpan ke tabel bookings. Transaksi pembayaran belum dibuat.'
-            );
+            return redirect()->route('transactions.index')->with('success', 'Booking dan transaksi pembayaran berhasil disimpan.');
         }
 
         if ($package->type === 'membership') {
+            abort_unless($package->facility?->has_membership, 422, 'Membership untuk olahraga ini sedang dinonaktifkan.');
+            $data['amount'] = (float) $package->price;
             $this->storeMembership($package, $data);
         } else {
+            abort_unless($package->facility?->has_session, 422, 'Tiket masuk untuk olahraga ini sedang dinonaktifkan.');
+            $rule = ! empty($data['pricing_rule_id'])
+                ? PackagePricingRule::query()->where('package_id', $package->id)->find($data['pricing_rule_id'])
+                : null;
+            if (! $rule) {
+                throw ValidationException::withMessages(['pricing_rule_id' => 'Pilih aturan harga yang sesuai dengan paket.']);
+            }
+            $amount = (float) $rule->price * (int) $data['quantity'];
             Transaction::create([
-                'transactionable_type' => 'booking',
-                'customer_name' => $data['customer_name'] ?? null,
-                'amount' => $data['amount'],
+                'user_id' => null,
+                'transactionable_type' => 'entry',
+                'customer_name' => $data['customer_name'] ?: 'Umum',
+                'amount' => $amount,
                 'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_status'],
+                'payment_status' => $data['payment_status'] === 'paid' ? 'fully_paid' : 'unpaid',
             ]);
         }
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil disimpan.');
+    }
+
+    /** @param array<string, mixed> $data */
+    private function storeClassSession(array $data): void
+    {
+        $names = collect($data['participants'] ?? [])->map(fn ($name) => trim((string) $name))->filter()->values();
+        if ($names->isEmpty()) {
+            throw ValidationException::withMessages(['participants' => 'Isi minimal satu peserta.']);
+        }
+
+        DB::transaction(function () use ($data, $names) {
+            $schedule = ClassSchedule::query()->with(['sportClass.facility'])->lockForUpdate()->findOrFail($data['class_schedule_id']);
+            abort_unless($schedule->is_active && $schedule->sportClass?->is_active && $schedule->sportClass?->facility?->status === 'active' && $schedule->sportClass?->facility?->has_session, 422, 'Jadwal kelas tidak tersedia.');
+            $date = Carbon::parse($data['date'] ?? '')->startOfDay();
+            abort_unless($date->gte(today()) && strtolower($date->englishDayOfWeek) === $schedule->day, 422, 'Tanggal tidak sesuai hari jadwal kelas.');
+            abort_if($date->isToday() && $schedule->start_time <= now()->format('H:i:s'), 422, 'Jadwal kelas sudah dimulai atau terlewat.');
+            $capacity = (int) ($schedule->capacity ?? $schedule->sportClass->default_capacity ?? 1);
+            $registered = SessionParticipant::query()->where('class_schedule_id', $schedule->id)->whereDate('session_date', $date->toDateString())->whereIn('status', ['pending', 'confirmed'])->lockForUpdate()->count();
+            if ($registered + $names->count() > $capacity) {
+                throw ValidationException::withMessages(['participants' => 'Jumlah peserta melebihi sisa kuota kelas.']);
+            }
+            $price = (float) $schedule->price;
+            $paid = ($data['payment_status'] ?? 'paid') === 'paid';
+            $transaction = Transaction::create([
+                'transactionable_type' => 'class',
+                'customer_name' => $data['customer_name'] ?: $names->first(),
+                'amount' => $price * $names->count(),
+                'payment_method' => $data['payment_method'],
+                'payment_status' => $paid ? 'fully_paid' : 'unpaid',
+            ]);
+            foreach ($names as $name) {
+                SessionParticipant::create([
+                    'class_schedule_id' => $schedule->id,
+                    'session_date' => $date->toDateString(),
+                    'guest_name' => $name === 'Umum' ? null : $name,
+                    'transaction_id' => $transaction->id,
+                    'price' => $price,
+                    'status' => $paid ? 'confirmed' : 'pending',
+                ]);
+            }
+        });
     }
 
     /**
@@ -622,9 +679,15 @@ class TransactionController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($data, $date, $startTime, $endTime, $startMinutes, $endMinutes, $turnaround) {
+        DB::transaction(function () use ($package, $data, $date, $startTime, $endTime, $startMinutes, $endMinutes, $turnaround, $durationMinutes) {
+            $court = \App\Models\Court::query()
+                ->whereKey($data['court_id'])
+                ->where('facility_id', $package->facility_id)
+                ->where('status', 'available')
+                ->firstOrFail();
+
             $conflict = Booking::query()
-                ->where('court_id', $data['court_id'])
+                ->where('court_id', $court->id)
                 ->whereDate('date', $date->toDateString())
                 ->whereNotIn('status', ['cancelled'])
                 ->lockForUpdate()
@@ -638,19 +701,40 @@ class TransactionController extends Controller
                 ));
 
             if ($conflict) {
-                throw ValidationException::withMessages([
-                    'start_time' => 'Lapangan sudah terisi pada jam tersebut. Pilih jam atau lapangan lain.',
-                ]);
+                throw ValidationException::withMessages(['start_time' => 'Lapangan sudah terisi pada jam tersebut. Pilih jam atau lapangan lain.']);
             }
 
-            Booking::create([
-                'guest_name' => $data['customer_name'] ?? null,
-                'court_id' => $data['court_id'],
-                'device_id' => Device::forCourt($data['court_id'])?->id,
+            $window = BookingTimeSlot::query()
+                ->where('facility_id', $package->facility_id)
+                ->where('day', strtolower($date->englishDayOfWeek))
+                ->where('is_active', true)
+                ->whereTime('start_time', '<=', $startTime)
+                ->whereTime('end_time', '>=', $endTime)
+                ->first();
+
+            if (! $window) {
+                throw ValidationException::withMessages(['start_time' => 'Jam booking tidak sesuai master jam operasional.']);
+            }
+
+            $amount = ((float) $window->price * ($durationMinutes / 60)) + (float) $court->price_adjustment;
+            $paid = ($data['payment_status'] ?? 'paid') === 'paid';
+            $booking = Booking::create([
+                'guest_name' => $data['customer_name'] ?: 'Umum',
+                'court_id' => $court->id,
+                'device_id' => Device::forCourt($court->id)?->id,
                 'date' => $date->toDateString(),
                 'start_time' => $startTime,
                 'end_time' => $endTime,
-                'status' => 'pending',
+                'status' => $paid ? 'confirmed' : 'pending',
+            ]);
+
+            Transaction::create([
+                'transactionable_type' => 'booking',
+                'guest_name' => $data['customer_name'] ?: 'Umum',
+                'amount' => $amount,
+                'invoice_number' => 'BK-'.$booking->id,
+                'payment_method' => $data['payment_method'],
+                'payment_status' => $paid ? 'fully_paid' : 'unpaid',
             ]);
         });
     }
