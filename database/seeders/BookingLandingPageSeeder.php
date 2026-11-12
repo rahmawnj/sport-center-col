@@ -23,13 +23,14 @@ class BookingLandingPageSeeder extends Seeder
     {
         DB::transaction(function (): void {
             $facilityData = [
-                ['name' => 'Padel', 'slug' => 'padel', 'online' => true, 'turnaround_minutes' => 5],
-                ['name' => 'Billiard', 'slug' => 'billiard', 'online' => true, 'turnaround_minutes' => 5],
-                ['name' => 'Gym', 'slug' => 'gym', 'online' => true, 'turnaround_minutes' => 5],
-                ['name' => 'Ice Skating', 'slug' => 'ice-skating', 'online' => true, 'turnaround_minutes' => 5],
-                ['name' => 'Yoga', 'slug' => 'yoga', 'online' => true, 'turnaround_minutes' => 10],
-                ['name' => 'Pilates', 'slug' => 'pilates', 'online' => true, 'turnaround_minutes' => 10],
-                ['name' => 'Spinning', 'slug' => 'spinning', 'online' => true, 'turnaround_minutes' => 10],
+                // has_membership / has_booking / has_session follow each sport's real service model.
+                ['name' => 'Padel', 'slug' => 'padel', 'online' => true, 'membership' => false, 'booking' => true, 'session' => false, 'turnaround_minutes' => 5],
+                ['name' => 'Billiard', 'slug' => 'billiard', 'online' => false, 'membership' => false, 'booking' => true, 'session' => false, 'turnaround_minutes' => 5],
+                ['name' => 'Gym', 'slug' => 'gym', 'online' => false, 'membership' => true, 'booking' => false, 'session' => true, 'turnaround_minutes' => 5],
+                ['name' => 'Ice Skating', 'slug' => 'ice-skating', 'online' => false, 'membership' => false, 'booking' => false, 'session' => true, 'turnaround_minutes' => 5],
+                ['name' => 'Yoga', 'slug' => 'yoga', 'online' => true, 'membership' => true, 'booking' => false, 'session' => true, 'turnaround_minutes' => 10],
+                ['name' => 'Pilates', 'slug' => 'pilates', 'online' => true, 'membership' => true, 'booking' => false, 'session' => true, 'turnaround_minutes' => 10],
+                ['name' => 'Spinning', 'slug' => 'spinning', 'online' => false, 'membership' => false, 'booking' => false, 'session' => true, 'turnaround_minutes' => 10],
             ];
 
             // Amenities belong to a room (court), not to the sport itself.
@@ -54,6 +55,9 @@ class BookingLandingPageSeeder extends Seeder
                 $attributes = [
                     'name' => $data['name'],
                     'is_bookable_online' => $data['online'],
+                    'has_membership' => $data['membership'],
+                    'has_booking' => $data['booking'],
+                    'has_session' => $data['session'],
                     'status' => 'active',
                 ];
 
@@ -114,8 +118,6 @@ class BookingLandingPageSeeder extends Seeder
                             'rules' => [['all', null, null, 250000, 10]]],
                         ['name' => 'Gym Iuran Harian', 'type' => 'entry', 'minutes' => 60, 'days' => null,
                             'rules' => [['all', null, null, 50000, 10]]],
-                        ['name' => 'Gym Sesi Trainer 60 Menit', 'type' => 'session', 'minutes' => 60, 'days' => null,
-                            'rules' => [['all', '06:00', '22:00', 150000, 10]]],
                         ['name' => 'Gym Akses Jam Tertentu Bulanan', 'type' => 'membership', 'minutes' => 60, 'days' => 30,
                             'rules' => [['all', '06:00', '10:00', 180000, 20]]],
                         ['name' => 'Gym Akses Jam Tertentu Harian', 'type' => 'entry', 'minutes' => 60, 'days' => null,
@@ -127,14 +129,14 @@ class BookingLandingPageSeeder extends Seeder
                     'open' => '09:00:00', 'close' => '22:00:00',
                     'spaces' => [['name' => 'Ice Rink', 'capacity' => 30]],
                     'packages' => [
-                        ['name' => 'Ice Skating per Jam', 'type' => 'session', 'minutes' => 60, 'days' => null,
+                        ['name' => 'Ice Skating per Jam', 'type' => 'entry', 'minutes' => 60, 'days' => null,
                             'rules' => [
                                 ['weekday', '10:00', '22:00', 80000, 10],
                                 ['weekend', '09:00', '22:00', 100000, 10],
                             ]],
                         ['name' => 'Ice Skating Unlimited 1x Masuk', 'type' => 'entry', 'minutes' => 60, 'days' => null,
                             'rules' => [['all', '09:00', '22:00', 120000, 20]]],
-                        ['name' => 'Ice Skating Paket Jam Tertentu', 'type' => 'session', 'minutes' => 120, 'days' => null,
+                        ['name' => 'Ice Skating Paket Jam Tertentu', 'type' => 'entry', 'minutes' => 120, 'days' => null,
                             'rules' => [['all', '18:00', '20:00', 150000, 50]]],
                     ],
                 ],
@@ -143,11 +145,6 @@ class BookingLandingPageSeeder extends Seeder
                     'open' => '08:00:00', 'close' => '20:00:00',
                     'spaces' => [['name' => 'Yoga Studio', 'capacity' => 20]],
                     'packages' => [
-                        ['name' => 'Yoga Member per Sesi', 'type' => 'session', 'minutes' => 60, 'days' => null,
-                            'rules' => [
-                                ['weekday', '08:00', '20:00', 75000, 10],
-                                ['weekend', '09:00', '17:00', 90000, 10],
-                            ]],
                         ['name' => 'Yoga Member Paket 8 Sesi', 'type' => 'membership', 'minutes' => 60, 'days' => 30,
                             'rules' => [['all', null, null, 500000, 10]]],
                     ],
@@ -157,11 +154,6 @@ class BookingLandingPageSeeder extends Seeder
                     'open' => '08:00:00', 'close' => '20:00:00',
                     'spaces' => [['name' => 'Pilates Studio', 'capacity' => 12]],
                     'packages' => [
-                        ['name' => 'Pilates Member per Sesi', 'type' => 'session', 'minutes' => 60, 'days' => null,
-                            'rules' => [
-                                ['weekday', '08:00', '20:00', 100000, 10],
-                                ['weekend', '09:00', '17:00', 120000, 10],
-                            ]],
                         ['name' => 'Pilates Member Paket 8 Sesi', 'type' => 'membership', 'minutes' => 60, 'days' => 30,
                             'rules' => [['all', null, null, 700000, 10]]],
                     ],
