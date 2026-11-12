@@ -539,6 +539,8 @@ class TransactionController extends Controller
 
             try {
                 $this->storeCashierBooking($facility, $data);
+            } catch (ValidationException $exception) {
+                throw $exception;
             } catch (\Throwable $exception) {
                 Log::error('Kasir booking: submit gagal.', [
                     'facility_id' => $facility->id,
@@ -549,7 +551,7 @@ class TransactionController extends Controller
                     'line' => $exception->getLine(),
                 ]);
 
-                throw $exception;
+                return back()->with('error', 'Booking gagal disimpan karena gangguan sistem. Silakan coba lagi. Jika berulang, hubungi administrator.');
             }
 
             Log::info('Kasir booking: submit berhasil.', ['facility_id' => $facility->id]);
