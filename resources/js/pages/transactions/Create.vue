@@ -303,7 +303,6 @@ watch(activeService, () => {
     classScheduleId.value = null;
     selectedClassId.value = null;
     classDate.value = today
-    participantNamesText.value = '';
 });
 
 function chooseClass(id: number) {
