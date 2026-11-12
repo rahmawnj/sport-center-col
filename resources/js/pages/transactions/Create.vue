@@ -99,7 +99,6 @@ const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities
 const classDate = ref(today);
 const classScheduleId = ref<number | null>(null);
 const selectedClassId = ref<number | null>(null);
-const participantNamesText = ref('');
 
 const date = ref(today);
 const slots = ref<Slot[]>([]);
@@ -160,7 +159,7 @@ const visiblePackages = computed(() => {
     if (activeService.value !== 'membership') return [];
     return activeFacility.value?.packages.filter((item) => item.type === 'membership') ?? [];
 });
-const participantNames = computed(() => participantNamesText.value.split(/\r?\n/).map((name) => name.trim()).filter(Boolean));
+const participantNames = computed(() => [form.customer_name.trim() || 'Umum']);
 const classOptions = computed(() => {
     if (!activeFacility.value) return [];
     const unique = new Map<number, { id: number; name: string }>();
@@ -256,7 +255,7 @@ const total = computed(() => activeService.value === 'session' && isClassFacilit
 );
 const canSubmit = computed(() => {
     if (isBooking.value) return !!date.value && selectedSlots.value.length > 0 && !!courtId.value;
-    if (activeService.value === 'session' && isClassFacility.value) return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0 && participantNames.value.length <= classRemaining.value;
+    if (activeService.value === 'session' && isClassFacility.value) return !!classScheduleId.value && !!classDate.value && classRemaining.value >= 1;
     if (!selected.value) return false;
 
     if (isSession.value) {
@@ -284,7 +283,6 @@ watch(facilityId, () => {
     classScheduleId.value = null;
     selectedClassId.value = null;
     classDate.value = today
-    participantNamesText.value = '';
     ruleId.value = '';
     memberId.value = '';
 });
@@ -311,7 +309,6 @@ watch(activeService, () => {
 function chooseClass(id: number) {
     selectedClassId.value = id;
     classScheduleId.value = null;
-    participantNamesText.value = '';
     const firstDate = classDates.value[0];
     classDate.value = firstDate?.value ?? '';
 }
@@ -319,7 +316,6 @@ function chooseClass(id: number) {
 function chooseClassDate(value: string) {
     classDate.value = value;
     classScheduleId.value = null;
-    participantNamesText.value = '';
 }
 
 watch(selected, () => {
@@ -497,9 +493,9 @@ function submit() {
         form.package_id = null;
         form.facility_id = null;
         form.class_schedule_id = classScheduleId.value;
-        form.participants = participantNames.value;
+        form.participants = [form.customer_name.trim() || 'Umum'];
         form.date = classDate.value;
-        form.quantity = participantNames.value.length;
+        form.quantity = 1;
         form.amount = total.value;
         form.pricing_rule_id = null;
         form.court_id = null;
@@ -726,10 +722,6 @@ function formatDate(value: Date) {
                         </button>
                     </div>
                     <p v-if="classDate && selectedClassId && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada sesi kelas pada tanggal ini.</p>
-                    <div v-if="classScheduleId" class="grid gap-2">
-                        <Label for="class-participants">Peserta (satu nama per baris, ketik Umum jika tanpa nama)</Label>
-                        <textarea id="class-participants" v-model="participantNamesText" rows="4" class="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="Umum&#10;Nama peserta 2"></textarea>
-                    </div>
                 </div>
 
                 <!-- Booking without package: choose date, multiple time slots and court -->
@@ -917,7 +909,11 @@ function formatDate(value: Date) {
 
                 <div v-if="activeService === 'session' && isClassFacility" class="space-y-4 pt-4">
                     <div class="font-medium">{{ selectedClassSchedule?.class_name || 'Pendaftaran kelas' }}</div>
-                    <div class="text-xs text-muted-foreground">{{ classDate || '—' }} · {{ participantNames.length }} peserta · {{ classRemaining }} slot tersisa</div>
+                    <div class="text-xs text-muted-foreground">{{ classDate || '—' }} · 1 peserta · {{ classRemaining }} slot tersisa</div>
+                    <div class="grid gap-2">
+                        <Label for="class-participant-name" class="text-xs">Nama peserta</Label>
+                        <Input id="class-participant-name" v-model="form.customer_name" placeholder="Nama peserta / Umum" />
+                    </div>
                     <div class="flex justify-between text-sm"><span>Harga / peserta</span><span>{{ formatIDR(unitPrice) }}</span></div>
                     <div class="flex justify-between border-t pt-2 font-semibold"><span>Total</span><span>{{ formatIDR(total) }}</span></div>
                     <div class="grid gap-2">
