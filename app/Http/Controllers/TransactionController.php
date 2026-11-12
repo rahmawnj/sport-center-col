@@ -98,7 +98,13 @@ class TransactionController extends Controller
             ->map(fn (Facility $facility) => [
                 'id' => $facility->id,
                 'name' => $facility->name,
-                'packages' => $facility->packages->map(fn (Package $package) => [
+                'packages' => $facility->packages
+                    ->filter(fn (Package $package) => match ($package->type) {
+                        'membership' => (bool) $facility->has_membership,
+                        'session' => (bool) $facility->has_session,
+                        default => (bool) $facility->has_booking,
+                    })
+                    ->map(fn (Package $package) => [
                     'id' => $package->id,
                     'name' => $package->name,
                     'type' => $package->type,
@@ -443,6 +449,8 @@ class TransactionController extends Controller
 
         if ($package->type === 'session') {
             abort_unless($package->facility?->has_session, 422, 'Sesi untuk olahraga ini sedang dinonaktifkan.');
+        } elseif ($package->type === 'membership') {
+            abort_unless($package->facility?->has_membership, 422, 'Membership untuk olahraga ini sedang dinonaktifkan.');
         } else {
             abort_unless($package->facility?->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
         }
