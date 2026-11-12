@@ -4,6 +4,8 @@ import {
     ArrowLeft,
     Check,
     Clock,
+    Ticket,
+    Users,
     Loader2,
     MapPin,
     Package as PackageIcon,
@@ -377,31 +379,54 @@ function formatDate(value: Date) {
         <div class="grid gap-6 lg:grid-cols-3">
             <!-- Catalog + schedule -->
             <div class="space-y-4 lg:col-span-2">
-                <section class="space-y-2">
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            v-for="item in props.facilities"
-                            :key="item.id"
-                            type="button"
-                            class="rounded-lg border px-3 py-2 text-sm font-medium transition-all"
-                            :class="facilityId === item.id ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:border-primary'"
-                            @click="facilityId = item.id"
-                        >
-                            {{ item.name }}
-                        </button>
-                    </div>
-                    <div v-if="activeServices.length" class="flex flex-wrap gap-2">
-                        <button v-for="service in activeServices" :key="service.value" type="button"
-                            class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all"
-                            :class="activeService === service.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:border-primary'"
-                            @click="activeService = service.value">{{ service.label }}</button>
+                <section class="rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="grid gap-4 md:grid-cols-[minmax(180px,0.8fr)_2fr] md:items-end">
+                        <div class="grid gap-2">
+                            <Label for="cashier-facility" class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Olahraga</Label>
+                            <select id="cashier-facility" v-model.number="facilityId"
+                                class="h-11 w-full rounded-xl border bg-background px-3 text-sm font-semibold outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15">
+                                <option v-for="item in props.facilities" :key="item.id" :value="item.id">{{ item.name }}</option>
+                            </select>
+                        </div>
+                        <div v-if="activeServices.length" class="grid gap-2 sm:grid-cols-3">
+                            <button v-for="service in activeServices" :key="service.value" type="button"
+                                class="group flex min-h-16 items-center gap-3 rounded-xl border p-3 text-left transition-all"
+                                :class="activeService === service.value ? 'border-primary bg-primary/[0.07] shadow-sm ring-1 ring-primary/30' : 'border-border bg-background hover:border-primary/50 hover:bg-muted/40'"
+                                @click="activeService = service.value">
+                                <span class="flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors"
+                                    :class="activeService === service.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-primary'">
+                                    <Clock v-if="service.value === 'booking'" class="size-5" />
+                                    <PackageIcon v-else-if="service.value === 'session'" class="size-5" />
+                                    <Check v-else class="size-5" />
+                                </span>
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold">{{ service.label }}</span>
+                                    <span class="block text-[11px] text-muted-foreground">{{ service.value === 'booking' ? 'Lapangan / meja' : service.value === 'session' ? 'Tiket atau kelas' : 'Paket member' }}</span>
+                                </span>
+                                <Check v-if="activeService === service.value" class="ml-auto size-4 shrink-0 text-primary" />
+                            </button>
+                        </div>
                     </div>
                 </section>
 
-                <div v-if="activeService === 'session'" class="flex gap-2">
-                    <button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium" :class="sessionMode === 'entry' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'" @click="sessionMode = 'entry'">Tiket masuk</button>
-                    <button type="button" class="rounded-lg border px-3 py-1.5 text-xs font-medium" :class="sessionMode === 'class' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'" @click="sessionMode = 'class'">Kelas terjadwal</button>
-                </div>
+                <section v-if="activeService === 'session'" class="rounded-2xl border bg-muted/20 p-3">
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        <button type="button" class="flex items-center gap-3 rounded-xl border p-3 text-left transition-all"
+                            :class="sessionMode === 'entry' ? 'border-primary bg-card shadow-sm ring-1 ring-primary/25' : 'border-transparent bg-background/60 hover:border-border'"
+                            @click="sessionMode = 'entry'">
+                            <span class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Ticket class="size-4" /></span>
+                            <span><span class="block text-sm font-semibold">Tiket masuk</span><span class="block text-xs text-muted-foreground">Pembelian satu tiket</span></span>
+                            <Check v-if="sessionMode === 'entry'" class="ml-auto size-4 text-primary" />
+                        </button>
+                        <button type="button" class="flex items-center gap-3 rounded-xl border p-3 text-left transition-all"
+                            :class="sessionMode === 'class' ? 'border-primary bg-card shadow-sm ring-1 ring-primary/25' : 'border-transparent bg-background/60 hover:border-border'"
+                            @click="sessionMode = 'class'">
+                            <span class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Users class="size-4" /></span>
+                            <span><span class="block text-sm font-semibold">Kelas terjadwal</span><span class="block text-xs text-muted-foreground">Pilih jadwal dan peserta</span></span>
+                            <Check v-if="sessionMode === 'class'" class="ml-auto size-4 text-primary" />
+                        </button>
+                    </div>
+                </section>
 
                 <div
                     v-if="visiblePackages.length && !(activeService === 'session' && sessionMode === 'class')"
