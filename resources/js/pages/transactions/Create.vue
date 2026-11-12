@@ -148,7 +148,7 @@ const packageTypeLabel: Record<string, string> = {
 const activeFacility = computed(
     () => props.facilities.find((item) => item.id === facilityId.value) ?? null,
 );
-const isClassFacility = computed(() => props.classSchedules.some((item) => item.facility_id === facilityId.value));
+const isClassFacility = computed(() => Boolean(activeFacility.value?.has_session));
 const activeServices = computed(() => {
     if (!activeFacility.value) return [];
     return [
@@ -158,9 +158,8 @@ const activeServices = computed(() => {
     ];
 });
 const visiblePackages = computed(() => {
-    if (activeService.value === 'booking') return [];
-    const type = activeService.value === 'membership' ? 'membership' : 'entry';
-    return activeFacility.value?.packages.filter((item) => item.type === type) ?? [];
+    if (activeService.value !== 'membership') return [];
+    return activeFacility.value?.packages.filter((item) => item.type === 'membership') ?? [];
 });
 const participantNames = computed(() => participantNamesText.value.split(/\r?\n/).map((name) => name.trim()).filter(Boolean));
 const classOptions = computed(() => {
@@ -677,7 +676,8 @@ function formatDate(value: Date) {
                 <div v-if="activeService === 'session' && isClassFacility" class="space-y-4 rounded-2xl border bg-card p-4">
                     <div class="space-y-2">
                         <Label>Pilih kelas</Label>
-                        <div class="grid gap-2 sm:grid-cols-2">
+                        <p v-if="!classOptions.length" class="text-sm text-muted-foreground">Belum ada kelas terjadwal untuk olahraga ini.</p>
+                        <div v-else class="grid gap-2 sm:grid-cols-2">
                             <button v-for="item in classOptions" :key="item.id" type="button"
                                 class="rounded-xl border p-3 text-left font-semibold transition-colors hover:border-primary"
                                 :class="selectedClassId === item.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-background'"
