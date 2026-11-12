@@ -53,7 +53,7 @@ type ExistingBooking = {
     customer_name: string | null;
 };
 
-const props = defineProps<{ facilities: Facility[]; members: Member[]; classSchedules: CashierClassSchedule[] }>();
+const props = withDefaults(defineProps<{ facilities: Facility[]; members: Member[]; classSchedules?: CashierClassSchedule[] }>(), { classSchedules: () => [] });
 
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -150,7 +150,7 @@ const visiblePackages = computed(() => {
     const type = activeService.value === 'booking' ? 'session' : activeService.value === 'membership' ? 'membership' : 'entry';
     return activeFacility.value?.packages.filter((item) => item.type === type) ?? [];
 });
-const participantNames = computed(() => participantNamesText.value.split(/\\r?\\n/).map((name) => name.trim()).filter(Boolean));
+const participantNames = computed(() => participantNamesText.value.split(/\r?\n/).map((name) => name.trim()).filter(Boolean));
 const visibleClassSchedules = computed(() => {
     if (!activeFacility.value || !classDate.value) return [];
     const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
@@ -468,7 +468,7 @@ function formatDate(value: Date) {
                             <div class="font-semibold">{{ item.class_name }}</div>
                             <div class="text-xs text-muted-foreground">{{ item.start_time }}–{{ item.end_time }} · {{ item.trainer || 'Tanpa trainer' }}</div>
                             <div class="mt-1 text-sm font-semibold">{{ formatIDR(item.price) }}</div>
-                            <div class="text-xs text-muted-foreground">{{ item.capacity - item.registered_count }} slot tersisa</div>
+                            <div class="text-xs text-muted-foreground">Kapasitas {{ item.capacity }} peserta</div>
                         </button>
                     </div>
                     <p v-if="classDate && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada kelas tersedia pada tanggal ini.</p>
