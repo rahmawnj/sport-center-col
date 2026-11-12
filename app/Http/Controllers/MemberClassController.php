@@ -61,7 +61,7 @@ class MemberClassController extends Controller
             ->where('status', 'active')
             ->where('has_session', true)
             ->where('is_bookable_online', true)
-            ->with(['classes => fn ($query) => $query
+            ->with(['classes' => fn ($query) => $query
                 ->where('is_active', true)
                 ->with(['schedules' => fn ($schedules) => $schedules
                     ->where('is_active', true)
