@@ -29,6 +29,7 @@ class PublicBookingController extends Controller
     {
         $facilities = Facility::query()
             ->where('status', 'active')
+            ->where('has_booking', true)
             ->where('is_bookable_online', true)
             ->with(['courts' => fn ($query) => $query->where('status', 'available')->orderBy('name')])
             ->orderBy('name')
@@ -71,6 +72,7 @@ class PublicBookingController extends Controller
             ? Package::with('facility')->findOrFail($data['package_id'])
             : null;
         $facility = Facility::with('courts')->findOrFail($data['facility_id'] ?? $package?->facility_id);
+        abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
         $slotDuration = $package ? max(1, (int) $package->duration_minutes) : 60;
         $date = Carbon::parse($data['date']);
 
@@ -129,7 +131,7 @@ class PublicBookingController extends Controller
         ], $contactRules));
 
         $facility = Facility::query()->findOrFail($data['facility_id']);
-        abort_unless($facility->status === 'active' && $facility->is_bookable_online, 422, 'Olahraga ini tidak tersedia untuk booking online.');
+        abort_unless($facility->status === 'active' && $facility->has_booking && $facility->is_bookable_online, 422, 'Olahraga ini tidak tersedia untuk booking online.');
 
         $total = (int) round($this->bookingPrice($facility, $data));
 
