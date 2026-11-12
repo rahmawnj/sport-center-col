@@ -62,18 +62,25 @@ class ClassSeeder extends Seeder
                     ['friday', '18:00', '18:45', 45000],
                 ],
             ],
-            [
-                'facility' => 'gym',
-                'name' => 'Strength & Conditioning',
-                'description' => 'Kelas latihan kekuatan dan kebugaran untuk membangun stamina serta kekuatan seluruh tubuh.',
-                'duration' => 60,
-                'capacity' => 10,
-                'schedules' => [
-                    ['tuesday', '07:00', '08:00', 65000],
-                    ['thursday', '07:00', '08:00', 65000],
-                ],
-            ],
+
         ];
+
+        // Gym is configured for membership + personal trainer appointments,
+        // not public group-class schedules. Deactivate the old demo class safely.
+        $gym = Facility::query()->where('slug', 'gym')->first();
+        if ($gym) {
+            $legacyGymClass = SportClass::query()
+                ->where('facility_id', $gym->id)
+                ->where('name', 'Strength & Conditioning')
+                ->first();
+
+            if ($legacyGymClass) {
+                $legacyGymClass->update(['is_active' => false]);
+                ClassSchedule::query()
+                    ->where('class_id', $legacyGymClass->id)
+                    ->update(['is_active' => false]);
+            }
+        }
 
         foreach ($classes as $data) {
             $facility = Facility::query()
