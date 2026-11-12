@@ -58,6 +58,7 @@ class PublicHomeController extends Controller
     {
         $facilities = Facility::query()
             ->where('status', 'active')
+            ->where('has_booking', true)
             ->where('is_bookable_online', true)
             ->withCount(['courts' => fn ($query) => $query->where('status', 'available')])
             ->with(['packages' => fn ($query) => $query
@@ -90,6 +91,7 @@ class PublicHomeController extends Controller
             ->where('is_active', true)
             ->whereHas('facility', fn ($query) => $query
                 ->where('status', 'active')
+                ->where('has_session', true)
                 ->where('is_bookable_online', true))
             ->with([
                 'facility:id,name',
