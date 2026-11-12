@@ -4,8 +4,6 @@ import {
     ArrowLeft,
     Check,
     Clock,
-    Ticket,
-    Users,
     Loader2,
     MapPin,
     Package as PackageIcon,
@@ -91,7 +89,6 @@ const selected = ref<SellPackage | null>(null);
 const ruleId = ref<string>('');
 const memberId = ref<string>('');
 const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
-const sessionMode = ref<'entry' | 'class'>('entry');
 const classDate = ref('');
 const classScheduleId = ref<number | null>(null);
 const participantNamesText = ref('');
@@ -136,6 +133,7 @@ const packageTypeLabel: Record<string, string> = {
 const activeFacility = computed(
     () => props.facilities.find((item) => item.id === facilityId.value) ?? null,
 );
+const isClassFacility = computed(() => props.classSchedules.some((item) => item.facility_id === facilityId.value));
 const activeServices = computed(() => {
     if (!activeFacility.value) return [];
     return [
@@ -185,17 +183,17 @@ const membershipPeriod = computed(() => {
     return { start: formatDate(start), end: formatDate(end) };
 });
 const unitPrice = computed(() => {
-    if (activeService.value === 'session' && sessionMode.value === 'class') return selectedClassSchedule.value?.price ?? 0;
+    if (activeService.value === 'session' && isClassFacility.value) return selectedClassSchedule.value?.price ?? 0;
     if (isSession.value) return (selectedSlot.value?.price ?? 0) + (selectedSlot.value?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0);
     if (isMembership.value) return selected.value?.price ?? 0;
     return activeRule.value?.price ?? 0;
 });
-const total = computed(() => activeService.value === 'session' && sessionMode.value === 'class'
+const total = computed(() => activeService.value === 'session' && isClassFacility.value
     ? unitPrice.value * participantNames.value.length
     : unitPrice.value,
 );
 const canSubmit = computed(() => {
-    if (activeService.value === 'session' && sessionMode.value === 'class') return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0 && participantNames.value.length <= classRemaining.value;
+    if (activeService.value === 'session' && isClassFacility.value) return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0 && participantNames.value.length <= classRemaining.value;
     if (!selected.value) return false;
 
     if (isSession.value) {
@@ -213,8 +211,7 @@ watch(facilityId, () => {
     const facility = activeFacility.value;
     activeService.value = facility?.has_booking ? 'booking' : facility?.has_session ? 'session' : 'membership';
     selected.value = null;
-    sessionMode.value = 'entry';
-    classScheduleId.value = null;
+        classScheduleId.value = null;
     classDate.value = '';
     participantNamesText.value = '';
     ruleId.value = '';
@@ -232,18 +229,10 @@ watch(activeService, () => {
     classScheduleId.value = null;
     classDate.value = '';
     participantNamesText.value = '';
-    sessionMode.value = 'entry';
-});
+    });
 
 watch(classDate, () => {
     classScheduleId.value = null;
-    participantNamesText.value = '';
-});
-
-watch(sessionMode, () => {
-    selected.value = null;
-    classScheduleId.value = null;
-    classDate.value = '';
     participantNamesText.value = '';
 });
 
@@ -304,7 +293,7 @@ function chooseCourt(id: number) {
 }
 
 function submit() {
-    if (activeService.value === 'session' && sessionMode.value === 'class') {
+    if (activeService.value === 'session' && isClassFacility.value) {
         form.package_id = null;
         form.class_schedule_id = classScheduleId.value;
         form.participants = participantNames.value;
@@ -414,27 +403,8 @@ function formatDate(value: Date) {
                     </div>
                 </section>
 
-                <section v-if="activeService === 'session'" class="rounded-2xl border bg-muted/20 p-3">
-                    <div class="grid gap-2 sm:grid-cols-2">
-                        <button type="button" class="flex items-center gap-3 rounded-xl border p-3 text-left transition-all"
-                            :class="sessionMode === 'entry' ? 'border-primary bg-card shadow-sm ring-1 ring-primary/25' : 'border-transparent bg-background/60 hover:border-border'"
-                            @click="sessionMode = 'entry'">
-                            <span class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Ticket class="size-4" /></span>
-                            <span><span class="block text-sm font-semibold">Tiket masuk</span><span class="block text-xs text-muted-foreground">Pembelian satu tiket</span></span>
-                            <Check v-if="sessionMode === 'entry'" class="ml-auto size-4 text-primary" />
-                        </button>
-                        <button type="button" class="flex items-center gap-3 rounded-xl border p-3 text-left transition-all"
-                            :class="sessionMode === 'class' ? 'border-primary bg-card shadow-sm ring-1 ring-primary/25' : 'border-transparent bg-background/60 hover:border-border'"
-                            @click="sessionMode = 'class'">
-                            <span class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Users class="size-4" /></span>
-                            <span><span class="block text-sm font-semibold">Kelas terjadwal</span><span class="block text-xs text-muted-foreground">Pilih jadwal dan peserta</span></span>
-                            <Check v-if="sessionMode === 'class'" class="ml-auto size-4 text-primary" />
-                        </button>
-                    </div>
-                </section>
-
                 <div
-                    v-if="visiblePackages.length && !(activeService === 'session' && sessionMode === 'class')"
+                    v-if="visiblePackages.length && !(activeService === 'session' && isClassFacility)"
                     class="grid gap-3 sm:grid-cols-2"
                 >
                     <button
@@ -478,11 +448,11 @@ function formatDate(value: Date) {
                         </div>
                     </button>
                 </div>
-                <p v-else-if="!(activeService === 'session' && sessionMode === 'class')" class="text-sm text-muted-foreground">
+                <p v-else-if="!(activeService === 'session' && isClassFacility)" class="text-sm text-muted-foreground">
                     Belum ada paket untuk layanan ini.
                 </p>
 
-                <div v-if="activeService === 'session' && sessionMode === 'class'" class="space-y-4 rounded-2xl border bg-card p-4">
+                <div v-if="activeService === 'session' && isClassFacility" class="space-y-4 rounded-2xl border bg-card p-4">
                     <div class="grid max-w-xs gap-2">
                         <Label for="class-date">Tanggal kelas</Label>
                         <Input id="class-date" v-model="classDate" type="date" :min="today" />
@@ -676,7 +646,7 @@ function formatDate(value: Date) {
                     <h2 class="font-semibold">Ringkasan</h2>
                 </div>
 
-                <div v-if="activeService === 'session' && sessionMode === 'class'" class="space-y-4 pt-4">
+                <div v-if="activeService === 'session' && isClassFacility" class="space-y-4 pt-4">
                     <div class="font-medium">{{ selectedClassSchedule?.class_name || 'Pendaftaran kelas' }}</div>
                     <div class="text-xs text-muted-foreground">{{ classDate || '—' }} · {{ participantNames.length }} peserta · {{ classRemaining }} slot tersisa</div>
                     <div class="flex justify-between text-sm"><span>Harga / peserta</span><span>{{ formatIDR(unitPrice) }}</span></div>
