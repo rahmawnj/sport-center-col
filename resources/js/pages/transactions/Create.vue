@@ -653,8 +653,13 @@ function formatDate(value: Date) {
                                 <label
                                     v-for="item in slots"
                                     :key="item.start_time"
-                                    class="flex cursor-pointer items-start gap-3 rounded-xl bg-muted/30 p-3 transition-colors has-[:disabled]:cursor-not-allowed has-[:checked]:bg-primary/10 hover:bg-primary/5"
-                                    :class="isSlotSelected(item) ? 'ring-2 ring-inset ring-primary' : ''"
+                                    class="flex items-start gap-3 rounded-xl border p-3 transition-colors"
+                                    :class="[
+                                        !item.courts.some((court) => court.is_available !== false) || isSlotPast(item)
+                                            ? 'cursor-not-allowed border-dashed border-slate-200 bg-slate-100/70 opacity-60'
+                                            : 'cursor-pointer border-transparent bg-muted/30 hover:bg-primary/5 has-[:checked]:bg-primary/10',
+                                        isSlotSelected(item) ? 'ring-2 ring-inset ring-primary' : '',
+                                    ]"
                                 >
                                     <input
                                         type="checkbox"
@@ -665,8 +670,14 @@ function formatDate(value: Date) {
                                     />
                                     <span class="min-w-0">
                                         <span class="block font-semibold">{{ item.start_time }}–{{ item.end_time }}</span>
-                                        <span class="block text-sm font-medium text-primary">{{ formatIDR(item.price) }}</span>
-                                        <span class="block text-xs text-muted-foreground">{{ item.courts.filter((court) => court.is_available !== false).length }} lapangan tersedia</span>
+                                        <span
+                                            class="block text-sm font-medium"
+                                            :class="!item.courts.some((court) => court.is_available !== false) ? 'text-slate-500' : 'text-foreground'"
+                                        >{{ formatIDR(item.price) }}</span>
+                                        <span
+                                            class="block text-xs"
+                                            :class="!item.courts.some((court) => court.is_available !== false) ? 'text-slate-400' : 'text-muted-foreground'"
+                                        >{{ item.courts.filter((court) => court.is_available !== false).length }} lapangan tersedia</span>
                                     </span>
                                 </label>
                             </div>
