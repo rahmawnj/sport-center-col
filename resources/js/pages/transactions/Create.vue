@@ -795,8 +795,10 @@ function formatDate(value: Date) {
                         <span class="font-medium">Total</span>
                         <span class="text-lg font-semibold text-primary">{{ formatIDR(total) }}</span>
                     </div>
+                    <p v-if="form.errors.date" class="text-xs text-destructive">{{ form.errors.date }}</p>
                     <p v-if="form.errors.court_id" class="text-xs text-destructive">{{ form.errors.court_id }}</p>
                     <p v-if="form.errors.start_time" class="text-xs text-destructive">{{ form.errors.start_time }}</p>
+                    <p v-if="form.errors.selected_slots" class="text-xs text-destructive">{{ form.errors.selected_slots }}</p>
                     <Button class="w-full" :disabled="form.processing || !canSubmit" @click="submit">{{ form.processing ? 'Menyimpan...' : 'Simpan booking' }}</Button>
                 </div>
 
@@ -949,6 +951,18 @@ function formatDate(value: Date) {
                         class="text-xs text-destructive"
                     >
                         {{ form.errors.start_time }}
+                    </p>
+                    <p
+                        v-if="form.errors.selected_slots"
+                        class="text-xs text-destructive"
+                    >
+                        {{ form.errors.selected_slots }}
+                    </p>
+                    <p
+                        v-if="form.errors.date"
+                        class="text-xs text-destructive"
+                    >
+                        {{ form.errors.date }}
                     </p>
 
                     <Button
