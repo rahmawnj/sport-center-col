@@ -351,11 +351,6 @@ function chooseSlot(slot: Slot) {
         .filter((item): item is Slot => !!item)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-    if (new Set(chosen.map((item) => item.window_id)).size > 1) {
-        slotSelectionError.value = 'Booking tidak bisa melewati pergantian rentang jadwal. Pilih jam dalam satu rentang.';
-        return;
-    }
-
     const commonCourtIds = chosen.length
         ? chosen[0].courts
             .filter((court) => court.is_available !== false)
