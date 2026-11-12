@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -525,7 +526,34 @@ class TransactionController extends Controller
 
         if (! empty($data['facility_id']) && empty($data['package_id'])) {
             $facility = Facility::query()->with('courts')->findOrFail($data['facility_id']);
-            $this->storeCashierBooking($facility, $data);
+
+            Log::info('Kasir booking: submit diterima.', [
+                'facility_id' => $facility->id,
+                'date' => $data['date'] ?? null,
+                'court_id' => $data['court_id'] ?? null,
+                'start_time' => $data['start_time'] ?? null,
+                'end_time' => $data['end_time'] ?? null,
+                'selected_slots' => $data['selected_slots'] ?? [],
+                'amount_from_client' => $data['amount'] ?? null,
+            ]);
+
+            try {
+                $this->storeCashierBooking($facility, $data);
+            } catch (\\Throwable $exception) {
+                Log::error('Kasir booking: submit gagal.', [
+                    'facility_id' => $facility->id,
+                    'payload' => $data,
+                    'exception' => $exception::class,
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                    'line' => $exception->getLine(),
+                ]);
+
+                throw $exception;
+            }
+
+            Log::info('Kasir booking: submit berhasil.', ['facility_id' => $facility->id]);
+
             return redirect()->route('transactions.index')->with('success', 'Booking dan transaksi pembayaran berhasil disimpan.');
         }
 
