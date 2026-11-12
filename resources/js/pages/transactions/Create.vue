@@ -42,7 +42,7 @@ type Slot = {
     start_time: string;
     end_time: string;
     price: number;
-    courts: { id: number; name: string }[];
+    courts: { id: number; name: string; price_adjustment?: number }[];
 };
 type ExistingBooking = {
     court_id: number;
@@ -185,7 +185,7 @@ const membershipPeriod = computed(() => {
 });
 const unitPrice = computed(() => {
     if (activeService.value === 'session' && sessionMode.value === 'class') return selectedClassSchedule.value?.price ?? 0;
-    if (isSession.value) return selectedSlot.value?.price ?? 0;
+    if (isSession.value) return (selectedSlot.value?.price ?? 0) + (selectedSlot.value?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0);
     if (isMembership.value) return selected.value?.price ?? 0;
     return activeRule.value?.price ?? 0;
 });
