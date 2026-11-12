@@ -39,6 +39,7 @@ class TrainerPackageController extends Controller
                 'total_sessions' => $package->total_sessions,
                 'duration_days' => $package->duration_days,
                 'price' => (float) $package->price,
+                'trainer_share_percentage' => (float) $package->trainer_share_percentage,
                 'description' => $package->description,
                 'is_active' => (bool) $package->is_active,
             ]);
@@ -218,7 +219,7 @@ class TrainerPackageController extends Controller
             ->count();
 
         $packagePrice = (float) ($memberTrainerPackage->trainerPackage?->price ?? 0);
-        $sharePercentage = (float) ($memberTrainerPackage->trainer_share_percentage ?? 0);
+        $sharePercentage = (float) ($memberTrainerPackage->trainer_share_percentage ?? $memberTrainerPackage->trainerPackage?->trainer_share_percentage ?? 0);
         $maximumTrainerShare = $packagePrice * $sharePercentage / 100;
         $eligibleSessions = min($completedSessions, (int) $memberTrainerPackage->total_sessions);
         $earnedTrainerShare = $memberTrainerPackage->total_sessions > 0
@@ -272,19 +273,6 @@ class TrainerPackageController extends Controller
         ]);
     }
 
-    public function updateTrainerShare(Request $request, MemberTrainerPackage $memberTrainerPackage): RedirectResponse
-    {
-        $data = $request->validate([
-            'trainer_share_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
-        ]);
-
-        $memberTrainerPackage->update([
-            'trainer_share_percentage' => $data['trainer_share_percentage'],
-        ]);
-
-        return back()->with('success', 'Persentase bagi hasil trainer berhasil disimpan.');
-    }
-
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -293,6 +281,7 @@ class TrainerPackageController extends Controller
             'total_sessions' => ['required', 'integer', 'min:1'],
             'duration_days' => ['required', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
+            'trainer_share_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -395,6 +384,7 @@ class TrainerPackageController extends Controller
                 'expires_at' => $expires->toDateString(),
                 'total_sessions' => $package->total_sessions,
                 'used_sessions' => 0,
+                'trainer_share_percentage' => $package->trainer_share_percentage,
                 'status' => $paid ? 'active' : 'pending',
             ]);
 
