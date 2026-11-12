@@ -539,7 +539,7 @@ class TransactionController extends Controller
 
             try {
                 $this->storeCashierBooking($facility, $data);
-            } catch (\\Throwable $exception) {
+            } catch (\Throwable $exception) {
                 Log::error('Kasir booking: submit gagal.', [
                     'facility_id' => $facility->id,
                     'payload' => $data,
