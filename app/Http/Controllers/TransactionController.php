@@ -500,6 +500,9 @@ class TransactionController extends Controller
             'package_id' => ['nullable', 'required_without_all:class_schedule_id,facility_id', 'integer', 'exists:packages,id'],
             'facility_id' => ['nullable', 'required_without_all:package_id,class_schedule_id', 'integer', 'exists:facilities,id'],
             'end_time' => ['nullable', 'date_format:H:i'],
+            'selected_slots' => ['nullable', 'array', 'min:1'],
+            'selected_slots.*.start_time' => ['required_with:selected_slots', 'date_format:H:i'],
+            'selected_slots.*.end_time' => ['required_with:selected_slots', 'date_format:H:i'],
             'class_schedule_id' => ['nullable', 'required_without_all:package_id,facility_id', 'integer', 'exists:class_schedules,id'],
             'participants' => ['nullable', 'array', 'min:1'],
             'participants.*' => ['required', 'string', 'max:255'],
@@ -797,45 +800,60 @@ class TransactionController extends Controller
     {
         abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
 
-        if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time']) || empty($data['end_time'])) {
-            throw ValidationException::withMessages(['court_id' => 'Lapangan, tanggal, dan slot jam wajib dipilih.']);
+        $selectedSlots = collect($data['selected_slots'] ?? []);
+        if (empty($data['court_id']) || empty($data['date']) || $selectedSlots->isEmpty()) {
+            throw ValidationException::withMessages(['court_id' => 'Pilih minimal satu slot jam dan lapangan.']);
         }
+
+        $selectedSlots = $selectedSlots
+            ->sortBy('start_time')
+            ->values();
 
         $date = Carbon::parse($data['date']);
-        $startMinutes = $this->toMinutes($data['start_time']);
-        $endMinutes = $this->toMinutes($data['end_time']);
-        $durationMinutes = $endMinutes - $startMinutes;
-
-        if ($durationMinutes <= 0) {
-            throw ValidationException::withMessages(['end_time' => 'Rentang slot booking tidak valid.']);
-        }
-
-        $durationHours = $durationMinutes / 60;
         $turnaround = max(0, (int) $facility->turnaround_minutes);
-        $window = BookingTimeSlot::query()
-            ->where('facility_id', $facility->id)
-            ->where('day', strtolower($date->englishDayOfWeek))
-            ->where('is_active', true)
-            ->get()
-            ->first(function (BookingTimeSlot $slot) use ($startMinutes, $endMinutes, $turnaround) {
-                $windowStart = $this->toMinutes((string) $slot->start_time);
-                $windowEnd = $this->toMinutes((string) $slot->end_time);
-                $step = 60 + $turnaround;
-
-                return $startMinutes >= $windowStart
-                    && $endMinutes <= $windowEnd
-                    && ($startMinutes - $windowStart) % $step === 0;
-            });
-
-        if (! $window) {
-            throw ValidationException::withMessages(['start_time' => 'Slot tidak sesuai Master Jam Booking. Silakan pilih slot yang tersedia.']);
-        }
+        $slotDuration = 60;
+        $step = $slotDuration + $turnaround;
+        $startMinutes = $this->toMinutes($selectedSlots->first()['start_time']);
+        $endMinutes = $this->toMinutes($selectedSlots->last()['end_time']);
 
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
 
-        DB::transaction(function () use ($facility, $data, $date, $startMinutes, $endMinutes, $durationHours, $turnaround, $window) {
+        $windows = BookingTimeSlot::query()
+            ->where('facility_id', $facility->id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->get();
+
+        $slotPrices = [];
+        $previousEnd = null;
+        foreach ($selectedSlots as $slot) {
+            $slotStart = $this->toMinutes($slot['start_time']);
+            $slotEnd = $this->toMinutes($slot['end_time']);
+
+            if ($slotEnd - $slotStart !== $slotDuration || ($previousEnd !== null && $slotStart !== $previousEnd + $turnaround)) {
+                throw ValidationException::withMessages(['selected_slots' => 'Pilih slot yang berurutan tanpa melewati jeda antar-slot.']);
+            }
+
+            $window = $windows->first(function (BookingTimeSlot $window) use ($slotStart, $slotEnd, $step, $slotDuration) {
+                $windowStart = $this->toMinutes((string) $window->start_time);
+                $windowEnd = $this->toMinutes((string) $window->end_time);
+
+                return $slotStart >= $windowStart
+                    && $slotEnd <= $windowEnd
+                    && ($slotStart - $windowStart) % $step === 0;
+            });
+
+            if (! $window) {
+                throw ValidationException::withMessages(['selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.']);
+            }
+
+            $slotPrices[] = (float) $window->price;
+            $previousEnd = $slotEnd;
+        }
+
+        DB::transaction(function () use ($facility, $data, $date, $startMinutes, $endMinutes, $turnaround, $slotPrices) {
             $court = \App\Models\Court::query()
                 ->lockForUpdate()
                 ->whereKey($data['court_id'])
@@ -858,7 +876,7 @@ class TransactionController extends Controller
                 ));
 
             if ($conflict) {
-                throw ValidationException::withMessages(['start_time' => 'Lapangan sudah terisi pada jam tersebut. Pilih jam atau lapangan lain.']);
+                throw ValidationException::withMessages(['start_time' => 'Lapangan sudah terisi pada rentang jam tersebut. Pilih slot atau lapangan lain.']);
             }
 
             $paid = ($data['payment_status'] ?? 'paid') === 'paid';
@@ -872,7 +890,7 @@ class TransactionController extends Controller
                 'status' => $paid ? 'confirmed' : 'pending',
             ]);
 
-            $amount = ((float) $window->price * $durationHours) + (float) $court->price_adjustment;
+            $amount = array_sum($slotPrices) + (float) $court->price_adjustment;
             Transaction::create([
                 'transactionable_type' => 'booking',
                 'guest_name' => $data['customer_name'] ?: 'Umum',
