@@ -75,7 +75,7 @@ class PublicBookingController extends Controller
         abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
         $slotDuration = $package
             ? max(1, (int) $package->duration_minutes)
-            : max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
+            : (isset($data['duration_hours']) ? max(1, (int) $data['duration_hours']) * 60 : 0);
         $date = Carbon::parse($data['date']);
 
         $bookings = Booking::with(['court:id,name', 'user:id,name'])
@@ -294,7 +294,6 @@ class PublicBookingController extends Controller
     private function buildSlots(Facility $facility, Carbon $date, int $duration = 60): array
     {
         $turnaround = max(0, (int) $facility->turnaround_minutes);
-        $step = $duration + $turnaround;
         $day = strtolower($date->englishDayOfWeek);
 
         $courts = $facility->courts()
@@ -317,16 +316,19 @@ class PublicBookingController extends Controller
 
         $slots = [];
         foreach ($windows as $window) {
-            $cursor = $this->toMinutes((string) $window->start_time);
+            $windowStart = $this->toMinutes((string) $window->start_time);
             $windowEnd = $this->toMinutes((string) $window->end_time);
+            $step = $duration > 0 ? $duration + $turnaround : 0;
+            $starts = $duration > 0
+                ? range($windowStart, max($windowStart, $windowEnd - $duration), max(1, $step))
+                : [$windowStart];
 
-            while ($cursor + $duration <= $windowEnd) {
-                if ($date->isToday() && $cursor < (now()->hour * 60 + now()->minute)) {
-                    $cursor += $step;
+            foreach ($starts as $cursor) {
+                $slotEnd = $duration > 0 ? $cursor + $duration : $windowEnd;
+                if ($slotEnd > $windowEnd || ($date->isToday() && $cursor < (now()->hour * 60 + now()->minute))) {
                     continue;
                 }
 
-                $slotEnd = $cursor + $duration;
                 $courtOptions = $courts
                     ->map(function ($court) use ($bookings, $cursor, $slotEnd, $turnaround) {
                         $isAvailable = ! $bookings->contains(
@@ -354,11 +356,9 @@ class PublicBookingController extends Controller
                     'window_id' => $window->id,
                     'start_time' => $this->toTime($cursor),
                     'end_time' => $this->toTime($slotEnd),
-                    'price' => (float) $window->price * ($duration / 60),
+                    'price' => (float) $window->price * (($slotEnd - $cursor) / 60),
                     'courts' => $courtOptions,
                 ];
-
-                $cursor += $step;
             }
         }
 
