@@ -737,7 +737,7 @@ class TransactionController extends Controller
                 'guest_name' => $data['customer_name'] ?: 'Umum',
                 'amount' => $amount,
                 'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
-                'booking_status' => $paid ? 'confirmed' : 'pending',\n                'booking_status' => $paid ? 'confirmed' : 'pending',
+                'booking_status' => $paid ? 'confirmed' : 'pending',
                 'payment_method' => $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
             ]);
