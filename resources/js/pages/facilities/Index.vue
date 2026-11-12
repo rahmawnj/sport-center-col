@@ -37,6 +37,8 @@ type Facility = {
     slug: string;
     is_bookable_online: boolean;
     has_membership: boolean;
+    has_booking: boolean;
+    has_session: boolean;
     turnaround_minutes: number;
     status: FacilityStatus;
     courts_count: number;
@@ -80,6 +82,10 @@ const membershipOptions = [
     { value: '1', label: 'Ya — membership dibuka' },
     { value: '0', label: 'Tidak — membership ditutup' },
 ];
+const featureOptions = [
+    { value: '1', label: 'Enable — fitur dibuka' },
+    { value: '0', label: 'Disable — fitur ditutup' },
+];
 const bookableOptions = [
     { value: '1', label: 'Ya — bisa dibooking online' },
     { value: '0', label: 'Tidak' },
@@ -88,6 +94,8 @@ const form = ref({
     status: 'active',
     is_bookable_online: '1',
     has_membership: '1',
+    has_booking: '1',
+    has_session: '1',
     turnaround_minutes: '5',
 });
 const statCards = computed(() => [
@@ -144,6 +152,8 @@ function openCreate() {
         status: 'active',
         is_bookable_online: '1',
         has_membership: '1',
+        has_booking: '1',
+        has_session: '1',
         turnaround_minutes: '5',
     };
     formKey.value++;
@@ -156,6 +166,8 @@ function openEdit(facility: Facility) {
         status: facility.status,
         is_bookable_online: facility.is_bookable_online ? '1' : '0',
         has_membership: facility.has_membership ? '1' : '0',
+        has_booking: facility.has_booking ? '1' : '0',
+        has_session: facility.has_session ? '1' : '0',
         turnaround_minutes: String(facility.turnaround_minutes ?? 5),
     };
     formKey.value++;
@@ -316,6 +328,12 @@ function initials(value: string) {
                                 class="inline-flex items-center gap-1.5 rounded-lg bg-slate-500/10 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400"
                             >
                                 Membership ditutup
+                            </span>
+                            <span class="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium" :class="row.has_booking ? 'bg-emerald-500/10 text-emerald-700' : 'bg-slate-500/10 text-slate-600'">
+                                Booking {{ row.has_booking ? 'Enable' : 'Disable' }}
+                            </span>
+                            <span class="inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium" :class="row.has_session ? 'bg-emerald-500/10 text-emerald-700' : 'bg-slate-500/10 text-slate-600'">
+                                Sesi {{ row.has_session ? 'Enable' : 'Disable' }}
                             </span>
                             <span
                                 v-if="row.is_bookable_online"
@@ -515,6 +533,16 @@ function initials(value: string) {
                             <p v-if="errors.has_membership" class="text-xs text-destructive">
                                 {{ errors.has_membership }}
                             </p>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="facility-booking">Booking</Label>
+                            <FormSelect id="facility-booking" v-model="form.has_booking" name="has_booking" :options="featureOptions" />
+                            <p v-if="errors.has_booking" class="text-xs text-destructive">{{ errors.has_booking }}</p>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="facility-session">Sesi</Label>
+                            <FormSelect id="facility-session" v-model="form.has_session" name="has_session" :options="featureOptions" />
+                            <p v-if="errors.has_session" class="text-xs text-destructive">{{ errors.has_session }}</p>
                         </div>
                         <div class="grid gap-2">
                             <Label for="facility-turnaround"
