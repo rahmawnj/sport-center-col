@@ -105,8 +105,8 @@ class TransactionController extends Controller
                 'packages' => $facility->packages
                     ->filter(fn (Package $package) => match ($package->type) {
                         'membership' => (bool) $facility->has_membership,
-                        'session' => (bool) $facility->has_booking,
-                        default => (bool) $facility->has_session,
+                        'entry' => (bool) $facility->has_session,
+                        default => false,
                     })
                     ->map(fn (Package $package) => [
                     'id' => $package->id,
@@ -813,8 +813,15 @@ class TransactionController extends Controller
             ->where('day', strtolower($date->englishDayOfWeek))
             ->where('is_active', true)
             ->get()
-            ->first(fn (BookingTimeSlot $slot) => $startMinutes >= $this->toMinutes((string) $slot->start_time)
-                && $endMinutes <= $this->toMinutes((string) $slot->end_time));
+            ->first(function (BookingTimeSlot $slot) use ($startMinutes, $endMinutes, $durationMinutes, $turnaround) {
+                $windowStart = $this->toMinutes((string) $slot->start_time);
+                $windowEnd = $this->toMinutes((string) $slot->end_time);
+                $step = $durationMinutes + $turnaround;
+
+                return $startMinutes >= $windowStart
+                    && $endMinutes <= $windowEnd
+                    && ($startMinutes - $windowStart) % $step === 0;
+            });
 
         if (! $window) {
             throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
