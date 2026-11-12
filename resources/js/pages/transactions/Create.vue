@@ -40,7 +40,7 @@ type Slot = {
     start_time: string;
     end_time: string;
     price: number;
-    courts: { id: number; name: string; price_adjustment?: number }[];
+    courts: { id: number; name: string; price_adjustment?: number; is_available?: boolean }[];
 };
 type ExistingBooking = {
     court_id: number;
@@ -90,6 +90,7 @@ const ruleId = ref<string>('');
 const memberId = ref<string>('');
 const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
 const classDate = ref('');
+const durationHours = ref(1);
 const classScheduleId = ref<number | null>(null);
 const participantNamesText = ref('');
 
@@ -102,6 +103,8 @@ const courtId = ref<number | null>(null);
 
 const form = useForm({
     package_id: null as number | null,
+    facility_id: null as number | null,
+    duration_hours: 1,
     pricing_rule_id: null as number | null,
     customer_name: '',
     payment_method: 'cash',
@@ -143,7 +146,8 @@ const activeServices = computed(() => {
     ];
 });
 const visiblePackages = computed(() => {
-    const type = activeService.value === 'booking' ? 'session' : activeService.value === 'membership' ? 'membership' : 'entry';
+    if (activeService.value === 'booking') return [];
+    const type = activeService.value === 'membership' ? 'membership' : 'entry';
     return activeFacility.value?.packages.filter((item) => item.type === type) ?? [];
 });
 const participantNames = computed(() => participantNamesText.value.split(/\r?\n/).map((name) => name.trim()).filter(Boolean));
@@ -162,6 +166,7 @@ const activeRule = computed(
             (rule) => String(rule.id) === ruleId.value,
         ) ?? null,
 );
+const isBooking = computed(() => activeService.value === 'booking');
 const isSession = computed(() => selected.value?.type === 'session');
 const isMembership = computed(() => selected.value?.type === 'membership');
 const memberOptions = computed(() =>
@@ -183,6 +188,7 @@ const membershipPeriod = computed(() => {
     return { start: formatDate(start), end: formatDate(end) };
 });
 const unitPrice = computed(() => {
+    if (isBooking.value) return (selectedSlot.value?.price ?? 0) + (selectedSlot.value?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0);
     if (activeService.value === 'session' && isClassFacility.value) return selectedClassSchedule.value?.price ?? 0;
     if (isSession.value) return (selectedSlot.value?.price ?? 0) + (selectedSlot.value?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0);
     if (isMembership.value) return selected.value?.price ?? 0;
@@ -193,6 +199,7 @@ const total = computed(() => activeService.value === 'session' && isClassFacilit
     : unitPrice.value,
 );
 const canSubmit = computed(() => {
+    if (isBooking.value) return !!date.value && !!selectedSlot.value && !!courtId.value;
     if (activeService.value === 'session' && isClassFacility.value) return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0 && participantNames.value.length <= classRemaining.value;
     if (!selected.value) return false;
 
@@ -224,6 +231,10 @@ watch(unitPrice, () => {
 
 watch(activeService, () => {
     selected.value = null;
+    date.value = '';
+    slots.value = [];
+    selectedSlot.value = null;
+    courtId.value = null;
     ruleId.value = '';
     memberId.value = '';
     classScheduleId.value = null;
@@ -253,19 +264,22 @@ watch(memberId, (value) => {
     }
 });
 
-watch(date, () => {
+watch([date, durationHours], () => {
     selectedSlot.value = null;
     courtId.value = null;
     slots.value = [];
     existingBookings.value = [];
 
-    if (!isSession.value || !selected.value || !date.value) {
+    if ((!isBooking.value && (!isSession.value || !selected.value)) || !date.value) {
         return;
     }
 
     loadingSlots.value = true;
+    const availabilityQuery = isBooking.value
+        ? `facility_id=${facilityId.value}&duration_hours=${durationHours.value}`
+        : `package_id=${selected.value?.id}`;
     fetch(
-        `/book/availability?package_id=${selected.value.id}&date=${date.value}`,
+        `/book/availability?${availabilityQuery}&date=${date.value}`,
         { headers: { Accept: 'application/json' } },
     )
         .then((response) => response.json())
@@ -293,8 +307,25 @@ function chooseCourt(id: number) {
 }
 
 function submit() {
+    if (isBooking.value) {
+        form.package_id = null;
+        form.facility_id = facilityId.value;
+        form.duration_hours = durationHours.value;
+        form.class_schedule_id = null;
+        form.participants = [];
+        form.quantity = 1;
+        form.pricing_rule_id = null;
+        form.court_id = courtId.value;
+        form.date = date.value;
+        form.start_time = selectedSlot.value?.start_time ?? '';
+        form.user_id = null;
+        form.amount = total.value;
+        form.post('/transactions');
+        return;
+    }
     if (activeService.value === 'session' && isClassFacility.value) {
         form.package_id = null;
+        form.facility_id = null;
         form.class_schedule_id = classScheduleId.value;
         form.participants = participantNames.value;
         form.date = classDate.value;
@@ -308,6 +339,7 @@ function submit() {
         return;
     }
     if (!selected.value) return;
+    form.facility_id = null;
     form.class_schedule_id = null;
     form.participants = [];
     form.package_id = selected.value.id;
@@ -475,14 +507,26 @@ function formatDate(value: Date) {
                     </div>
                 </div>
 
-                <!-- Schedule for session packages -->
+                <!-- Booking without package: facility, duration, date and availability -->
                 <div
-                    v-if="selected && isSession"
+                    v-if="isBooking || (selected && isSession)"
                     class="space-y-4 rounded-2xl border bg-card p-4 shadow-sm"
                 >
                     <div class="flex items-center gap-2">
                         <Clock class="size-4 text-primary" />
-                        <h2 class="font-semibold">Jadwal & lapangan</h2>
+                        <h2 class="font-semibold">{{ isBooking ? 'Jadwal booking' : 'Jadwal & lapangan' }}</h2>
+                    </div>
+
+                    <div v-if="isBooking" class="space-y-2">
+                        <Label>Durasi booking</Label>
+                        <div class="flex flex-wrap gap-2">
+                            <button v-for="hours in [1, 2, 3, 4, 5, 6]" :key="hours" type="button"
+                                class="rounded-lg border px-4 py-2 text-sm font-medium transition-all"
+                                :class="durationHours === hours ? 'border-primary bg-primary text-primary-foreground' : 'bg-background hover:border-primary/50'"
+                                @click="durationHours = hours">
+                                {{ hours }} jam
+                            </button>
+                        </div>
                     </div>
 
                     <div class="grid max-w-xs gap-2">
@@ -513,7 +557,7 @@ function formatDate(value: Date) {
                                 :key="item.start_time"
                                 type="button"
                                 :disabled="
-                                    item.courts.length === 0 || isSlotPast(item)
+                                    !item.courts.some((court) => court.is_available !== false) || isSlotPast(item)
                                 "
                                 class="rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                 :class="
@@ -530,7 +574,7 @@ function formatDate(value: Date) {
                                     {{ formatIDR(item.price) }}
                                 </div>
                                 <div class="text-xs text-muted-foreground">
-                                    {{ item.courts.length }} lapangan
+                                    {{ item.courts.filter((court) => court.is_available !== false).length }} tersedia
                                 </div>
                             </button>
                         </div>
@@ -567,12 +611,12 @@ function formatDate(value: Date) {
                                     </span>
                                 </div>
                                 <span class="text-xs text-muted-foreground">
-                                    {{ selectedSlot.courts.length }} tersedia
+                                    {{ selectedSlot.courts.filter((court) => court.is_available !== false).length }} tersedia
                                 </span>
                             </div>
                             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 <button
-                                    v-for="court in selectedSlot.courts"
+                                    v-for="court in selectedSlot.courts.filter((item) => item.is_available !== false)"
                                     :key="court.id"
                                     type="button"
                                     class="flex items-center justify-between gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all"
@@ -660,6 +704,36 @@ function formatDate(value: Date) {
                         <FormSelect v-model="form.payment_status" :options="statusOptions" />
                     </div>
                     <Button class="w-full" :disabled="form.processing || !canSubmit" @click="submit">{{ form.processing ? 'Menyimpan...' : 'Simpan transaksi' }}</Button>
+                </div>
+
+                <div v-else-if="activeService === 'booking'" class="space-y-4 pt-4">
+                    <div>
+                        <div class="font-semibold">{{ activeFacility?.name }} · Booking</div>
+                        <div class="text-xs text-muted-foreground">{{ date || 'Pilih tanggal' }} · {{ durationHours }} jam</div>
+                    </div>
+                    <div class="space-y-1 rounded-xl bg-muted/40 p-3 text-sm">
+                        <div class="flex justify-between gap-2"><span class="text-muted-foreground">Jam</span><span class="font-medium">{{ selectedSlot ? `${selectedSlot.start_time}–${selectedSlot.end_time}` : '—' }}</span></div>
+                        <div class="flex justify-between gap-2"><span class="text-muted-foreground">Lapangan / meja</span><span class="font-medium">{{ selectedSlot?.courts.find((court) => court.id === courtId)?.name ?? '—' }}</span></div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="pos-customer-booking" class="text-xs">Nama pelanggan (opsional)</Label>
+                        <Input id="pos-customer-booking" v-model="form.customer_name" placeholder="Umum / walk-in" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label class="text-xs">Metode pembayaran</Label>
+                        <FormSelect v-model="form.payment_method" :options="methodOptions" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label class="text-xs">Status pembayaran</Label>
+                        <FormSelect v-model="form.payment_status" :options="statusOptions" />
+                    </div>
+                    <div class="flex items-center justify-between rounded-xl bg-muted/40 p-3">
+                        <span class="font-medium">Total</span>
+                        <span class="text-lg font-semibold text-primary">{{ formatIDR(total) }}</span>
+                    </div>
+                    <p v-if="form.errors.court_id" class="text-xs text-destructive">{{ form.errors.court_id }}</p>
+                    <p v-if="form.errors.start_time" class="text-xs text-destructive">{{ form.errors.start_time }}</p>
+                    <Button class="w-full" :disabled="form.processing || !canSubmit" @click="submit">{{ form.processing ? 'Menyimpan...' : 'Simpan booking' }}</Button>
                 </div>
 
                 <div v-else-if="selected" class="space-y-4 pt-4">
