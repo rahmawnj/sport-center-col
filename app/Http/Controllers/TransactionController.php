@@ -505,7 +505,7 @@ class TransactionController extends Controller
             'selected_slots.*.start_time' => ['required_with:selected_slots', 'date_format:H:i'],
             'selected_slots.*.end_time' => ['required_with:selected_slots', 'date_format:H:i'],
             'class_schedule_id' => ['nullable', 'required_without_all:package_id,facility_id', 'integer', 'exists:class_schedules,id'],
-            'participants' => ['nullable', 'array', 'min:1'],
+            'participants' => ['nullable', 'array'],
             'participants.*' => ['required', 'string', 'max:255'],
             'pricing_rule_id' => ['nullable', 'integer', 'exists:package_pricing_rules,id'],
             'quantity' => ['required', 'integer', 'min:1', 'max:500'],
