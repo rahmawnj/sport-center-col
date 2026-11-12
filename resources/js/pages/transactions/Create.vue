@@ -104,6 +104,7 @@ const courtId = ref<number | null>(null);
 const form = useForm({
     package_id: null as number | null,
     facility_id: null as number | null,
+    quantity: 1,
     duration_hours: 1,
     pricing_rule_id: null as number | null,
     customer_name: '',
@@ -218,7 +219,12 @@ watch(facilityId, () => {
     const facility = activeFacility.value;
     activeService.value = facility?.has_booking ? 'booking' : facility?.has_session ? 'session' : 'membership';
     selected.value = null;
-        classScheduleId.value = null;
+    date.value = '';
+    slots.value = [];
+    existingBookings.value = [];
+    selectedSlot.value = null;
+    courtId.value = null;
+    classScheduleId.value = null;
     classDate.value = '';
     participantNamesText.value = '';
     ruleId.value = '';
@@ -240,7 +246,7 @@ watch(activeService, () => {
     classScheduleId.value = null;
     classDate.value = '';
     participantNamesText.value = '';
-    });
+});
 
 watch(classDate, () => {
     classScheduleId.value = null;
