@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ type SportClass = { id:number; facility_id:number; name:string; description:stri
 const props=defineProps<{facilityId:number; facilityName:string; classes:SportClass[]; trainers:{id:number;name:string}[]}>();
 const days=[{value:'monday',label:'Senin'},{value:'tuesday',label:'Selasa'},{value:'wednesday',label:'Rabu'},{value:'thursday',label:'Kamis'},{value:'friday',label:'Jumat'},{value:'saturday',label:'Sabtu'},{value:'sunday',label:'Minggu'}];
 const dayLabel=(day:string)=>days.find(d=>d.value===day)?.label??day;
+const timeSlots=(item:SportClass)=>[...new Set(item.schedules.map(s=>s.start_time.slice(0,5)))].sort((a,b)=>a.localeCompare(b));
+const schedulesAt=(item:SportClass,day:string,time:string)=>item.schedules.filter(s=>s.day===day&&s.start_time.slice(0,5)===time).sort((a,b)=>a.start_time.localeCompare(b.start_time));
 const classDialog=ref(false); const editingClass=ref<number|null>(null);
 const classForm=useForm({name:'',description:'',duration_minutes:'60',default_capacity:'10',is_active:true});
 const scheduleDialog=ref(false); const editingSchedule=ref<number|null>(null); const scheduleClassId=ref<number|null>(null);
@@ -65,38 +67,53 @@ function setAttendance(id:number,status:'attended'|'no_show'){router.put('/sessi
         <Button size="sm" variant="outline" @click="openSchedule(item)">+ Jadwal</Button>
       </div>
       <p v-if="!item.schedules.length" class="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">Belum ada jadwal untuk kelas ini.</p>
-      <div v-else class="grid gap-2 sm:grid-cols-2">
-        <div v-for="s in item.schedules" :key="s.id" class="rounded-lg border bg-background p-2.5">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <p class="text-sm font-semibold">{{dayLabel(s.day)}} <span class="font-medium text-muted-foreground">{{s.start_time}}–{{s.end_time}}</span></p>
-              <p class="mt-0.5 truncate text-xs text-muted-foreground">{{s.trainer||'Trainer belum ditentukan'}}</p>
-              <p class="mt-1 text-xs text-muted-foreground">{{s.registered_count}} pendaftar · {{money(s.price)}}/peserta</p>
-            </div>
-            <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium" :class="s.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{s.is_active?'Aktif':'Nonaktif'}}</span>
-          </div>
-          <div class="mt-2 flex flex-wrap gap-1 border-t pt-2">
-            <Button size="sm" variant="outline" @click="openSchedule(item,s)">Edit</Button>
-            <Button size="sm" variant="outline" @click="setActive(s,!s.is_active)">{{s.is_active?'Matikan':'Aktifkan'}}</Button>
-            <Button size="sm" variant="ghost" class="text-destructive" @click="removeSchedule(s)">Hapus</Button>
-          </div>
-          <div v-if="s.participants.length" class="mt-2 space-y-2 border-t pt-2">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Peserta per tanggal</p>
-            <div v-for="group in groupedParticipants(s.participants)" :key="group.date" class="rounded-md bg-muted/35 p-2">
-              <div class="mb-1 flex items-center justify-between gap-2">
-                <p class="text-xs font-semibold">{{dateLabel(group.date)}}</p>
-                <span class="text-[10px] text-muted-foreground">{{group.people.length}} peserta</span>
-              </div>
-              <div v-for="p in group.people" :key="p.id" class="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 py-1.5 first:border-0">
-                <span class="text-xs">{{p.name}} <span class="text-muted-foreground">· {{p.status}}</span></span>
-                <div v-if="['confirmed','attended','no_show'].includes(p.status)" class="flex gap-1">
-                  <Button size="sm" variant="outline" class="h-7 px-2 text-[11px]" @click="setAttendance(p.id,'attended')">Hadir</Button>
-                  <Button size="sm" variant="outline" class="h-7 px-2 text-[11px]" @click="setAttendance(p.id,'no_show')">Tidak hadir</Button>
+      <div v-else class="overflow-x-auto rounded-lg border">
+        <table class="w-full min-w-[980px] border-collapse text-left">
+          <thead>
+            <tr class="bg-muted/60">
+              <th class="sticky left-0 z-10 w-24 border-b border-r bg-muted/90 px-3 py-2 text-xs font-semibold text-muted-foreground">Jam</th>
+              <th v-for="d in days" :key="d.value" class="border-b border-r px-3 py-2 text-center text-xs font-semibold last:border-r-0">{{d.label}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="time in timeSlots(item)" :key="time" class="align-top">
+              <th class="sticky left-0 z-10 border-b border-r bg-muted/40 px-3 py-3 text-xs font-semibold tabular-nums">{{time}}</th>
+              <td v-for="d in days" :key="d.value" class="w-[12.5%] border-b border-r p-1.5 last:border-r-0">
+                <div v-if="schedulesAt(item,d.value,time).length" class="space-y-2">
+                  <div v-for="s in schedulesAt(item,d.value,time)" :key="s.id" class="rounded-md border bg-background p-2">
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="text-[11px] font-semibold tabular-nums">{{s.start_time.slice(0,5)}}–{{s.end_time.slice(0,5)}}</span>
+                      <span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium" :class="s.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{s.is_active?'Aktif':'Off'}}</span>
+                    </div>
+                    <p class="mt-1 text-[11px] font-medium leading-tight">{{s.trainer||'Trainer belum ditentukan'}}</p>
+                    <p class="mt-1 text-[10px] leading-relaxed text-muted-foreground">{{s.registered_count}} peserta · {{money(s.price)}}</p>
+                    <div class="mt-2 flex flex-wrap gap-1 border-t pt-1.5">
+                      <Button size="sm" variant="outline" class="h-6 px-1.5 text-[10px]" @click="openSchedule(item,s)">Edit</Button>
+                      <Button size="sm" variant="outline" class="h-6 px-1.5 text-[10px]" @click="setActive(s,!s.is_active)">{{s.is_active?'Off':'Aktifkan'}}</Button>
+                      <Button size="sm" variant="ghost" class="h-6 px-1.5 text-[10px] text-destructive" @click="removeSchedule(s)">Hapus</Button>
+                    </div>
+                    <details v-if="s.participants.length" class="mt-2 border-t pt-1.5">
+                      <summary class="cursor-pointer text-[10px] font-medium text-muted-foreground">Lihat {{s.participants.length}} peserta</summary>
+                      <div class="mt-2 space-y-2">
+                        <div v-for="group in groupedParticipants(s.participants)" :key="group.date" class="rounded bg-muted/40 p-1.5">
+                          <p class="mb-1 text-[10px] font-semibold">{{dateLabel(group.date)}}</p>
+                          <div v-for="p in group.people" :key="p.id" class="flex flex-wrap items-center justify-between gap-1 border-t border-border/60 py-1 first:border-0">
+                            <span class="text-[10px]">{{p.name}} · {{p.status}}</span>
+                            <div v-if="['confirmed','attended','no_show'].includes(p.status)" class="flex gap-1">
+                              <Button size="sm" variant="outline" class="h-6 px-1.5 text-[9px]" @click="setAttendance(p.id,'attended')">Hadir</Button>
+                              <Button size="sm" variant="outline" class="h-6 px-1.5 text-[9px]" @click="setAttendance(p.id,'no_show')">Absen</Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                <div v-else class="min-h-12 rounded-md bg-muted/15"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
