@@ -3,16 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Facility;
-use App\Models\MemberTrainerPackage;
-use App\Models\Trainer;
 use App\Models\TrainerPackage;
-use App\Models\TrainerSessionSchedule;
-use App\Models\Transaction;
-use App\Models\User;
-use App\Models\UserMembership;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -20,17 +12,13 @@ use Inertia\Response;
 
 class TrainerPackageController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(): Response
     {
-        $search = trim((string) $request->input('search', ''));
-        $status = $request->input('status', 'all');
-
         $packages = TrainerPackage::query()
             ->whereHas('facility', fn ($query) => $query->where('has_membership', true))
             ->with('facility:id,name')
             ->latest()
-            ->paginate(10, ['*'], 'packages_page')
-            ->withQueryString()
+            ->paginate(10)
             ->through(fn (TrainerPackage $package) => [
                 'id' => $package->id,
                 'facility' => $package->facility ? ['id' => $package->facility->id, 'name' => $package->facility->name] : null,
@@ -44,61 +32,15 @@ class TrainerPackageController extends Controller
                 'is_active' => (bool) $package->is_active,
             ]);
 
-        $members = User::query()->whereHas('memberProfile')->orderBy('name')->get(['id', 'name']);
-        $trainers = Trainer::query()->with(['facilities' => fn ($query) => $query->where('has_membership', true)->select('facilities.id', 'facilities.name')])->orderBy('name')->get(['id', 'name', 'specialty'])->map(fn (Trainer $trainer) => ['id' => $trainer->id, 'name' => $trainer->name, 'specialty' => $trainer->specialty, 'facility_ids' => $trainer->facilities->pluck('id')->map(fn ($id) => (int) $id)->all()]);
         $facilities = Facility::query()->where('status', 'active')->where('has_membership', true)->orderBy('name')->get(['id', 'name']);
-
-        $memberPackages = MemberTrainerPackage::query()
-            ->with(['user:id,name', 'trainer:id,name', 'trainerPackage:id,name', 'facility:id,name'])
-            ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
-                $q->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%"))
-                    ->orWhereHas('trainerPackage', fn ($package) => $package->where('name', 'like', "%{$search}%"))
-                    ->orWhereHas('trainer', fn ($trainer) => $trainer->where('name', 'like', "%{$search}%"));
-            }))
-            ->when($status === 'active', fn ($query) => $query->where('status', 'active')->whereDate('start_date', '<=', today())->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions'))
-            ->when($status === 'scheduled', fn ($query) => $query->where('status', 'active')->whereDate('start_date', '>', today()))
-            ->when($status === 'pending', fn ($query) => $query->where('status', 'pending'))
-            ->when($status === 'completed', fn ($query) => $query->where(fn ($q) => $q->where('status', 'completed')->orWhere(fn ($active) => $active->where('status', 'active')->whereColumn('used_sessions', '>=', 'total_sessions'))))
-            ->when($status === 'expired', fn ($query) => $query->where(function ($q) {
-                $q->where('status', 'expired')->orWhere(fn ($active) => $active->where('status', 'active')->whereDate('expires_at', '<', today()));
-            }))
-            ->when($status === 'cancelled', fn ($query) => $query->where('status', 'cancelled'))
-            ->latest()
-            ->paginate(10, ['*'], 'memberships_page')
-            ->withQueryString()
-            ->through(fn (MemberTrainerPackage $item) => [
-                'id' => $item->id,
-                'member_name' => $item->user?->name,
-                'trainer_name' => $item->trainer?->name,
-                'facility_name' => $item->facility?->name,
-                'package_name' => $item->trainerPackage?->name,
-                'start_date' => $item->start_date?->toDateString(),
-                'expires_at' => $item->expires_at?->toDateString(),
-                'total_sessions' => $item->total_sessions,
-                'used_sessions' => $item->used_sessions,
-                'remaining_sessions' => $item->remaining_sessions,
-                'status' => $item->status === 'active' && $item->start_date->gt(today())
-                    ? 'scheduled'
-                    : ($item->expires_at->lt(today()) && $item->status === 'active'
-                        ? 'expired'
-                        : ($item->used_sessions >= $item->total_sessions && $item->status === 'active' ? 'completed' : $item->status)),
-            ]);
 
         return Inertia::render('trainer-packages/Index', [
             'packages' => $packages,
-            'packageOptions' => TrainerPackage::query()->where('is_active', true)->whereHas('facility', fn ($query) => $query->where('has_membership', true))->orderBy('name')->get(['id', 'facility_id', 'name', 'total_sessions', 'price'])->map(fn (TrainerPackage $package) => ['id' => $package->id, 'name' => $package->name, 'total_sessions' => $package->total_sessions, 'price' => (float) $package->price, 'facility_id' => $package->facility_id]),
-            'members' => $members,
-            'trainers' => $trainers,
             'facilities' => $facilities,
-            'memberPackages' => $memberPackages,
-            'filters' => ['search' => $search, 'status' => $status],
             'stats' => [
-                'packages' => TrainerPackage::count(),
-                'active' => MemberTrainerPackage::where('status', 'active')->whereDate('start_date', '<=', today())->whereDate('expires_at', '>=', today())->whereColumn('used_sessions', '<', 'total_sessions')->count(),
-                'expiring' => MemberTrainerPackage::where('status', 'active')->whereDate('start_date', '<=', today())->whereBetween('expires_at', [today(), today()->addDays(7)])->count(),
-                'expired' => MemberTrainerPackage::where(function ($query) {
-                    $query->where('status', 'expired')->orWhere(fn ($q) => $q->where('status', 'active')->whereDate('expires_at', '<', today()));
-                })->count(),
+                'total' => TrainerPackage::whereHas('facility', fn ($query) => $query->where('has_membership', true))->count(),
+                'active' => TrainerPackage::where('is_active', true)->whereHas('facility', fn ($query) => $query->where('has_membership', true))->count(),
+                'inactive' => TrainerPackage::where('is_active', false)->whereHas('facility', fn ($query) => $query->where('has_membership', true))->count(),
             ],
         ]);
     }
