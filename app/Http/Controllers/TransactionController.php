@@ -577,7 +577,7 @@ class TransactionController extends Controller
             $paid = ($data['payment_status'] ?? 'paid') === 'paid';
             $transaction = Transaction::create([
                 'transactionable_type' => 'class',
-                'customer_name' => $data['customer_name'] ?: $names->first(),
+                'customer_name' => $data['customer_name'] ?? $names->first(),
                 'amount' => $price * $names->count(),
                 'payment_method' => $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
@@ -757,7 +757,7 @@ class TransactionController extends Controller
             $amount = ((float) $window->price * ($durationMinutes / 60)) + (float) $court->price_adjustment;
             $paid = ($data['payment_status'] ?? 'paid') === 'paid';
             $booking = Booking::create([
-                'guest_name' => $data['customer_name'] ?: 'Umum',
+                'guest_name' => $data['customer_name'] ?? 'Umum',
                 'court_id' => $court->id,
                 'device_id' => Device::forCourt($court->id)?->id,
                 'date' => $date->toDateString(),
