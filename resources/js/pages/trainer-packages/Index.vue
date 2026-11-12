@@ -34,6 +34,7 @@ type TrainerPackage = {
     total_sessions: number;
     duration_days: number;
     price: number;
+    trainer_share_percentage: number;
     description: string | null;
     is_active: boolean;
     facility_id: number | null;
@@ -98,6 +99,7 @@ const packageForm = useForm({
     total_sessions: 5,
     duration_days: 30,
     price: '',
+    trainer_share_percentage: 0,
     description: '',
     is_active: true,
 });
@@ -112,6 +114,7 @@ function openCreatePackage() {
     packageForm.total_sessions = 5;
     packageForm.duration_days = 30;
     packageForm.price = '';
+    packageForm.trainer_share_percentage = 0;
     packageForm.description = '';
     packageForm.is_active = true;
     showPackageForm.value = true;
@@ -124,6 +127,7 @@ function editPackage(item: TrainerPackage) {
     packageForm.total_sessions = item.total_sessions;
     packageForm.duration_days = item.duration_days;
     packageForm.price = String(item.price);
+    packageForm.trainer_share_percentage = Number(item.trainer_share_percentage ?? 0);
     packageForm.description = item.description ?? '';
     packageForm.is_active = item.is_active;
     showPackageForm.value = true;
@@ -320,6 +324,7 @@ function useSession(item: MemberPackage) {
                                 <th class="px-4 py-3 font-medium">Jumlah sesi</th>
                                 <th class="px-4 py-3 font-medium">Masa berlaku</th>
                                 <th class="px-4 py-3 font-medium">Harga</th>
+                                <th class="px-4 py-3 font-medium">Bagian trainer</th>
                                 <th class="px-4 py-3 font-medium">Status</th>
                                 <th class="px-4 py-3 text-right font-medium">Aksi</th>
                             </tr>
@@ -334,6 +339,7 @@ function useSession(item: MemberPackage) {
                                 <td class="px-4 py-3">{{ item.total_sessions }} sesi</td>
                                 <td class="px-4 py-3">{{ item.duration_days }} hari</td>
                                 <td class="px-4 py-3 font-medium">{{ rupiah(item.price) }}</td>
+                                <td class="px-4 py-3 font-medium">{{ Number(item.trainer_share_percentage).toLocaleString("id-ID") }}%</td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="item.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">{{ item.is_active ? 'Aktif' : 'Nonaktif' }}</span>
                                 </td>
@@ -353,7 +359,7 @@ function useSession(item: MemberPackage) {
                                 </td>
                             </tr>
                             <tr v-if="!packages.data.length">
-                                <td colspan="7" class="px-4 py-12 text-center text-muted-foreground">Belum ada master paket trainer.</td>
+                                <td colspan="8" class="px-4 py-12 text-center text-muted-foreground">Belum ada master paket trainer.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -380,7 +386,8 @@ function useSession(item: MemberPackage) {
                     <div class="grid gap-2 sm:col-span-2"><Label>Olahraga paket</Label><select v-model="packageForm.facility_id" required class="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Pilih olahraga</option><option v-for="facility in facilities" :key="facility.id" :value="String(facility.id)">{{ facility.name }}</option></select><p v-if="packageForm.errors.facility_id" class="text-xs text-destructive">{{ packageForm.errors.facility_id }}</p></div>
                     <div class="grid gap-2"><Label>Jumlah sesi</Label><Input v-model.number="packageForm.total_sessions" type="number" min="1" /><p v-if="packageForm.errors.total_sessions" class="text-xs text-destructive">{{ packageForm.errors.total_sessions }}</p></div>
                     <div class="grid gap-2"><Label>Masa berlaku (hari)</Label><Input v-model.number="packageForm.duration_days" type="number" min="1" /><p v-if="packageForm.errors.duration_days" class="text-xs text-destructive">{{ packageForm.errors.duration_days }}</p></div>
-                    <div class="grid gap-2 sm:col-span-2"><Label>Harga (Rp)</Label><Input v-model="packageForm.price" type="number" min="0" placeholder="900000" /><p v-if="packageForm.errors.price" class="text-xs text-destructive">{{ packageForm.errors.price }}</p></div>
+                    <div class="grid gap-2"><Label>Harga (Rp)</Label><Input v-model="packageForm.price" type="number" min="0" placeholder="900000" /><p v-if="packageForm.errors.price" class="text-xs text-destructive">{{ packageForm.errors.price }}</p></div>
+                    <div class="grid gap-2"><Label>Bagian trainer (%)</Label><Input v-model.number="packageForm.trainer_share_percentage" type="number" min="0" max="100" step="0.01" placeholder="40" /><p v-if="packageForm.errors.trainer_share_percentage" class="text-xs text-destructive">{{ packageForm.errors.trainer_share_percentage }}</p><p class="text-xs text-muted-foreground">Persentase dari harga paket yang menjadi hak trainer.</p></div>
                     <div class="grid gap-2 sm:col-span-2"><Label>Deskripsi</Label><textarea v-model="packageForm.description" rows="3" class="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="Deskripsi paket..." /></div>
                     <label v-if="editing" class="flex items-center gap-2 text-sm sm:col-span-2"><input v-model="packageForm.is_active" type="checkbox" class="size-4" /> Paket aktif dan bisa dijual</label>
                 </div>
