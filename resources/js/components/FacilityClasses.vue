@@ -11,8 +11,11 @@ type SportClass = { id:number; facility_id:number; name:string; description:stri
 const props=defineProps<{facilityId:number; facilityName:string; classes:SportClass[]; trainers:{id:number;name:string}[]}>();
 const days=[{value:'monday',label:'Senin'},{value:'tuesday',label:'Selasa'},{value:'wednesday',label:'Rabu'},{value:'thursday',label:'Kamis'},{value:'friday',label:'Jumat'},{value:'saturday',label:'Sabtu'},{value:'sunday',label:'Minggu'}];
 const dayLabel=(day:string)=>days.find(d=>d.value===day)?.label??day;
-const timeSlots=(item:SportClass)=>[...new Set(item.schedules.map(s=>s.start_time.slice(0,5)))].sort((a,b)=>a.localeCompare(b));
-const schedulesAt=(item:SportClass,day:string,time:string)=>item.schedules.filter(s=>s.day===day&&s.start_time.slice(0,5)===time).sort((a,b)=>a.start_time.localeCompare(b.start_time));
+const timeToMinutes=(value:string)=>{const [h,m]=value.slice(0,5).split(':').map(Number);return h*60+m;};
+const hourLabel=(hour:number)=>String(hour).padStart(2,'0')+':00';
+const timeSlots=(item:SportClass)=>[...new Set(item.schedules.map(s=>Math.floor(timeToMinutes(s.start_time)/60)))].sort((a,b)=>a-b).map(hourLabel);
+const schedulesAt=(item:SportClass,day:string,time:string)=>item.schedules.filter(s=>s.day===day&&Math.floor(timeToMinutes(s.start_time)/60)===Number(time.slice(0,2))).sort((a,b)=>a.start_time.localeCompare(b.start_time));
+const scheduleBlockStyle=(s:Schedule)=>{const start=timeToMinutes(s.start_time);let end=timeToMinutes(s.end_time);if(end<=start)end+=24*60;const duration=end-start;const offset=start%60;return {marginTop:offset+'px',minHeight:Math.max(48,duration)+'px'};};
 const classDialog=ref(false); const editingClass=ref<number|null>(null);
 const classForm=useForm({name:'',description:'',duration_minutes:'60',default_capacity:'10',is_active:true});
 const scheduleDialog=ref(false); const editingSchedule=ref<number|null>(null); const scheduleClassId=ref<number|null>(null);
@@ -80,7 +83,7 @@ function setAttendance(id:number,status:'attended'|'no_show'){router.put('/sessi
               <th class="sticky left-0 z-10 border-b border-r bg-muted/40 px-3 py-3 text-xs font-semibold tabular-nums">{{time}}</th>
               <td v-for="d in days" :key="d.value" class="w-[12.5%] border-b border-r p-1.5 last:border-r-0">
                 <div v-if="schedulesAt(item,d.value,time).length" class="space-y-2">
-                  <div v-for="s in schedulesAt(item,d.value,time)" :key="s.id" class="rounded-md border bg-background p-2">
+                  <div v-for="s in schedulesAt(item,d.value,time)" :key="s.id" class="rounded-md border bg-background p-2" :style="scheduleBlockStyle(s)">
                     <div class="flex items-center justify-between gap-1">
                       <span class="text-[11px] font-semibold tabular-nums">{{s.start_time.slice(0,5)}}–{{s.end_time.slice(0,5)}}</span>
                       <span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium" :class="s.is_active?'bg-emerald-500/10 text-emerald-600':'bg-muted text-muted-foreground'">{{s.is_active?'Aktif':'Off'}}</span>
