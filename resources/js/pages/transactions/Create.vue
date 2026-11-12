@@ -382,15 +382,12 @@ function formatDate(value: Date) {
                 <section class="space-y-4 rounded-2xl border bg-card p-4 shadow-sm">
                     <div class="space-y-2">
                         <div class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pilih olahraga</div>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl border bg-muted/50 p-1">
                             <button v-for="item in props.facilities" :key="item.id" type="button"
-                                class="min-w-28 rounded-xl border px-4 py-3 text-left transition-all"
-                                :class="facilityId === item.id ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-background hover:border-primary/50 hover:bg-muted/40'"
+                                class="min-w-24 rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-all"
+                                :class="facilityId === item.id ? 'bg-background text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'"
                                 @click="facilityId = item.id">
-                                <span class="block text-sm font-semibold">{{ item.name }}</span>
-                                <span class="mt-1 block text-[10px]" :class="facilityId === item.id ? 'text-primary-foreground/75' : 'text-muted-foreground'">
-                                    {{ [item.has_booking && 'Booking', item.has_session && 'Sesi', item.has_membership && 'Membership'].filter(Boolean).join(' · ') }}
-                                </span>
+                                {{ item.name }}
                             </button>
                         </div>
                     </div>
