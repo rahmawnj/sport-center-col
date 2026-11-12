@@ -75,7 +75,7 @@ class PublicBookingController extends Controller
         abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
         $slotDuration = $package
             ? max(1, (int) $package->duration_minutes)
-            : (isset($data['duration_hours']) ? max(1, (int) $data['duration_hours']) * 60 : 0);
+            : max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
         $date = Carbon::parse($data['date']);
 
         $bookings = Booking::with(['court:id,name', 'user:id,name'])
