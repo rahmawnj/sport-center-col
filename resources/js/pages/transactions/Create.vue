@@ -242,6 +242,7 @@ watch(activeService, () => {
     date.value = '';
     slots.value = [];
     selectedSlot.value = null;
+    selectedSlots.value = [];
     courtId.value = null;
     ruleId.value = '';
     memberId.value = '';
@@ -260,6 +261,7 @@ watch(selected, () => {
     slots.value = [];
     existingBookings.value = [];
     selectedSlot.value = null;
+    selectedSlots.value = [];
     courtId.value = null;
     memberId.value = '';
 });
@@ -274,6 +276,7 @@ watch(memberId, (value) => {
 
 watch(date, () => {
     selectedSlot.value = null;
+    selectedSlots.value = [];
     courtId.value = null;
     slots.value = [];
     existingBookings.value = [];
@@ -652,12 +655,12 @@ function formatDate(value: Date) {
                                     </span>
                                 </div>
                                 <span class="text-xs text-muted-foreground">
-                                    {{ isBooking ? availableBookingCourts.length : selectedSlot!.courts.filter((court) => court.is_available !== false).length }} tersedia
+                                    {{ isBooking ? availableBookingCourts.length : (selectedSlot?.courts ?? []).filter((court) => court.is_available !== false).length }} tersedia
                                 </span>
                             </div>
                             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 <button
-                                    v-for="court in (isBooking ? availableBookingCourts : selectedSlot!.courts.filter((item) => item.is_available !== false))"
+                                    v-for="court in (isBooking ? availableBookingCourts : (selectedSlot?.courts ?? []).filter((item) => item.is_available !== false))"
                                     :key="court.id"
                                     type="button"
                                     class="flex items-center justify-between gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all"
