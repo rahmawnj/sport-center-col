@@ -79,6 +79,7 @@ class ClassSeeder extends Seeder
             $facility = Facility::query()
                 ->where('slug', $data['facility'])
                 ->where('status', 'active')
+                ->where('has_session', true)
                 ->first();
 
             if (! $facility) {
