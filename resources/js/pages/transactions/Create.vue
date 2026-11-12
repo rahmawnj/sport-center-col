@@ -239,6 +239,11 @@ watch(activeService, () => {
     sessionMode.value = 'entry';
 });
 
+watch(classDate, () => {
+    classScheduleId.value = null;
+    participantNamesText.value = '';
+});
+
 watch(sessionMode, () => {
     selected.value = null;
     classScheduleId.value = null;
