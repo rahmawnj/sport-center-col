@@ -486,7 +486,7 @@ function formatDate(value: Date) {
                         </div>
                     </button>
                 </div>
-                <p v-else-if="!(activeService === 'session' && isClassFacility)" class="text-sm text-muted-foreground">
+                <p v-else-if="activeService !== 'booking' && !(activeService === 'session' && isClassFacility)" class="text-sm text-muted-foreground">
                     Belum ada paket untuk layanan ini.
                 </p>
 
