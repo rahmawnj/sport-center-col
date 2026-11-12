@@ -35,7 +35,7 @@ type Facility = {
     packages: SellPackage[];
 };
 type Member = { id: number; name: string };
-type CashierClassSchedule = { id: number; class_name: string; facility_id: number; day: string; start_time: string; end_time: string; trainer: string | null; capacity: number; registered_count: number; registered_by_date: Record<string, number>; price: number };
+type CashierClassSchedule = { id: number; class_id: number; class_name: string; facility_id: number; day: string; start_time: string; end_time: string; trainer: string | null; capacity: number; registered_count: number; registered_by_date: Record<string, number>; price: number };
 type Slot = {
     window_id?: number;
     start_time: string;
@@ -98,6 +98,8 @@ const memberId = ref<string>('');
 const activeService = ref<'booking' | 'session' | 'membership'>(props.facilities[0]?.has_booking ? 'booking' : props.facilities[0]?.has_session ? 'session' : 'membership');
 const classDate = ref(today);
 const classScheduleId = ref<number | null>(null);
+const selectedClassId = ref<number | null>(null);
+const selectedClassDay = ref<string>('');
 const participantNamesText = ref('');
 
 const date = ref(today);
@@ -161,10 +163,32 @@ const visiblePackages = computed(() => {
     return activeFacility.value?.packages.filter((item) => item.type === type) ?? [];
 });
 const participantNames = computed(() => participantNamesText.value.split(/\r?\n/).map((name) => name.trim()).filter(Boolean));
+const classOptions = computed(() => {
+    if (!activeFacility.value) return [];
+    const unique = new Map<number, { id: number; name: string }>();
+    props.classSchedules
+        .filter((item) => item.facility_id === activeFacility.value?.id)
+        .forEach((item) => unique.set(item.class_id, { id: item.class_id, name: item.class_name }));
+    return [...unique.values()];
+});
+const selectedClassDays = computed(() => {
+    const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    return order.filter((day) => props.classSchedules.some((item) =>
+        item.facility_id === facilityId.value && item.class_id === selectedClassId.value && item.day === day
+    ));
+});
+const dayLabels: Record<string, string> = {
+    monday: 'Sen', tuesday: 'Sel', wednesday: 'Rab', thursday: 'Kam',
+    friday: 'Jum', saturday: 'Sab', sunday: 'Min',
+};
 const visibleClassSchedules = computed(() => {
-    if (!activeFacility.value || !classDate.value) return [];
-    const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
-    return props.classSchedules.filter((item) => item.facility_id === activeFacility.value?.id && item.day === day && (item.capacity - (item.registered_by_date?.[classDate.value] ?? 0)) > 0);
+    if (!activeFacility.value || !selectedClassId.value || !selectedClassDay.value || !classDate.value) return [];
+    return props.classSchedules.filter((item) =>
+        item.facility_id === activeFacility.value?.id
+        && item.class_id === selectedClassId.value
+        && item.day === selectedClassDay.value
+        && (item.capacity - (item.registered_by_date?.[classDate.value] ?? 0)) > 0
+    );
 });
 const selectedClassSchedule = computed(() => props.classSchedules.find((item) => item.id === classScheduleId.value) ?? null);
 const classRemaining = computed(() => selectedClassSchedule.value
@@ -236,6 +260,8 @@ watch(facilityId, () => {
     slotSelectionError.value = '';
     courtId.value = null;
     classScheduleId.value = null;
+    selectedClassId.value = null;
+    selectedClassDay.value = '';
     classDate.value = today
     participantNamesText.value = '';
     ruleId.value = '';
@@ -256,13 +282,46 @@ watch(activeService, () => {
     ruleId.value = '';
     memberId.value = '';
     classScheduleId.value = null;
+    selectedClassId.value = null;
+    selectedClassDay.value = '';
     classDate.value = today
     participantNamesText.value = '';
 });
 
+function nextDateForDay(day: string) {
+    const target = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day);
+    const next = new Date();
+    next.setHours(12, 0, 0, 0);
+    const offset = (target - next.getDay() + 7) % 7;
+    next.setDate(next.getDate() + offset);
+    return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+}
+
+function chooseClass(id: number) {
+    selectedClassId.value = id;
+    selectedClassDay.value = '';
+    classScheduleId.value = null;
+    participantNamesText.value = '';
+}
+
+function chooseClassDay(day: string) {
+    selectedClassDay.value = day;
+    classDate.value = nextDateForDay(day);
+    classScheduleId.value = null;
+    participantNamesText.value = '';
+}
+
 watch(classDate, () => {
     classScheduleId.value = null;
     participantNamesText.value = '';
+    if (!selectedClassId.value || !classDate.value) return;
+    const dateDay = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
+        .format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
+    if (selectedClassDays.value.includes(dateDay)) {
+        selectedClassDay.value = dateDay;
+    } else if (selectedClassDay.value) {
+        classDate.value = nextDateForDay(selectedClassDay.value);
+    }
 }, { immediate: true });
 
 watch(selected, () => {
@@ -599,22 +658,44 @@ function formatDate(value: Date) {
                 </p>
 
                 <div v-if="activeService === 'session' && isClassFacility" class="space-y-4 rounded-2xl border bg-card p-4">
-                    <div class="grid max-w-xs gap-2">
-                        <Label for="class-date">Tanggal kelas</Label>
+                    <div class="space-y-2">
+                        <Label>Pilih kelas</Label>
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <button v-for="item in classOptions" :key="item.id" type="button"
+                                class="rounded-xl border p-3 text-left font-semibold transition-colors hover:border-primary"
+                                :class="selectedClassId === item.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-background'"
+                                @click="chooseClass(item.id)">
+                                {{ item.name }}
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="selectedClassId" class="space-y-2 border-t pt-3">
+                        <Label>Pilih hari</Label>
+                        <div class="flex flex-wrap gap-2">
+                            <button v-for="day in selectedClassDays" :key="day" type="button"
+                                class="min-w-12 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors"
+                                :class="selectedClassDay === day ? 'border-primary bg-primary text-primary-foreground' : 'bg-background hover:border-primary'"
+                                @click="chooseClassDay(day)">
+                                {{ dayLabels[day] }}
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="selectedClassDay" class="grid max-w-xs gap-2 border-t pt-3">
+                        <Label for="class-date">Tanggal kelas · {{ dayLabels[selectedClassDay] }}</Label>
                         <Input id="class-date" v-model="classDate" type="date" :min="today" />
                     </div>
-                    <div v-if="classDate" class="grid gap-2 sm:grid-cols-2">
+                    <div v-if="selectedClassDay" class="grid gap-2 sm:grid-cols-2">
                         <button v-for="item in visibleClassSchedules" :key="item.id" type="button"
                             class="rounded-xl border p-3 text-left transition-colors hover:border-primary"
                             :class="classScheduleId === item.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''"
                             @click="classScheduleId = item.id">
-                            <div class="font-semibold">{{ item.class_name }}</div>
-                            <div class="text-xs text-muted-foreground">{{ item.start_time }}–{{ item.end_time }} · {{ item.trainer || 'Tanpa trainer' }}</div>
+                            <div class="font-semibold">{{ item.start_time }}–{{ item.end_time }}</div>
+                            <div class="text-xs text-muted-foreground">{{ item.trainer || 'Tanpa trainer' }}</div>
                             <div class="mt-1 text-sm font-semibold">{{ formatIDR(item.price) }}</div>
                             <div class="text-xs text-muted-foreground">{{ item.capacity - (item.registered_by_date?.[classDate] ?? 0) }} slot tersisa</div>
                         </button>
                     </div>
-                    <p v-if="classDate && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada kelas tersedia pada tanggal ini.</p>
+                    <p v-if="selectedClassDay && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada jadwal tersedia pada tanggal ini.</p>
                     <div v-if="classScheduleId" class="grid gap-2">
                         <Label for="class-participants">Peserta (satu nama per baris, ketik Umum jika tanpa nama)</Label>
                         <textarea id="class-participants" v-model="participantNamesText" rows="4" class="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="Umum&#10;Nama peserta 2"></textarea>
