@@ -10,6 +10,10 @@ class TrainerPackageSeeder extends Seeder
 {
     public function run(): void
     {
+        TrainerPackage::query()
+            ->whereDoesntHave('facility', fn ($query) => $query->where('slug', 'gym'))
+            ->update(['is_active' => false]);
+
         $facilities = Facility::query()
             ->where('status', 'active')
             ->where('slug', 'gym')
