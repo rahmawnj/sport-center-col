@@ -157,6 +157,9 @@ const visibleClassSchedules = computed(() => {
     return props.classSchedules.filter((item) => item.facility_id === activeFacility.value?.id && item.day === day && (item.capacity - (item.registered_by_date?.[classDate.value] ?? 0)) > 0);
 });
 const selectedClassSchedule = computed(() => props.classSchedules.find((item) => item.id === classScheduleId.value) ?? null);
+const classRemaining = computed(() => selectedClassSchedule.value
+    ? Math.max(0, selectedClassSchedule.value.capacity - (selectedClassSchedule.value.registered_by_date?.[classDate.value] ?? 0))
+    : 0);
 const activeRule = computed(
     () =>
         selected.value?.pricing_rules.find(
@@ -194,7 +197,7 @@ const total = computed(() => activeService.value === 'session' && sessionMode.va
     : isSession.value ? unitPrice.value : unitPrice.value * quantity.value,
 );
 const canSubmit = computed(() => {
-    if (activeService.value === 'session' && sessionMode.value === 'class') return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0;
+    if (activeService.value === 'session' && sessionMode.value === 'class') return !!classScheduleId.value && !!classDate.value && participantNames.value.length > 0 && participantNames.value.length <= classRemaining.value;
     if (!selected.value) return false;
 
     if (isSession.value) {
@@ -651,7 +654,7 @@ function formatDate(value: Date) {
 
                 <div v-if="activeService === 'session' && sessionMode === 'class'" class="space-y-4 pt-4">
                     <div class="font-medium">{{ selectedClassSchedule?.class_name || 'Pendaftaran kelas' }}</div>
-                    <div class="text-xs text-muted-foreground">{{ classDate || '—' }} · {{ participantNames.length }} peserta</div>
+                    <div class="text-xs text-muted-foreground">{{ classDate || '—' }} · {{ participantNames.length }} peserta · {{ classRemaining }} slot tersisa</div>
                     <div class="flex justify-between text-sm"><span>Harga / peserta</span><span>{{ formatIDR(unitPrice) }}</span></div>
                     <div class="flex justify-between border-t pt-2 font-semibold"><span>Total</span><span>{{ formatIDR(total) }}</span></div>
                     <div class="grid gap-2">
