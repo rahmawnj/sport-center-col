@@ -818,8 +818,13 @@ class TransactionController extends Controller
             ->where('is_active', true)
             ->get()
             ->first(fn (BookingTimeSlot $slot) =>
-                $this->toMinutes((string) $slot->start_time) === $startMinutes
-                && $this->toMinutes((string) $slot->end_time) === $endMinutes
+                $windowStart = $this->toMinutes((string) $slot->start_time);
+                $windowEnd = $this->toMinutes((string) $slot->end_time);
+                $step = 60 + $turnaround;
+
+                return $startMinutes >= $windowStart
+                    && $endMinutes <= $windowEnd
+                    && ($startMinutes - $windowStart) % $step === 0
             );
 
         if (! $window) {
