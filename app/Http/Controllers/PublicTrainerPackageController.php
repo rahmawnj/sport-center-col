@@ -78,6 +78,7 @@ class PublicTrainerPackageController extends Controller
                 'expires_at' => $expires->toDateString(),
                 'total_sessions' => $trainerPackage->total_sessions,
                 'used_sessions' => 0,
+                'trainer_share_percentage' => $trainerPackage->trainer_share_percentage,
                 'status' => 'pending',
             ]);
 
