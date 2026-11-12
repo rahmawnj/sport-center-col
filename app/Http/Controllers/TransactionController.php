@@ -129,6 +129,16 @@ class TransactionController extends Controller
             ->get(['id', 'name'])
             ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name]);
 
+        $classRegistrationCounts = SessionParticipant::query()
+            ->select('class_schedule_id', 'session_date', DB::raw('COUNT(*) as registered_count'))
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->groupBy('class_schedule_id', 'session_date')
+            ->get()
+            ->groupBy('class_schedule_id')
+            ->map(fn ($rows) => $rows->mapWithKeys(fn ($row) => [
+                Carbon::parse($row->session_date)->toDateString() => (int) $row->registered_count,
+            ]));
+
         $classSchedules = ClassSchedule::query()
             ->with(['sportClass.facility', 'trainer'])
             ->where('is_active', true)
@@ -152,6 +162,7 @@ class TransactionController extends Controller
                 'trainer' => $schedule->trainer?->name,
                 'capacity' => (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1),
                 'registered_count' => (int) $schedule->registered_count,
+                'registered_by_date' => $classRegistrationCounts->get($schedule->id, collect())->all(),
                 'price' => (float) $schedule->price,
             ])->values();
 
@@ -698,6 +709,7 @@ class TransactionController extends Controller
 
         DB::transaction(function () use ($package, $data, $date, $startTime, $endTime, $startMinutes, $endMinutes, $turnaround, $durationMinutes) {
             $court = \App\Models\Court::query()
+                ->lockForUpdate()
                 ->whereKey($data['court_id'])
                 ->where('facility_id', $package->facility_id)
                 ->where('status', 'available')
