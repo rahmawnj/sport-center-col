@@ -529,7 +529,9 @@ class TransactionController extends Controller
         DB::transaction(function () use ($data, $names) {
             $schedule = ClassSchedule::query()->with(['sportClass.facility'])->lockForUpdate()->findOrFail($data['class_schedule_id']);
             abort_unless($schedule->is_active && $schedule->sportClass?->is_active && $schedule->sportClass?->facility?->status === 'active' && $schedule->sportClass?->facility?->has_session, 422, 'Jadwal kelas tidak tersedia.');
-            if (empty($data['date'])) {\n                throw ValidationException::withMessages(['date' => 'Tanggal kelas wajib dipilih.']);\n            }\n            $date = Carbon::parse($data['date'])->startOfDay();
+            if (empty($data['date'])) {
+                throw ValidationException::withMessages(['date' => 'Tanggal kelas wajib dipilih.']);
+            }\n            $date = Carbon::parse($data['date'])->startOfDay();
             abort_unless($date->gte(today()) && strtolower($date->englishDayOfWeek) === $schedule->day, 422, 'Tanggal tidak sesuai hari jadwal kelas.');
             abort_if($date->isToday() && $schedule->start_time <= now()->format('H:i:s'), 422, 'Jadwal kelas sudah dimulai atau terlewat.');
             $capacity = (int) ($schedule->capacity ?? $schedule->sportClass->default_capacity ?? 1);
@@ -553,7 +555,7 @@ class TransactionController extends Controller
                     'guest_name' => $name === 'Umum' ? null : $name,
                     'transaction_id' => $transaction->id,
                     'price' => $price,
-                    'status' => 'pending',
+                    'status' => $paid ? 'confirmed' : 'pending',
                 ]);
             }
         });
@@ -726,14 +728,15 @@ class TransactionController extends Controller
                 'date' => $date->toDateString(),
                 'start_time' => $startTime,
                 'end_time' => $endTime,
-                'status' => $paid ? 'confirmed' : 'pending',
+                'status' => 'pending',
             ]);
 
             Transaction::create([
                 'transactionable_type' => 'booking',
                 'guest_name' => $data['customer_name'] ?: 'Umum',
                 'amount' => $amount,
-                'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),\n                'booking_status' => $paid ? 'confirmed' : 'pending',
+                'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
+                'booking_status' => $paid ? 'confirmed' : 'pending',\n                'booking_status' => $paid ? 'confirmed' : 'pending',
                 'payment_method' => $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
             ]);
