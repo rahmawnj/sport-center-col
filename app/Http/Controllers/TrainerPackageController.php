@@ -210,6 +210,21 @@ class TrainerPackageController extends Controller
             && $membership->start_date?->lte(today())
             && $membership->end_date?->gte(today());
 
+        $completedSessions = TrainerSessionSchedule::query()
+            ->where('member_trainer_package_id', $memberTrainerPackage->id)
+            ->where('status', 'completed')
+            ->where('member_attended', true)
+            ->where('trainer_attended', true)
+            ->count();
+
+        $packagePrice = (float) ($memberTrainerPackage->trainerPackage?->price ?? 0);
+        $sharePercentage = (float) ($memberTrainerPackage->trainer_share_percentage ?? 0);
+        $maximumTrainerShare = $packagePrice * $sharePercentage / 100;
+        $eligibleSessions = min($completedSessions, (int) $memberTrainerPackage->total_sessions);
+        $earnedTrainerShare = $memberTrainerPackage->total_sessions > 0
+            ? $maximumTrainerShare * $eligibleSessions / $memberTrainerPackage->total_sessions
+            : 0;
+
         $schedules = TrainerSessionSchedule::query()
             ->where('member_trainer_package_id', $memberTrainerPackage->id)
             ->orderByDesc('session_date')
@@ -241,6 +256,11 @@ class TrainerPackageController extends Controller
                 'used_sessions' => $memberTrainerPackage->used_sessions,
                 'remaining_sessions' => $memberTrainerPackage->remaining_sessions,
                 'status' => $memberTrainerPackage->status,
+                'package_price' => $packagePrice,
+                'trainer_share_percentage' => $sharePercentage,
+                'maximum_trainer_share' => round($maximumTrainerShare, 2),
+                'completed_sessions' => $eligibleSessions,
+                'earned_trainer_share' => round($earnedTrainerShare, 2),
                 'membership_active' => (bool) $membershipActive,
                 'membership_package' => $membership?->package?->name,
                 'membership_end' => $membership?->end_date?->toDateString(),
@@ -250,6 +270,19 @@ class TrainerPackageController extends Controller
             ],
             'schedules' => $schedules,
         ]);
+    }
+
+    public function updateTrainerShare(Request $request, MemberTrainerPackage $memberTrainerPackage): RedirectResponse
+    {
+        $data = $request->validate([
+            'trainer_share_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        $memberTrainerPackage->update([
+            'trainer_share_percentage' => $data['trainer_share_percentage'],
+        ]);
+
+        return back()->with('success', 'Persentase bagi hasil trainer berhasil disimpan.');
     }
 
     public function store(Request $request): RedirectResponse
