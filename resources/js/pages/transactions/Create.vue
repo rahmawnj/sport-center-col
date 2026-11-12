@@ -120,7 +120,7 @@ const form = useForm({
     amount: 0,
     court_id: null as number | null,
     date: '',
-    membership_start_date: today,
+    membership_start_date: '',
     start_time: '',
     end_time: '',
     selected_slots: [] as { start_time: string; end_time: string }[],
@@ -236,8 +236,12 @@ const membershipPeriod = computed(() => {
         return null;
     }
 
+    if (!form.membership_start_date) {
+        return { start: 'Otomatis mengikuti antrean member', end: 'Dihitung otomatis' };
+    }
+
     const days = selected.value.duration_days ?? 30;
-    const start = new Date(`${form.membership_start_date || today}T12:00:00`);
+    const start = new Date(`${form.membership_start_date}T12:00:00`);
     const end = new Date(start);
     end.setDate(end.getDate() + days - 1);
 
@@ -286,7 +290,7 @@ watch(facilityId, () => {
     classDate.value = today
     ruleId.value = '';
     memberId.value = '';
-    form.membership_start_date = today;
+    form.membership_start_date = '';
 });
 
 watch(unitPrice, () => {
@@ -1037,7 +1041,7 @@ function formatDate(value: Date) {
                         class="space-y-1 rounded-xl bg-muted/40 p-3 text-sm"
                     >
                         <div class="grid gap-2">
-                            <Label for="membership-start-date" class="text-xs">Tanggal mulai aktif</Label>
+                            <Label for="membership-start-date" class="text-xs">Ubah tanggal mulai aktif (opsional)</Label>
                             <Input
                                 id="membership-start-date"
                                 v-model="form.membership_start_date"
