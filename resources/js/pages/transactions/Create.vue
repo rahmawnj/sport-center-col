@@ -186,7 +186,6 @@ const visibleClassSchedules = computed(() => {
         item.facility_id === activeFacility.value?.id
         && item.class_id === selectedClassId.value
         && item.day === selectedClassDay.value
-        && (item.capacity - (item.registered_by_date?.[classDate.value] ?? 0)) > 0
     );
 });
 const selectedClassSchedule = computed(() => props.classSchedules.find((item) => item.id === classScheduleId.value) ?? null);
@@ -703,13 +702,21 @@ function formatDate(value: Date) {
                     </div>
                     <div v-if="selectedClassDay" class="grid gap-2 sm:grid-cols-2">
                         <button v-for="item in visibleClassSchedules" :key="item.id" type="button"
-                            class="rounded-xl border p-3 text-left transition-colors hover:border-primary"
-                            :class="classScheduleId === item.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''"
+                            :disabled="item.capacity - (item.registered_by_date?.[classDate] ?? 0) <= 0"
+                            class="rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:border-dashed disabled:bg-muted/50 disabled:opacity-60"
+                            :class="[
+                                classScheduleId === item.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary',
+                            ]"
                             @click="classScheduleId = item.id">
-                            <div class="font-semibold">{{ item.start_time }}–{{ item.end_time }}</div>
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="font-semibold">{{ item.start_time }}–{{ item.end_time }}</div>
+                                <span v-if="item.capacity - (item.registered_by_date?.[classDate] ?? 0) <= 0" class="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Penuh</span>
+                            </div>
                             <div class="text-xs text-muted-foreground">{{ item.trainer || 'Tanpa trainer' }}</div>
                             <div class="mt-1 text-sm font-semibold">{{ formatIDR(item.price) }}</div>
-                            <div class="text-xs text-muted-foreground">{{ item.capacity - (item.registered_by_date?.[classDate] ?? 0) }} slot tersisa</div>
+                            <div class="text-xs text-muted-foreground">
+                                {{ Math.max(0, item.capacity - (item.registered_by_date?.[classDate] ?? 0)) }} slot tersisa
+                            </div>
                         </button>
                     </div>
                     <p v-if="selectedClassDay && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada jadwal tersedia pada tanggal ini.</p>
