@@ -531,7 +531,8 @@ class TransactionController extends Controller
             abort_unless($schedule->is_active && $schedule->sportClass?->is_active && $schedule->sportClass?->facility?->status === 'active' && $schedule->sportClass?->facility?->has_session, 422, 'Jadwal kelas tidak tersedia.');
             if (empty($data['date'])) {
                 throw ValidationException::withMessages(['date' => 'Tanggal kelas wajib dipilih.']);
-            }\n            $date = Carbon::parse($data['date'])->startOfDay();
+            }
+            $date = Carbon::parse($data['date'])->startOfDay();
             abort_unless($date->gte(today()) && strtolower($date->englishDayOfWeek) === $schedule->day, 422, 'Tanggal tidak sesuai hari jadwal kelas.');
             abort_if($date->isToday() && $schedule->start_time <= now()->format('H:i:s'), 422, 'Jadwal kelas sudah dimulai atau terlewat.');
             $capacity = (int) ($schedule->capacity ?? $schedule->sportClass->default_capacity ?? 1);
