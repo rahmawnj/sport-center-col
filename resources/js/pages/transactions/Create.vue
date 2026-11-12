@@ -251,7 +251,6 @@ watch(selected, () => {
     existingBookings.value = [];
     selectedSlot.value = null;
     courtId.value = null;
-    quantity.value = 1;
     memberId.value = '';
 });
 
@@ -756,34 +755,6 @@ function formatDate(value: Date) {
                             <span class="font-medium">
                                 {{ selected.duration_days ?? 30 }} hari
                             </span>
-                        </div>
-                    </div>
-
-                    <div v-else class="flex items-center justify-between">
-                        <span class="text-sm text-muted-foreground">Qty</span>
-                        <div class="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                class="size-8"
-                                :disabled="quantity <= 1"
-                                @click="changeQty(-1)"
-                            >
-                                <Minus class="size-4" />
-                            </Button>
-                            <span class="w-8 text-center font-medium">{{
-                                quantity
-                            }}</span>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                class="size-8"
-                                @click="changeQty(1)"
-                            >
-                                <Plus class="size-4" />
-                            </Button>
                         </div>
                     </div>
 
