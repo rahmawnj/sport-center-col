@@ -449,9 +449,18 @@ class TransactionController extends Controller
                     ['label' => 'Trainer', 'value' => $classSchedule->trainer?->name ?? 'Belum ditentukan'],
                     ['label' => 'Tanggal kelas', 'value' => $classParticipant?->session_date?->translatedFormat('l, d F Y')],
                     ['label' => 'Waktu kelas', 'value' => substr((string) $classSchedule->start_time, 0, 5).' - '.substr((string) $classSchedule->end_time, 0, 5)],
+                    ['label' => 'Peserta', 'value' => $transaction->sessionParticipants->map(fn (SessionParticipant $participant) => $participant->guest_name ?: 'Umum')->implode(', ')],
+                    ['label' => 'Jumlah peserta', 'value' => (string) $transaction->sessionParticipants->count()],
                     ['label' => 'Status peserta', 'value' => ucfirst((string) $classParticipant->status)],
                 ];
             }
+        } elseif ($transaction->transactionable_type === 'entry') {
+            $itemName = 'Tiket Masuk';
+            $details = [
+                ['label' => 'Jenis pesanan', 'value' => 'Tiket masuk per orang'],
+                ['label' => 'Pelanggan', 'value' => $transaction->customer_name ?: 'Umum'],
+                ['label' => 'Total pembayaran', 'value' => 'Rp '.number_format((float) $transaction->amount, 0, ',', '.')],
+            ];
         }
 
         if ($details === []) {
