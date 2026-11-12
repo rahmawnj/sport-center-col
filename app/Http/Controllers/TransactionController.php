@@ -6,6 +6,8 @@ use App\Models\Booking;
 use App\Models\BookingTimeSlot;
 use App\Models\ClassSchedule;
 use App\Models\MemberTrainerPackage;
+use App\Models\MemberProfile;
+use App\Models\Role;
 use App\Models\Device;
 use App\Models\Facility;
 use App\Models\Package;
@@ -528,6 +530,11 @@ class TransactionController extends Controller
             'court_id' => ['nullable', 'integer', 'exists:courts,id'],
             'date' => ['nullable', 'date', 'after_or_equal:today'],
             'membership_start_date' => ['nullable', 'date'],
+            'membership_member_type' => ['nullable', Rule::in(['existing', 'new'])],
+            'new_member_name' => ['required_if:membership_member_type,new', 'nullable', 'string', 'max:255'],
+            'new_member_email' => ['required_if:membership_member_type,new', 'nullable', 'email', 'max:255', Rule::unique('users', 'email')],
+            'new_member_phone' => ['required_if:membership_member_type,new', 'nullable', 'string', 'max:25'],
+            'new_member_password' => ['required_if:membership_member_type,new', 'nullable', 'string', 'min:8'],
             'start_time' => ['nullable', 'date_format:H:i'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
@@ -655,16 +662,35 @@ class TransactionController extends Controller
      */
     private function storeMembership(Package $package, array $data): void
     {
-        if (empty($data['user_id'])) {
-            throw ValidationException::withMessages([
-                'user_id' => 'Member wajib dipilih untuk paket membership.',
-            ]);
-        }
-
         DB::transaction(function () use ($package, $data) {
+            if (($data['membership_member_type'] ?? 'existing') === 'new') {
+                $memberRole = Role::firstOrCreate(['name' => 'Member']);
+                $member = new User([
+                    'name' => $data['new_member_name'],
+                    'email' => $data['new_member_email'],
+                    'password' => $data['new_member_password'],
+                ]);
+                $member->role()->associate($memberRole);
+                $member->save();
+                MemberProfile::create([
+                    'user_id' => $member->id,
+                    'phone' => $data['new_member_phone'],
+                ]);
+            } else {
+                if (empty($data['user_id'])) {
+                    throw ValidationException::withMessages([
+                        'user_id' => 'Pilih member yang sudah terdaftar.',
+                    ]);
+                }
+                $member = User::query()
+                    ->whereHas('memberProfile')
+                    ->lockForUpdate()
+                    ->findOrFail($data['user_id']);
+            }
+
             // Lock member row to prevent two simultaneous purchases from receiving
             // the same start date.
-            $member = User::query()->lockForUpdate()->findOrFail($data['user_id']);
+            User::query()->lockForUpdate()->findOrFail($member->id);
             $paid = $data['payment_status'] === 'paid';
 
             $transaction = Transaction::create([
