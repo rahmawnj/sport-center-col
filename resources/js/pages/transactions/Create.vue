@@ -120,6 +120,7 @@ const form = useForm({
     amount: 0,
     court_id: null as number | null,
     date: '',
+    membership_start_date: today,
     start_time: '',
     end_time: '',
     selected_slots: [] as { start_time: string; end_time: string }[],
@@ -236,9 +237,9 @@ const membershipPeriod = computed(() => {
     }
 
     const days = selected.value.duration_days ?? 30;
-    const start = new Date();
-    const end = new Date();
-    end.setDate(end.getDate() + days);
+    const start = new Date(`${form.membership_start_date || today}T12:00:00`);
+    const end = new Date(start);
+    end.setDate(end.getDate() + days - 1);
 
     return { start: formatDate(start), end: formatDate(end) };
 });
@@ -285,6 +286,7 @@ watch(facilityId, () => {
     classDate.value = today
     ruleId.value = '';
     memberId.value = '';
+    form.membership_start_date = today;
 });
 
 watch(unitPrice, () => {
@@ -300,6 +302,7 @@ watch(activeService, () => {
     courtId.value = null;
     ruleId.value = '';
     memberId.value = '';
+    form.membership_start_date = today;
     classScheduleId.value = null;
     selectedClassId.value = null;
     classDate.value = today
@@ -519,6 +522,7 @@ function submit() {
         : '';
     form.user_id =
         isMembership.value && memberId.value ? Number(memberId.value) : null;
+    form.membership_start_date = isMembership.value ? form.membership_start_date : '';
     form.post('/transactions');
 }
 
@@ -1032,6 +1036,15 @@ function formatDate(value: Date) {
                         v-else-if="isMembership"
                         class="space-y-1 rounded-xl bg-muted/40 p-3 text-sm"
                     >
+                        <div class="grid gap-2">
+                            <Label for="membership-start-date" class="text-xs">Tanggal mulai aktif</Label>
+                            <Input
+                                id="membership-start-date"
+                                v-model="form.membership_start_date"
+                                type="date"
+                                class="w-full"
+                            />
+                        </div>
                         <div class="flex justify-between gap-2">
                             <span class="text-muted-foreground">Aktivasi</span>
                             <span class="font-medium">
