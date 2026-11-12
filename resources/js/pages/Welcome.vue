@@ -691,7 +691,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                 </div>
             </Transition>
 
-            <section class="px-5 pb-20 lg:px-8 lg:pb-28">
+            <section class="px-5 pt-20 pb-20 lg:px-8 lg:pt-28 lg:pb-28">
                 <div class="cta-strip mx-auto flex max-w-7xl flex-col gap-6 rounded-3xl px-7 py-9 sm:flex-row sm:items-center sm:justify-between sm:px-12">
                     <div>
                         <p class="section-kicker">Mulai dari sekarang</p>
