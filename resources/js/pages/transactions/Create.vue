@@ -170,22 +170,47 @@ const classOptions = computed(() => {
         .forEach((item) => unique.set(item.class_id, { id: item.class_id, name: item.class_name }));
     return [...unique.values()];
 });
-const selectedClassDays = computed(() => {
-    const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    return order.filter((day) => props.classSchedules.some((item) =>
-        item.facility_id === facilityId.value && item.class_id === selectedClassId.value && item.day === day
-    ));
-});
 const dayLabels: Record<string, string> = {
     monday: 'Sen', tuesday: 'Sel', wednesday: 'Rab', thursday: 'Kam',
     friday: 'Jum', saturday: 'Sab', sunday: 'Min',
 };
+const selectedClassDays = computed(() => new Set(
+    props.classSchedules
+        .filter((item) => item.facility_id === facilityId.value && item.class_id === selectedClassId.value)
+        .map((item) => item.day),
+));
+const classDates = computed(() => {
+    if (!selectedClassId.value) return [];
+
+    const dates: { value: string; day: string; label: string; shortDate: string }[] = [];
+    const start = new Date(`${today}T12:00:00`);
+
+    for (let offset = 0; offset < 30; offset++) {
+        const dateValue = new Date(start);
+        dateValue.setDate(start.getDate() + offset);
+        const day = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dateValue.getDay()];
+        if (!selectedClassDays.value.has(day)) continue;
+
+        const value = `${dateValue.getFullYear()}-${String(dateValue.getMonth() + 1).padStart(2, '0')}-${String(dateValue.getDate()).padStart(2, '0')}`;
+        dates.push({
+            value,
+            day,
+            label: new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(dateValue),
+            shortDate: new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(dateValue),
+        });
+    }
+
+    return dates;
+});
 const visibleClassSchedules = computed(() => {
-    if (!activeFacility.value || !selectedClassId.value || !selectedClassDay.value || !classDate.value) return [];
+    if (!activeFacility.value || !selectedClassId.value || !classDate.value) return [];
+    const dateDay = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
+        .format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
+
     return props.classSchedules.filter((item) =>
         item.facility_id === activeFacility.value?.id
         && item.class_id === selectedClassId.value
-        && item.day === selectedClassDay.value
+        && item.day === dateDay
     );
 });
 const selectedClassSchedule = computed(() => props.classSchedules.find((item) => item.id === classScheduleId.value) ?? null);
@@ -286,41 +311,19 @@ watch(activeService, () => {
     participantNamesText.value = '';
 });
 
-function nextDateForDay(day: string) {
-    const target = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day);
-    const next = new Date();
-    next.setHours(12, 0, 0, 0);
-    const offset = (target - next.getDay() + 7) % 7;
-    next.setDate(next.getDate() + offset);
-    return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
-}
-
 function chooseClass(id: number) {
     selectedClassId.value = id;
-    selectedClassDay.value = '';
+    classScheduleId.value = null;
+    participantNamesText.value = '';
+    const firstDate = classDates.value[0];
+    classDate.value = firstDate?.value ?? '';
+}
+
+function chooseClassDate(value: string) {
+    classDate.value = value;
     classScheduleId.value = null;
     participantNamesText.value = '';
 }
-
-function chooseClassDay(day: string) {
-    selectedClassDay.value = day;
-    classDate.value = nextDateForDay(day);
-    classScheduleId.value = null;
-    participantNamesText.value = '';
-}
-
-watch(classDate, () => {
-    classScheduleId.value = null;
-    participantNamesText.value = '';
-    if (!selectedClassId.value || !classDate.value) return;
-    const dateDay = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
-        .format(new Date(`${classDate.value}T12:00:00`)).toLowerCase();
-    if (selectedClassDays.value.includes(dateDay)) {
-        selectedClassDay.value = dateDay;
-    } else if (selectedClassDay.value) {
-        classDate.value = nextDateForDay(selectedClassDay.value);
-    }
-}, { immediate: true });
 
 watch(selected, () => {
     date.value = today
@@ -685,22 +688,28 @@ function formatDate(value: Date) {
                             </button>
                         </div>
                     </div>
-                    <div v-if="selectedClassId" class="space-y-2 border-t pt-3">
-                        <Label>Pilih hari</Label>
-                        <div class="flex flex-wrap gap-2">
-                            <button v-for="day in selectedClassDays" :key="day" type="button"
-                                class="min-w-12 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors"
-                                :class="selectedClassDay === day ? 'border-primary bg-primary text-primary-foreground' : 'bg-background hover:border-primary'"
-                                @click="chooseClassDay(day)">
-                                {{ dayLabels[day] }}
+                    <div v-if="selectedClassId" class="space-y-3 border-t pt-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <Label>Pilih tanggal kelas</Label>
+                            <span class="text-xs text-muted-foreground">30 hari ke depan</span>
+                        </div>
+                        <div v-if="!classDates.length" class="text-sm text-muted-foreground">
+                            Tidak ada jadwal kelas dalam 30 hari ke depan.
+                        </div>
+                        <div v-else class="flex flex-wrap gap-2">
+                            <button v-for="item in classDates" :key="item.value" type="button"
+                                class="min-w-[76px] rounded-xl border px-3 py-2 text-center transition-colors"
+                                :class="classDate === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-background hover:border-primary'"
+                                @click="chooseClassDate(item.value)">
+                                <span class="block text-xs font-medium">{{ item.label }}</span>
+                                <span class="block text-sm font-bold">{{ item.shortDate }}</span>
                             </button>
                         </div>
                     </div>
-                    <div v-if="selectedClassDay" class="grid max-w-xs gap-2 border-t pt-3">
-                        <Label for="class-date">Tanggal kelas · {{ dayLabels[selectedClassDay] }}</Label>
-                        <Input id="class-date" v-model="classDate" type="date" :min="today" />
+                    <div v-if="classDate && selectedClassId" class="space-y-2 border-t pt-3">
+                        <Label>Pilih jam kelas · {{ new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${classDate}T12:00:00`)) }}</Label>
                     </div>
-                    <div v-if="selectedClassDay" class="grid gap-2 sm:grid-cols-2">
+                    <div v-if="classDate && selectedClassId" class="grid gap-2 sm:grid-cols-2">
                         <button v-for="item in visibleClassSchedules" :key="item.id" type="button"
                             :disabled="item.capacity - (item.registered_by_date?.[classDate] ?? 0) <= 0"
                             class="rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:border-dashed disabled:bg-muted/50 disabled:opacity-60"
@@ -719,7 +728,7 @@ function formatDate(value: Date) {
                             </div>
                         </button>
                     </div>
-                    <p v-if="selectedClassDay && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada jadwal tersedia pada tanggal ini.</p>
+                    <p v-if="classDate && selectedClassId && !visibleClassSchedules.length" class="text-sm text-muted-foreground">Tidak ada sesi kelas pada tanggal ini.</p>
                     <div v-if="classScheduleId" class="grid gap-2">
                         <Label for="class-participants">Peserta (satu nama per baris, ketik Umum jika tanpa nama)</Label>
                         <textarea id="class-participants" v-model="participantNamesText" rows="4" class="w-full rounded-lg border bg-background px-3 py-2 text-sm" placeholder="Umum&#10;Nama peserta 2"></textarea>
