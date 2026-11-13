@@ -222,6 +222,19 @@ class TrainerPackageController extends Controller
         ]);
     }
 
+    public function updateTrainerShare(Request $request, MemberTrainerPackage $memberTrainerPackage): RedirectResponse
+    {
+        $data = $request->validate([
+            'trainer_share_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        $memberTrainerPackage->update([
+            'trainer_share_percentage' => $data['trainer_share_percentage'],
+        ]);
+
+        return back()->with('success', 'Persentase bagian trainer untuk paket member ini berhasil diperbarui.');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
