@@ -10,10 +10,12 @@ const form = useForm({ session_date:'', start_time:'09:00', end_time:'10:00' });
 function formatRupiah(value:number){ return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value || 0); }
 const editingId = ref<number|null>(null);
 const editForm = useForm({ session_date:'', start_time:'09:00', end_time:'10:00' });
+const shareForm = useForm({ trainer_share_percentage: props.item.trainer_share_percentage });
 function submit(){ form.post('/membership-trainers/'+props.item.id+'/schedules',{onSuccess:()=>form.reset('session_date')}); }
 function beginEdit(schedule:Schedule){ editingId.value=schedule.id; editForm.clearErrors(); editForm.session_date=schedule.date; editForm.start_time=schedule.start_time; editForm.end_time=schedule.end_time; }
 function cancelEdit(){ editingId.value=null; editForm.reset(); editForm.clearErrors(); }
 function saveEdit(id:number){ editForm.put('/trainer-session-schedules/'+id,{onSuccess:cancelEdit}); }
+function saveTrainerShare(){ shareForm.put('/membership-trainers/'+props.item.id+'/trainer-share'); }
 function setResult(id:number,result:'completed'|'failed'){ const label=result==='completed'?'BERHASIL':'TIDAK BERHASIL'; if(window.confirm('Tandai sesi ini '+label+'? '+(result==='completed'?'Sisa sesi akan berkurang satu.':'Sisa sesi tidak akan berkurang.'))) router.post('/trainer-session-schedules/'+id+'/result',{result}); }
 function attendanceLabel(confirmedAt:string|null,attended:boolean){ return !confirmedAt ? 'Belum dikonfirmasi' : (attended ? 'Hadir' : 'Tidak hadir'); }
 function statusLabel(status:string){ return ({scheduled:'Menunggu hasil',completed:'Berhasil',failed:'Tidak berhasil'} as Record<string,string>)[status] || status; }
@@ -29,7 +31,10 @@ function formatDate(value:string|null){ return value ? new Intl.DateTimeFormat('
 <div class="mt-6 grid gap-3 sm:grid-cols-3"><div class="rounded-xl bg-muted/50 p-4"><p class="text-xs text-muted-foreground">Total sesi</p><p class="mt-1 text-2xl font-semibold">{{item.total_sessions}}</p></div><div class="rounded-xl bg-muted/50 p-4"><p class="text-xs text-muted-foreground">Sesi terpakai</p><p class="mt-1 text-2xl font-semibold">{{item.used_sessions}}</p></div><div class="rounded-xl bg-primary/5 p-4"><p class="text-xs text-muted-foreground">Sisa sesi</p><p class="mt-1 text-2xl font-semibold text-primary">{{item.remaining_sessions}}</p></div></div>
 <div class="mt-6 border-t pt-5">
 <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><h3 class="font-semibold">Bagi hasil trainer</h3><p class="mt-1 text-xs text-muted-foreground">Persentase ini berlaku untuk penugasan member dan trainer ini.</p></div><div class="text-right"><p class="text-xs text-muted-foreground">Hak trainer saat ini</p><p class="text-xl font-semibold text-primary">{{formatRupiah(item.earned_trainer_share)}}</p></div></div>
-<p class="mt-3 text-sm">Persentase bagian trainer: <strong>{{item.trainer_share_percentage}}%</strong> <span class="text-xs text-muted-foreground">(diatur dari master paket trainer)</span></p>
+<form class="mt-4 flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-end" @submit.prevent="saveTrainerShare">
+<div class="flex-1 space-y-1.5"><label class="text-sm font-medium">Persentase bagian trainer (%)</label><input v-model.number="shareForm.trainer_share_percentage" type="number" min="0" max="100" step="0.01" required class="w-full rounded-md border bg-background px-3 py-2 text-sm"/><p class="text-xs text-muted-foreground">Perubahan hanya berlaku untuk paket member ini, tidak mengubah master paket trainer.</p><p v-if="shareForm.errors.trainer_share_percentage" class="text-xs text-destructive">{{shareForm.errors.trainer_share_percentage}}</p></div>
+<Button type="submit" :disabled="shareForm.processing || shareForm.trainer_share_percentage < 0 || shareForm.trainer_share_percentage > 100"><Save class="mr-2 size-4"/>Simpan persentase</Button>
+</form>
 <div class="mt-4 grid gap-3 sm:grid-cols-3"><div class="rounded-xl bg-muted/50 p-3"><p class="text-xs text-muted-foreground">Harga paket</p><p class="mt-1 font-semibold">{{formatRupiah(item.package_price)}}</p></div><div class="rounded-xl bg-muted/50 p-3"><p class="text-xs text-muted-foreground">Maksimal bagian trainer</p><p class="mt-1 font-semibold">{{formatRupiah(item.maximum_trainer_share)}}</p></div><div class="rounded-xl bg-muted/50 p-3"><p class="text-xs text-muted-foreground">Sesi valid</p><p class="mt-1 font-semibold">{{item.completed_sessions}} / {{item.total_sessions}}</p></div></div>
 <p class="mt-3 text-xs text-muted-foreground">Perhitungan: harga paket × persentase trainer × (sesi berhasil ÷ total sesi). Sesi dihitung jika member dan trainer sama-sama hadir dan admin menetapkan hasilnya berhasil.</p>
 </div>
