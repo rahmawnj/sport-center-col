@@ -156,6 +156,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('trainer-packages', [TrainerPackageController::class, 'index'])->name('trainer-packages.index');
         Route::get('membership-trainers', [TrainerPackageController::class, 'membershipTrainers'])->name('membership-trainers.index');
         Route::get('membership-trainers/{memberTrainerPackage}', [TrainerPackageController::class, 'membershipTrainerShow'])->name('membership-trainers.show');
+        Route::put('membership-trainers/{memberTrainerPackage}/trainer-share', [TrainerPackageController::class, 'updateTrainerShare'])->name('membership-trainers.trainer-share.update');
         Route::post('membership-trainers/{memberTrainerPackage}/schedules', [TrainerSessionController::class, 'store'])->name('membership-trainers.schedules.store');
         Route::put('trainer-session-schedules/{schedule}', [TrainerSessionController::class, 'update'])->name('trainer-session-schedules.update');
         Route::post('trainer-session-schedules/{schedule}/result', [TrainerSessionController::class, 'setResult'])->name('trainer-session-schedules.result');
