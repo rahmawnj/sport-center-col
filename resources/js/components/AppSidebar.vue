@@ -33,7 +33,6 @@ const items: (NavItem | NavGroup)[] = [
     { title: 'Membership', href: '/memberships', icon: BadgeCheck },
     { title: 'Paket Membership', href: '/membership-packages', icon: PackageIcon },
     { title: 'Trainer', href: '/trainers', icon: Dumbbell },
-    { title: 'Paket Trainer', href: '/trainer-packages', icon: PackageIcon },
     { title: 'Membership Trainer', href: '/membership-trainers', icon: Dumbbell },
     { title: 'Transaksi', href: '/transactions', icon: Receipt },
     {
