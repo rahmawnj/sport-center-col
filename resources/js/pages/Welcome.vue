@@ -705,7 +705,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 
 <style scoped>
 .dream-home { --lime: #a4da01; --navy: #001428; font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif; }
-.btn-lime { border-radius: 15px; background: var(--lime); color: var(--navy); transition: transform .2s ease, background .2s ease; }\n.dream-home button, .dream-home .public-action-button, .dream-home a[class*="px-"][class*="py-"] { border-radius: 15px !important; }
+.btn-lime { border-radius: 15px; background: var(--lime); color: var(--navy); transition: transform .2s ease, background .2s ease; }
+.dream-home button, .dream-home .public-action-button, .dream-home a[class*="px-"][class*="py-"] { border-radius: 15px !important; }
 .btn-lime:hover { background: #b8ec24; transform: translateY(-2px); }
 .brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: var(--lime); color: var(--navy); font-size: 18px; }
 .nav-link { position: relative; padding: 10px 0; transition: color .2s ease; }
