@@ -814,8 +814,8 @@ function promoRange(rule: PricingRule) {
                                         <span>{{
                                             formatDuration(pkg.duration_minutes)
                                         }}</span>
-                                    
-    
+                                    </template>
+
                                     <template
                                         v-if="
                                             pkg.type === 'membership' &&
