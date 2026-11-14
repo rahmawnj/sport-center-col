@@ -274,26 +274,60 @@ const formMethod = computed(() => (editing.value ? 'put' : 'post'));
 
 const info = computed(() => [
     {
+        key: 'has_booking',
         label: 'Booking',
+        enabled: props.facility.has_booking,
         value: !props.facility.has_booking
             ? 'Tidak tersedia'
             : props.facility.is_bookable_online
               ? 'Tersedia · Online'
               : 'Tersedia · Kasir',
+        disabled: false,
     },
     {
+        key: 'has_membership',
         label: 'Membership',
+        enabled: props.facility.has_membership,
         value: props.facility.has_membership ? 'Tersedia' : 'Tidak tersedia',
+        disabled: false,
     },
     {
+        key: 'has_session',
         label: 'Kelas',
+        enabled: props.facility.has_session,
         value: props.facility.has_session ? 'Tersedia' : 'Tidak tersedia',
+        disabled: false,
     },
     {
+        key: 'has_trainer',
         label: 'Personal Trainer',
-        value: props.facility.trainer_packages.length > 0 ? 'Tersedia' : 'Belum ada paket',
+        enabled: props.facility.trainer_packages.some((item) => item.is_active),
+        value: props.facility.trainer_packages.length === 0
+            ? 'Belum ada paket'
+            : props.facility.trainer_packages.some((item) => item.is_active)
+              ? 'Tersedia'
+              : 'Tidak tersedia',
+        disabled: props.facility.trainer_packages.length === 0,
     },
 ]);
+
+const updatingCapability = ref<string | null>(null);
+
+function toggleCapability(item: (typeof info.value)[number]) {
+    if (item.disabled || updatingCapability.value) return;
+
+    updatingCapability.value = item.key;
+    router.patch(
+        `/facilities/${props.facility.id}/capabilities`,
+        { capability: item.key, enabled: !item.enabled },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                updatingCapability.value = null;
+            },
+        },
+    );
+}
 
 function openCreate() {
     editing.value = null;
@@ -634,13 +668,31 @@ function promoRange(rule: PricingRule) {
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div
                 v-for="item in info"
-                :key="item.label"
-                class="rounded-2xl border bg-card p-4 shadow-sm"
+                :key="item.key"
+                class="flex flex-col justify-between gap-4 rounded-2xl border bg-card p-4 shadow-sm"
             >
-                <div class="text-sm text-muted-foreground">
-                    {{ item.label }}
+                <div>
+                    <div class="text-sm text-muted-foreground">{{ item.label }}</div>
+                    <div class="mt-2 flex items-center gap-2">
+                        <span
+                            class="size-2 rounded-full"
+                            :class="item.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/40'"
+                        />
+                        <span class="font-medium">{{ item.value }}</span>
+                    </div>
                 </div>
-                <div class="mt-2 font-medium">{{ item.value }}</div>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    class="w-full"
+                    :disabled="item.disabled || updatingCapability !== null"
+                    @click="toggleCapability(item)"
+                >
+                    {{ updatingCapability === item.key ? 'Menyimpan...' : item.enabled ? 'Nonaktifkan' : 'Aktifkan' }}
+                </Button>
+                <p v-if="item.disabled" class="text-xs text-muted-foreground">
+                    Tambahkan paket personal trainer terlebih dahulu.
+                </p>
             </div>
         </div>
 
