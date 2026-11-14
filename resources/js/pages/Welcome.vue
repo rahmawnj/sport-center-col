@@ -475,12 +475,14 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" class="trainer-card group block overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
                             <div class="trainer-avatar relative" :class="'trainer-avatar-' + (index % 4)">
                                 <i class="fa-solid fa-user-tie transition-transform duration-300 group-hover:scale-110"></i>
-                                <span class="absolute right-3 top-3 max-w-[75%] truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-extrabold text-[#001428] shadow-sm">{{ trainer.sports?.length ? trainer.sports.join(' · ') : (trainer.specialty || 'Pelatih') }}</span>
+                                <span class="absolute right-3 top-3 max-w-[85%] rounded-full bg-white/95 px-3 py-1.5 text-xs font-extrabold text-[#001428] shadow-sm">{{ trainer.specialty || 'Pelatih olahraga' }}</span>
                             </div>
                             <div class="p-5">
                                 <h3 class="text-lg font-extrabold text-[#001428]">{{ trainer.name }}</h3>
-                                <p class="mt-1 text-sm text-slate-500">{{ trainer.specialty || 'Pelatih olahraga' }}</p>
-
+                                <div v-if="trainer.sports?.length" class="mt-3 flex flex-wrap gap-2">
+                                    <span v-for="sport in trainer.sports" :key="sport" class="rounded-full bg-lime-50 px-3 py-1.5 text-xs font-bold text-lime-800">{{ sport }}</span>
+                                </div>
+                                <p v-else class="mt-3 text-sm text-slate-400">Belum ada olahraga yang dipilih</p>
                             </div>
                         </Link>
                     </div>
