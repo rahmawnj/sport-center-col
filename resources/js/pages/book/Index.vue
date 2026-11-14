@@ -127,7 +127,6 @@ function toMinutes(time: string) {
 }
 
 function chooseSlot(item: Slot) {
-    slotSelectionError.value = '';
     const selected = new Set(selectedSlots.value);
     const clickedIndex = slots.value.findIndex((entry) => entry.start_time === item.start_time);
 
