@@ -56,6 +56,7 @@ const form = useForm({
     guest_email: props.currentUser?.email ?? '',
     guest_phone: '',
     terms_accepted: false,
+    selected_slots: [] as { start_time: string; end_time: string }[],
 });
 
 const steps = [
@@ -157,7 +158,8 @@ function chooseSlot(item: Slot) {
         if (clickedIndex === first || clickedIndex === last) {
             selected.delete(item.start_time);
         } else {
-            indices.filter((index) => index >= clickedIndex).forEach((index) => selected.delete(slots.value[index].start_time));
+            indices.filter((index) => index >= clickedIndex)
+                .forEach((index) => selected.delete(slots.value[index].start_time));
         }
     } else {
         const indices = [...selected]
@@ -166,7 +168,9 @@ function chooseSlot(item: Slot) {
         const first = indices.length ? Math.min(...indices, clickedIndex) : clickedIndex;
         const last = indices.length ? Math.max(...indices, clickedIndex) : clickedIndex;
 
-        for (let index = first; index <= last; index++) selected.add(slots.value[index].start_time);
+        for (let index = first; index <= last; index++) {
+            selected.add(slots.value[index].start_time);
+        }
     }
 
     const chosen = [...selected]
@@ -174,11 +178,13 @@ function chooseSlot(item: Slot) {
         .filter((entry): entry is Slot => !!entry)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-    if (chosen.some((entry, index) => index > 0 && toMinutes(entry.start_time) !== toMinutes(chosen[index - 1].start_time) + 60)) {
-        selected.clear();
-        selected.add(item.start_time);
-        chosen.splice(0, chosen.length, item);
-    }
+    const commonCourts = chosen.length
+        ? chosen[0].courts
+            .filter((court) => court.is_available)
+            .filter((court) => chosen.every((entry) =>
+                entry.courts.some((option) => option.id === court.id && option.is_available)
+            ))
+        : [];
 
     selectedSlots.value = chosen.map((entry) => entry.start_time);
     courtId.value = null;
@@ -188,19 +194,15 @@ function chooseSlot(item: Slot) {
         return;
     }
 
-    const commonCourts = chosen[0].courts.map((court) => ({
-        ...court,
-        is_available: chosen.every((entry) => entry.courts.some((option) => option.id === court.id && option.is_available)),
-    }));
-    const [hour, minute] = chosen[0].start_time.split(':').map(Number);
-    const endMinutes = hour * 60 + minute + chosen.length * 60;
-
     slot.value = {
         window_id: chosen[0].window_id,
         start_time: chosen[0].start_time,
-        end_time: `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`,
+        end_time: chosen[chosen.length - 1].end_time,
         price: chosen.reduce((total, entry) => total + entry.price, 0),
-        courts: commonCourts,
+        courts: chosen[0].courts.map((court) => ({
+            ...court,
+            is_available: commonCourts.some((available) => available.id === court.id),
+        })),
     };
 }
 
@@ -214,6 +216,10 @@ function next() {
         form.date = date.value;
         form.start_time = slot.value?.start_time ?? '';
         form.duration_hours = selectedSlots.value.length;
+        form.selected_slots = selectedSlots.value.map((time) => {
+            const item = slots.value.find((entry) => entry.start_time === time)!;
+            return { start_time: item.start_time, end_time: item.end_time };
+        });
         form.court_id = courtId.value;
     }
     step.value = Math.min(5, step.value + 1);
@@ -229,6 +235,10 @@ function submit() {
     form.date = date.value;
     form.start_time = slot.value?.start_time ?? '';
     form.duration_hours = selectedSlots.value.length;
+    form.selected_slots = selectedSlots.value.map((time) => {
+        const item = slots.value.find((entry) => entry.start_time === time)!;
+        return { start_time: item.start_time, end_time: item.end_time };
+    });
     form.court_id = courtId.value;
     form.post('/book', { preserveScroll: true });
 }
