@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link, router } from '@inertiajs/vue3';
-import { Dumbbell, Pencil, Plus, Trash2, X } from '@lucide/vue';
+import { Dumbbell, Eye, Pencil, Plus, Trash2, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DataTableCard from '@/components/DataTableCard.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -195,6 +195,17 @@ function initials(value: string) {
                 <div
                     class="flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100"
                 >
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Detail"
+                        class="hover:bg-primary/10 hover:text-primary"
+                        as-child
+                    >
+                        <Link :href="`/trainers/${row.id}`">
+                            <Eye class="size-4" />
+                        </Link>
+                    </Button>
                     <Button
                         variant="ghost"
                         size="icon"
