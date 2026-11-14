@@ -756,101 +756,7 @@ function promoRange(rule: PricingRule) {
             </div>
         </section>
 
-        <section class="space-y-3">
-            <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                    <LayoutGrid class="size-4 text-primary" />
-                    <h2 class="font-semibold">Lapangan</h2>
-                    <span class="text-sm text-muted-foreground"
-                        >({{ props.facility.courts.length }})</span
-                    >
-                </div>
-                <Button size="sm" @click="openCourtCreate">
-                    <Plus class="mr-2 size-4" />
-                    Tambah lapangan
-                </Button>
-            </div>
-
-            <div
-                v-if="props.facility.courts.length"
-                class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
-            >
-                <div
-                    v-for="court in props.facility.courts"
-                    :key="court.id"
-                    class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm"
-                >
-                    <div class="flex min-w-0 items-center gap-3">
-                        <div
-                            class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary"
-                        >
-                            <Building2 class="size-4" />
-                        </div>
-                        <div class="min-w-0">
-                            <span class="block truncate font-medium">{{
-                                court.name
-                            }}</span>
-                            <span
-                                v-if="court.amenities?.length"
-                                class="mt-0.5 block truncate text-xs text-muted-foreground"
-                                >{{ court.amenities.join(' · ') }}</span
-                            >
-                            <span
-                                v-else
-                                class="mt-0.5 block text-xs text-muted-foreground"
-                                >Tanpa fasilitas</span
-                            >
-                            <span
-                                v-if="court.price_adjustment"
-                                class="mt-0.5 block text-xs font-medium text-emerald-700"
-                                >+{{ formatIDR(court.price_adjustment) }}</span
-                            >
-                        </div>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <span
-                            class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
-                            :class="courtStatusMeta[court.status].badge"
-                        >
-                            {{ courtStatusMeta[court.status].label }}
-                        </span>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger :as-child="true">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    title="Aksi"
-                                    class="hover:bg-primary/10 hover:text-primary"
-                                >
-                                    <EllipsisVertical class="size-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" class="w-40">
-                                <DropdownMenuItem @click="openCourtEdit(court)">
-                                    <Pencil class="size-4" />
-                                    Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    variant="destructive"
-                                    @click="removeCourt(court)"
-                                >
-                                    <Trash2 class="size-4" />
-                                    Hapus
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-            </div>
-
-            <div
-                v-else
-                class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm"
-            >
-                Belum ada lapangan pada olahraga ini.
-            </div>
-        </section>
+        
 
         <section class="space-y-3">
             <div class="flex items-center justify-between gap-2">
@@ -1056,106 +962,204 @@ function promoRange(rule: PricingRule) {
             <div v-else class="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Belum ada paket personal trainer untuk olahraga ini.</div>
         </section>
 
+
+
         <section class="space-y-3">
-            <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                    <Cpu class="size-4 text-primary" />
-                    <h2 class="font-semibold">Perangkat</h2>
-                    <span class="text-sm text-muted-foreground"
-                        >({{ props.facility.devices.length }})</span
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <Cpu class="size-4 text-primary" />
+                            <h2 class="font-semibold">Perangkat</h2>
+                            <span class="text-sm text-muted-foreground"
+                                >({{ props.facility.devices.length }})</span
+                            >
+                        </div>
+                        <Button size="sm" @click="openDeviceCreate">
+                            <Plus class="mr-2 size-4" />
+                            Tambah perangkat
+                        </Button>
+                    </div>
+        
+                    <div
+                        v-if="props.facility.devices.length"
+                        class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
                     >
-                </div>
-                <Button size="sm" @click="openDeviceCreate">
-                    <Plus class="mr-2 size-4" />
-                    Tambah perangkat
-                </Button>
-            </div>
-
-            <div
-                v-if="props.facility.devices.length"
-                class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
-            >
-                <div
-                    v-for="device in props.facility.devices"
-                    :key="device.id"
-                    class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm"
-                >
-                    <div class="flex min-w-0 items-center gap-3">
                         <div
-                            class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                            v-for="device in props.facility.devices"
+                            :key="device.id"
+                            class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm"
                         >
-                            <Cpu class="size-4" />
-                        </div>
-                        <div class="min-w-0">
-                            <div class="truncate font-medium">
-                                {{ device.name }}
+                            <div class="flex min-w-0 items-center gap-3">
+                                <div
+                                    class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                                >
+                                    <Cpu class="size-4" />
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="truncate font-medium">
+                                        {{ device.name }}
+                                    </div>
+                                    <div
+                                        class="truncate font-mono text-xs text-muted-foreground"
+                                    >
+                                        {{ device.device_code || device.type || '—' }}
+                                    </div>
+                                    <div class="truncate text-xs text-muted-foreground">
+                                        {{ device.court_name || 'Semua lapangan' }}
+                                    </div>
+                                    <div
+                                        v-if="device.mqtt_topic"
+                                        class="truncate font-mono text-xs text-sky-600"
+                                    >
+                                        {{ device.mqtt_topic }}
+                                    </div>
+                                </div>
                             </div>
-                            <div
-                                class="truncate font-mono text-xs text-muted-foreground"
-                            >
-                                {{ device.device_code || device.type || '—' }}
-                            </div>
-                            <div class="truncate text-xs text-muted-foreground">
-                                {{ device.court_name || 'Semua lapangan' }}
-                            </div>
-                            <div
-                                v-if="device.mqtt_topic"
-                                class="truncate font-mono text-xs text-sky-600"
-                            >
-                                {{ device.mqtt_topic }}
+                            <div class="flex shrink-0 items-center gap-2">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                                    :class="deviceStatusMeta[device.status].badge"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full"
+                                        :class="deviceStatusMeta[device.status].dot"
+                                    />
+                                    {{ deviceStatusMeta[device.status].label }}
+                                </span>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger :as-child="true">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Aksi"
+                                            class="hover:bg-primary/10 hover:text-primary"
+                                        >
+                                            <EllipsisVertical class="size-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" class="w-40">
+                                        <DropdownMenuItem
+                                            @click="openDeviceEdit(device)"
+                                        >
+                                            <Pencil class="size-4" />
+                                            Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            variant="destructive"
+                                            @click="removeDevice(device)"
+                                        >
+                                            <Trash2 class="size-4" />
+                                            Hapus
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
                     </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <span
-                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-                            :class="deviceStatusMeta[device.status].badge"
-                        >
-                            <span
-                                class="size-1.5 rounded-full"
-                                :class="deviceStatusMeta[device.status].dot"
-                            />
-                            {{ deviceStatusMeta[device.status].label }}
-                        </span>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger :as-child="true">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    title="Aksi"
-                                    class="hover:bg-primary/10 hover:text-primary"
-                                >
-                                    <EllipsisVertical class="size-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" class="w-40">
-                                <DropdownMenuItem
-                                    @click="openDeviceEdit(device)"
-                                >
-                                    <Pencil class="size-4" />
-                                    Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    variant="destructive"
-                                    @click="removeDevice(device)"
-                                >
-                                    <Trash2 class="size-4" />
-                                    Hapus
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+        
+                    <div
+                        v-else
+                        class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm"
+                    >
+                        Belum ada perangkat pada olahraga ini.
                     </div>
-                </div>
-            </div>
+                </section>
 
-            <div
-                v-else
-                class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm"
-            >
-                Belum ada perangkat pada olahraga ini.
-            </div>
-        </section>
+        <section class="space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <LayoutGrid class="size-4 text-primary" />
+                            <h2 class="font-semibold">Lapangan</h2>
+                            <span class="text-sm text-muted-foreground"
+                                >({{ props.facility.courts.length }})</span
+                            >
+                        </div>
+                        <Button size="sm" @click="openCourtCreate">
+                            <Plus class="mr-2 size-4" />
+                            Tambah lapangan
+                        </Button>
+                    </div>
+        
+                    <div
+                        v-if="props.facility.courts.length"
+                        class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+                    >
+                        <div
+                            v-for="court in props.facility.courts"
+                            :key="court.id"
+                            class="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm"
+                        >
+                            <div class="flex min-w-0 items-center gap-3">
+                                <div
+                                    class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary"
+                                >
+                                    <Building2 class="size-4" />
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="block truncate font-medium">{{
+                                        court.name
+                                    }}</span>
+                                    <span
+                                        v-if="court.amenities?.length"
+                                        class="mt-0.5 block truncate text-xs text-muted-foreground"
+                                        >{{ court.amenities.join(' · ') }}</span
+                                    >
+                                    <span
+                                        v-else
+                                        class="mt-0.5 block text-xs text-muted-foreground"
+                                        >Tanpa fasilitas</span
+                                    >
+                                    <span
+                                        v-if="court.price_adjustment"
+                                        class="mt-0.5 block text-xs font-medium text-emerald-700"
+                                        >+{{ formatIDR(court.price_adjustment) }}</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <span
+                                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                    :class="courtStatusMeta[court.status].badge"
+                                >
+                                    {{ courtStatusMeta[court.status].label }}
+                                </span>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger :as-child="true">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Aksi"
+                                            class="hover:bg-primary/10 hover:text-primary"
+                                        >
+                                            <EllipsisVertical class="size-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" class="w-40">
+                                        <DropdownMenuItem @click="openCourtEdit(court)">
+                                            <Pencil class="size-4" />
+                                            Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            variant="destructive"
+                                            @click="removeCourt(court)"
+                                        >
+                                            <Trash2 class="size-4" />
+                                            Hapus
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    </div>
+        
+                    <div
+                        v-else
+                        class="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm"
+                    >
+                        Belum ada lapangan pada olahraga ini.
+                    </div>
+                </section>
     </div>
 
     <div
