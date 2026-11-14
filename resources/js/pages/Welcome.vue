@@ -494,7 +494,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         </div>
                     </div>
                     <div class="relative">
-                        <button v-if="trainers.length > 1" type="button" @click="previousTrainer" aria-label="Pelatih sebelumnya" class="trainer-arrow left-0"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button v-if="trainers.length > 1" type="button" @click="previousTrainer" aria-label="Pelatih sebelumnya" class="trainer-arrow trainer-arrow-left"><i class="fa-solid fa-chevron-left"></i></button>
                         <div ref="trainerSlider" class="trainer-slider flex snap-x snap-mandatory gap-5 overflow-x-hidden py-5">
                         <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" :class="{ 'is-active': activeTrainerIndex === index }" class="trainer-card group block shrink-0 snap-center overflow-hidden rounded-[15px] bg-white shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
                             <div class="trainer-avatar relative" :class="'trainer-avatar-' + (index % 4)">
@@ -510,7 +510,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             </div>
                         </Link>
                         </div>
-                        <button v-if="trainers.length > 1" type="button" @click="nextTrainer" aria-label="Pelatih berikutnya" class="trainer-arrow right-0"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button v-if="trainers.length > 1" type="button" @click="nextTrainer" aria-label="Pelatih berikutnya" class="trainer-arrow trainer-arrow-right"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
             </section>
@@ -775,7 +775,30 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .sport-card:hover { transform: translateY(-6px); box-shadow: 0 24px 50px rgba(0,20,40,.11); }
 .sport-card-image { height: 245px; overflow: hidden; background: #e9eee1; }
 .sport-icon { display: grid; width: 38px; height: 38px; flex-shrink: 0; place-items: center; border-radius: 50%; background: #f2f7df; color: #6e9000; }
-.trainer-card { flex: 0 0 270px; transition: transform .2s ease, box-shadow .2s ease; }\n.trainer-slider { scrollbar-width: thin; scrollbar-color: #a4da01 #e8eddf; }\n.trainer-slider::-webkit-scrollbar { height: 8px; }\n.trainer-slider::-webkit-scrollbar-track { border-radius: 999px; background: #e8eddf; }\n.trainer-slider::-webkit-scrollbar-thumb { border-radius: 999px; background: #a4da01; }
+.trainer-card { flex: 0 0 270px; transition: transform .2s ease, box-shadow .2s ease; }
+.trainer-slider { scrollbar-width: thin; scrollbar-color: #a4da01 #e8eddf; }
+.trainer-slider::-webkit-scrollbar { height: 8px; }
+.trainer-slider::-webkit-scrollbar-track { border-radius: 999px; background: #e8eddf; }
+.trainer-slider::-webkit-scrollbar-thumb { border-radius: 999px; background: #a4da01; }
+.trainer-arrow {
+    position: absolute;
+    z-index: 5;
+    top: 50%;
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid rgba(0,20,40,.08);
+    border-radius: 50% !important;
+    background: white;
+    color: var(--navy);
+    box-shadow: 0 8px 24px rgba(0,20,40,.16);
+    transform: translateY(-50%);
+    transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+.trainer-arrow:hover { background: var(--lime); color: var(--navy); }
+.trainer-arrow-left { left: -18px; }
+.trainer-arrow-right { right: -18px; }
 .trainer-avatar { display: grid; width: 100%; height: 190px; place-items: center; border-radius: 0; color: var(--navy); font-size: 48px; }
 .trainer-avatar-0 { background: linear-gradient(135deg, #dceca5, #f4f7e8); }
 .trainer-avatar-1 { background: linear-gradient(135deg, #d8e9ef, #f2f7f8); }
@@ -799,6 +822,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 @media (max-width: 640px) {
     .trainer-slider { --trainer-card-width: 86%; }
     .trainer-arrow { width: 36px; height: 36px; }
+    .trainer-arrow-left { left: -8px; }
+    .trainer-arrow-right { right: -8px; }
     .hero-visual { min-height: 350px; }    .hero-image-main { height: 305px; width: 82%; }
     .hero-image-small { height: 140px; width: 43%; }
     .hero-floating-card { right: 0; bottom: 16px; min-width: 185px; padding: 13px 15px; }
