@@ -198,6 +198,7 @@ function formatDateTime(value: string | null) {
                             <th class="px-4 py-3 font-medium">Waktu</th>
                             <th class="px-4 py-3 font-medium">Invoice</th>
                             <th class="px-4 py-3 font-medium">Pelanggan</th>
+                            <th class="px-4 py-3 font-medium">Jenis & detail pesanan</th>
                             <th class="px-4 py-3 font-medium">Referensi</th>
                             <th class="px-4 py-3 font-medium">Jumlah Scan</th>
                             <th class="px-4 py-3 font-medium">Metode</th>
@@ -226,6 +227,10 @@ function formatDateTime(value: string | null) {
                             </td>
                             <td class="px-4 py-3">
                                 {{ row.customer_name || 'Umum' }}
+                            </td>
+                            <td class="min-w-[240px] px-4 py-3">
+                                <div class="font-medium">{{ row.type_label }}</div>
+                                <div class="mt-0.5 max-w-[360px] text-xs text-muted-foreground">{{ row.item_summary }}</div>
                             </td>
                             <td class="px-4 py-3 text-muted-foreground">
                                 {{ row.reference }}
