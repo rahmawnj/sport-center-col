@@ -34,6 +34,13 @@ type Props = {
         emergency_contact_phone: string | null;
         registered_at: string | null;
         memberships_count: number;
+        active_memberships: {
+            id: number; package_name: string; facility_name: string; start_date: string | null; end_date: string | null;
+        }[];
+        active_trainer_packages: {
+            id: number; package_name: string; facility_name: string; trainer_name: string;
+            start_date: string | null; expires_at: string | null; total_sessions: number; used_sessions: number; remaining_sessions: number;
+        }[];
         memberships: {
             id: number;
             package_name: string;
@@ -141,6 +148,47 @@ function formatDate(value: string | null) {
                         <div>
                             <p class="text-xs text-muted-foreground">Nomor telepon</p>
                             <p class="mt-1 font-medium">{{ member.emergency_contact_phone || '—' }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section v-if="member.active_memberships.length" class="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                    <div class="border-b p-5">
+                        <h3 class="font-semibold">Paket Membership Aktif</h3>
+                        <p class="mt-1 text-sm text-muted-foreground">Paket keanggotaan yang sedang berlaku saat ini.</p>
+                    </div>
+                    <div class="divide-y">
+                        <div v-for="item in member.active_memberships" :key="item.id" class="flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="font-semibold">{{ item.package_name }}</p>
+                                <p class="mt-1 text-xs text-muted-foreground">{{ item.facility_name }} · {{ formatDate(item.start_date) }} – {{ formatDate(item.end_date) }}</p>
+                            </div>
+                            <span class="w-fit rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600">Aktif</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section v-if="member.active_trainer_packages.length" class="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                    <div class="border-b p-5">
+                        <h3 class="font-semibold">Paket Personal Trainer Aktif</h3>
+                        <p class="mt-1 text-sm text-muted-foreground">Paket latihan personal yang masih berlaku dan memiliki sisa sesi.</p>
+                    </div>
+                    <div class="divide-y">
+                        <div v-for="item in member.active_trainer_packages" :key="item.id" class="space-y-3 p-5">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="font-semibold">{{ item.package_name }}</p>
+                                    <p class="mt-1 text-xs text-muted-foreground">{{ item.facility_name }} · Pelatih: {{ item.trainer_name }}</p>
+                                </div>
+                                <span class="w-fit rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600">Aktif</span>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                                <span class="text-muted-foreground">{{ formatDate(item.start_date) }} – {{ formatDate(item.expires_at) }}</span>
+                                <span class="font-semibold tabular-nums">{{ item.remaining_sessions }} / {{ item.total_sessions }} sesi tersisa</span>
+                            </div>
+                            <div class="h-2 overflow-hidden rounded-full bg-muted">
+                                <div class="h-full rounded-full bg-primary" :style="{ width: (item.total_sessions ? item.used_sessions / item.total_sessions * 100 : 0) + '%' }"></div>
+                            </div>
                         </div>
                     </div>
                 </section>
