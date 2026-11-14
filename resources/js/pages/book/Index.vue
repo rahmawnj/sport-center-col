@@ -37,8 +37,9 @@ const maxBookingDate = toDateInputValue(new Date(now.getFullYear(), now.getMonth
 const initialFacility = props.facilities.find((item) => item.id === props.initialFacilityId) ?? null;
 const step = ref(initialFacility ? 2 : 1);
 const facility = ref<Facility | null>(initialFacility);
-const date = ref('');
+const date = ref(today);
 const slots = ref<Slot[]>([]);
+const courts = ref<Court[]>([]);
 const loadingSlots = ref(false);
 const slot = ref<Slot | null>(null);
 const selectedSlots = ref<string[]>([]);
@@ -67,7 +68,11 @@ const steps = [
 
 const selectedDurationHours = computed(() => selectedSlots.value.length);
 const selectedDurationLabel = computed(() => selectedDurationHours.value === 1 ? '1 jam' : `${selectedDurationHours.value} jam`);
-const selectedCourt = computed(() => slot.value?.courts.find((court) => court.id === courtId.value) ?? null);
+const displayCourts = computed(() => courts.value.map((court) => ({
+    ...court,
+    is_available: !!slot.value && !!slot.value.courts.find((option) => option.id === court.id)?.is_available,
+})));
+const selectedCourt = computed(() => displayCourts.value.find((court) => court.id === courtId.value) ?? null);
 const displayPrice = computed(() => slot.value
     ? slot.value.price + (selectedCourt.value?.price_adjustment ?? 0)
     : null);
@@ -89,11 +94,12 @@ const canNext = computed(() => {
     }
 });
 
-watch(date, () => {
+function loadAvailability() {
     slot.value = null;
     selectedSlots.value = [];
     courtId.value = null;
     slots.value = [];
+    courts.value = [];
 
     if (!facility.value || !date.value) return;
 
@@ -105,19 +111,29 @@ watch(date, () => {
             if (!response.ok) throw new Error('Gagal memuat jadwal booking.');
             return response.json();
         })
-        .then((data) => { slots.value = data.slots ?? []; })
-        .catch(() => { slots.value = []; })
+        .then((data) => {
+            slots.value = data.slots ?? [];
+            courts.value = data.courts ?? [];
+        })
+        .catch(() => {
+            slots.value = [];
+            courts.value = [];
+        })
         .finally(() => { loadingSlots.value = false; });
-});
+}
+
+watch(date, loadAvailability);
 
 function chooseFacility(item: Facility) {
     facility.value = item;
     form.facility_id = item.id;
-    date.value = '';
+    date.value = today;
     slots.value = [];
+    courts.value = [];
     slot.value = null;
     selectedSlots.value = [];
     courtId.value = null;
+    loadAvailability();
     step.value = 2;
 }
 
@@ -316,8 +332,8 @@ function formatIDR(value: number) {
 
                                 <div class="space-y-3 border-t border-slate-100 pt-5">
                                     <div><h3 class="font-semibold">Pilih lapangan</h3><p v-if="slot" class="mt-1 text-sm text-slate-500">{{ slot.start_time }}–{{ slot.end_time }}</p></div>
-                                    <div v-if="slot?.courts.length" class="grid gap-3 sm:grid-cols-2">
-                                        <button v-for="item in slot.courts" :key="item.id" type="button" :disabled="!item.is_available"
+                                    <div v-if="displayCourts.length" class="grid gap-3 sm:grid-cols-2">
+                                        <button v-for="item in displayCourts" :key="item.id" type="button" :disabled="!item.is_available"
                                             class="flex items-center gap-3 rounded-xl border p-4 text-left transition-colors"
                                             :class="courtId === item.id ? 'border-[#a4da01] bg-lime-100 ring-2 ring-inset ring-[#a4da01]' : item.is_available ? 'border-slate-100 bg-slate-50 hover:bg-lime-50' : 'cursor-not-allowed border-slate-200 bg-slate-100 opacity-60'"
                                             @click="chooseCourt(item.id)">
