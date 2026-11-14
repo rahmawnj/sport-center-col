@@ -10,6 +10,8 @@ use App\Models\UserMembership;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,12 +37,26 @@ class ReportController extends Controller
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        return match ($type) {
-            'membership' => $this->membershipReport($type, $from, $to),
-            'trainer' => $this->trainerReport($type, $from, $to),
-            'booking' => $this->bookingReport($type, $from, $to),
-            'class' => $this->classReport($type, $from, $to),
-        };
+        try {
+            return match ($type) {
+                'membership' => $this->membershipReport($type, $from, $to),
+                'trainer' => $this->trainerReport($type, $from, $to),
+                'booking' => $this->bookingReport($type, $from, $to),
+                'class' => $this->classReport($type, $from, $to),
+            };
+        } catch (Throwable $exception) {
+            Log::error('Report page failed to load.', [
+                'report_type' => $type,
+                'user_id' => $request->user()?->id,
+                'url' => $request->fullUrl(),
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            throw $exception;
+        }
     }
 
     private function membershipReport(string $type, ?string $from, ?string $to): Response
