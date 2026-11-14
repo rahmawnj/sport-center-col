@@ -355,14 +355,14 @@ function formatIDR(value: number) {
                                     <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
                                         <div class="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
                                             <button v-for="item in weekDates" :key="item.value" type="button"
-                                                class="min-w-[72px] rounded-xl px-3 py-3 text-center transition-colors"
-                                                :class="date === item.value ? 'bg-[#a40025] text-white shadow-sm' : 'text-slate-600 hover:bg-rose-50'"
+                                                class="min-w-[72px] rounded-[15px] px-3 py-3 text-center transition-colors"
+                                                :class="date === item.value ? 'bg-[#a4da01] font-semibold text-[#001428] shadow-sm' : 'text-slate-600 hover:bg-lime-50'"
                                                 @click="chooseDate(item.value)">
                                                 <span class="block text-xs" :class="date === item.value ? 'text-white/80' : 'text-slate-400'">{{ item.day }}</span>
                                                 <span class="mt-1 block text-sm font-bold">{{ item.number }} {{ new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(new Date(item.value + 'T00:00:00')) }}</span>
                                             </button>
                                         </div>
-                                        <button type="button" class="flex size-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-[#a40025] hover:bg-rose-50"
+                                        <button type="button" class="flex size-12 shrink-0 items-center justify-center rounded-[10px] border border-slate-200 text-[#001428] hover:bg-lime-50"
                                             aria-label="Buka kalender" @click="calendarOpen = !calendarOpen">
                                             <CalendarDays class="size-5" />
                                         </button>
@@ -383,7 +383,7 @@ function formatIDR(value: number) {
                                                     <span v-for="(cell, index) in month.cells" :key="index" class="flex min-h-11 items-center justify-center">
                                                         <button v-if="cell" type="button" :disabled="isDateDisabled(cell.value)"
                                                             class="flex size-10 items-center justify-center rounded-full text-sm transition-colors"
-                                                            :class="date === cell.value ? 'bg-[#a40025] font-bold text-white' : isDateDisabled(cell.value) ? 'cursor-not-allowed text-slate-300' : 'text-slate-700 hover:bg-rose-50'"
+                                                            :class="date === cell.value ? 'bg-[#a4da01] font-bold text-[#001428]' : isDateDisabled(cell.value) ? 'cursor-not-allowed text-slate-300' : 'text-slate-700 hover:bg-lime-50'"
                                                             @click="chooseDate(cell.value)">{{ cell.number }}</button>
                                                     </span>
                                                 </div>
