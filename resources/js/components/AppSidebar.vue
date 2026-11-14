@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import {
     BadgeCheck,
@@ -46,6 +47,7 @@ const items: (NavItem | NavGroup)[] = [
         ],
     },
 ];
+</script>
 
 <template>
     <Sidebar collapsible="icon" variant="inset">
