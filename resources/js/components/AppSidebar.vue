@@ -31,7 +31,6 @@ const items: (NavItem | NavGroup)[] = [
     { title: 'Olahraga', href: '/facilities', icon: Building2 },
     { title: 'Member', href: '/members', icon: Users },
     { title: 'Membership', href: '/memberships', icon: BadgeCheck },
-    { title: 'Paket Membership', href: '/membership-packages', icon: PackageIcon },
     { title: 'Trainer', href: '/trainers', icon: Dumbbell },
     { title: 'Membership Trainer', href: '/membership-trainers', icon: Dumbbell },
     { title: 'Transaksi', href: '/transactions', icon: Receipt },
