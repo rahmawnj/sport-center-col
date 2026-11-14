@@ -130,7 +130,12 @@ Route::middleware(['auth'])->group(function () {
         Route::put('devices/{device}', [DeviceController::class, 'update'])->name('devices.update');
         Route::delete('devices/{device}', [DeviceController::class, 'destroy'])->name('devices.destroy');
 
-        Route::get('admins', [AdminController::class, 'index'])->name('admins.index');\n        Route::post('admins', [AdminController::class, 'store'])->name('admins.store');\n        Route::put('admins/{admin}', [AdminController::class, 'update'])->name('admins.update');\n        Route::delete('admins/{admin}', [AdminController::class, 'destroy'])->name('admins.destroy');\n\n        Route::get('members', [MemberController::class, 'index'])->name('members.index');
+        Route::get('admins', [AdminController::class, 'index'])->name('admins.index');
+        Route::post('admins', [AdminController::class, 'store'])->name('admins.store');
+        Route::put('admins/{admin}', [AdminController::class, 'update'])->name('admins.update');
+        Route::delete('admins/{admin}', [AdminController::class, 'destroy'])->name('admins.destroy');
+
+        Route::get('members', [MemberController::class, 'index'])->name('members.index');
         Route::get('members/{member}', [MemberController::class, 'show'])->name('members.show');
         Route::post('members', [MemberController::class, 'store'])->name('members.store');
         Route::put('members/{member}', [MemberController::class, 'update'])->name('members.update');
