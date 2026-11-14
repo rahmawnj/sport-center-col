@@ -188,6 +188,7 @@ class MembershipController extends Controller
             'days_left' => (int) Carbon::today()->diffInDays($membership->end_date, false),
             'status' => $cancelled ? 'cancelled' : ($scheduled ? 'scheduled' : ($expired ? 'expired' : 'active')),
             'duration_days' => $membership->package?->duration_days,
+            'scan_count' => (int) ($membership->scan_count ?? 0),
         ];
     }
 }
