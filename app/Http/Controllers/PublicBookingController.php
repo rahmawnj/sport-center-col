@@ -30,7 +30,6 @@ class PublicBookingController extends Controller
         $facilities = Facility::query()
             ->where('status', 'active')
             ->where('has_booking', true)
-            ->where('is_bookable_online', true)
             ->with(['courts' => fn ($query) => $query->where('status', 'available')->orderBy('name')])
             ->orderBy('name')
             ->get()
