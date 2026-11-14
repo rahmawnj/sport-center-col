@@ -122,7 +122,7 @@ function loadAvailability() {
         .finally(() => { loadingSlots.value = false; });
 }
 
-watch(date, loadAvailability);
+watch(date, loadAvailability, { immediate: true });
 
 function chooseFacility(item: Facility) {
     facility.value = item;
