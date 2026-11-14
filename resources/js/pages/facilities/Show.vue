@@ -110,10 +110,10 @@ const props = defineProps<Props>();
 
 const activeTab = ref('general');
 const facilityTabs = computed(() => [
+    { value: 'general', label: 'General' },
     ...(props.facility.has_booking ? [{ value: 'booking', label: 'Booking' }] : []),
     ...(props.facility.has_membership ? [{ value: 'membership', label: 'Membership' }] : []),
     ...(props.facility.has_session ? [{ value: 'session', label: 'Sesi Kelas' }] : []),
-    { value: 'general', label: 'Pengaturan General' },
 ]);
 
 const showBookingSlotForm = ref(false);
@@ -704,21 +704,23 @@ function promoRange(rule: PricingRule) {
 
 
 
-        <div class="flex flex-wrap gap-2 border-b pb-3" role="tablist" aria-label="Bagian pengaturan olahraga">
-            <button
-                v-for="tab in facilityTabs"
-                :key="tab.value"
-                type="button"
-                role="tab"
-                :aria-selected="activeTab === tab.value"
-                @click="activeTab = tab.value"
-                class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-                :class="activeTab === tab.value
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'"
-            >
-                {{ tab.label }}
-            </button>
+        <div class="w-full overflow-x-auto">
+            <div class="inline-flex min-w-max items-center rounded-lg border bg-muted p-1" role="tablist" aria-label="Bagian pengaturan olahraga">
+                <button
+                    v-for="tab in facilityTabs"
+                    :key="tab.value"
+                    type="button"
+                    role="tab"
+                    :aria-selected="activeTab === tab.value"
+                    @click="activeTab = tab.value"
+                    class="rounded-md px-4 py-2 text-sm font-medium transition-all"
+                    :class="activeTab === tab.value
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'"
+                >
+                    {{ tab.label }}
+                </button>
+            </div>
         </div>
 
         <section v-if="props.facility.has_booking && activeTab === 'booking'" class="space-y-3">
