@@ -14,7 +14,6 @@ type Trainer = {
     id: number;
     name: string;
     specialty: string | null;
-    phone: string | null;
     user_id: number | null;
     user_name: string | null;
     user_email: string | null;
@@ -41,7 +40,6 @@ const columns: TableColumn[] = [
     { key: 'user', label: 'Akun User' },
     { key: 'specialty', label: 'Spesialisasi' },
     { key: 'facilities', label: 'Olahraga' },
-    { key: 'phone', label: 'Telepon' },
     {
         key: 'actions',
         label: 'Aksi',
@@ -193,12 +191,6 @@ function initials(value: string) {
                 <span class="text-muted-foreground">{{ row.facilities?.join(', ') || '—' }}</span>
             </template>
 
-            <template #phone="{ row }">
-                <span class="text-muted-foreground tabular-nums">
-                    {{ row.phone || '—' }}
-                </span>
-            </template>
-
             <template #actions="{ row }">
                 <div
                     class="flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100"
@@ -323,18 +315,6 @@ function initials(value: string) {
                         </select>
                         <p class="text-xs text-muted-foreground">Pilih satu atau lebih olahraga yang dapat diajarkan trainer ini.</p>
                         <p v-if="errors.facility_ids" class="text-xs text-destructive">{{ errors.facility_ids }}</p>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="trainer-phone">Telepon (opsional)</Label>
-                        <Input
-                            id="trainer-phone"
-                            name="phone"
-                            :default-value="editing?.phone ?? ''"
-                            placeholder="08xxxxxxxxxx"
-                        />
-                        <p v-if="errors.phone" class="text-xs text-destructive">
-                            {{ errors.phone }}
-                        </p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 border-t pt-4">
