@@ -152,7 +152,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('trainers/{trainer}', [TrainerController::class, 'update'])->name('trainers.update');
         Route::delete('trainers/{trainer}', [TrainerController::class, 'destroy'])->name('trainers.destroy');
 
-        Route::get('trainer-packages', [TrainerPackageController::class, 'index'])->name('trainer-packages.index');
+        Route::redirect('trainer-packages', '/facilities')->name('trainer-packages.index');
         Route::get('membership-trainers', [TrainerPackageController::class, 'membershipTrainers'])->name('membership-trainers.index');
         Route::get('membership-trainers/{memberTrainerPackage}', [TrainerPackageController::class, 'membershipTrainerShow'])->name('membership-trainers.show');
         Route::put('membership-trainers/{memberTrainerPackage}/trainer-share', [TrainerPackageController::class, 'updateTrainerShare'])->name('membership-trainers.trainer-share.update');
