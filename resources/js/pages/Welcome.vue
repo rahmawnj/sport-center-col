@@ -727,12 +727,12 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                 </div>
             </Transition>
 
-            <section class="px-5 pt-20 pb-20 lg:px-8 lg:pt-28 lg:pb-28">
-                <div class="cta-strip mx-auto flex max-w-7xl flex-col gap-6 rounded-3xl px-7 py-9 sm:flex-row sm:items-center sm:justify-between sm:px-12">
+            <section class="cta-section relative overflow-hidden px-5 py-20 lg:px-8 lg:py-28">
+                <div class="cta-strip mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="section-kicker">Mulai dari sekarang</p>
-                        <h2 class="mt-2 text-2xl font-black sm:text-3xl">Siap untuk pertandingan berikutnya?</h2>
-                        <p class="mt-2 text-sm text-slate-500">Pilih olahraga dan amankan jadwal bermainmu.</p>
+                        <h2 class="mt-2 text-2xl font-black text-white sm:text-3xl">Siap untuk pertandingan berikutnya?</h2>
+                        <p class="mt-2 text-sm text-white/80">Pilih olahraga dan amankan jadwal bermainmu.</p>
                     </div>
                     <Link href="/book" class="btn-lime inline-flex shrink-0 items-center justify-center gap-3 rounded-full px-7 py-4 font-extrabold">Booking sekarang <i class="fa-solid fa-arrow-right"></i></Link>
                 </div>
@@ -785,7 +785,17 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .membership-decoration { position: absolute; top: -170px; right: -110px; width: 500px; height: 500px; border: 1px solid rgba(164,218,1,.16); border-radius: 50%; box-shadow: 0 0 0 50px rgba(164,218,1,.035), 0 0 0 100px rgba(164,218,1,.025); }
 .membership-card { border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: white; backdrop-filter: blur(8px); }
 .membership-card-featured { border-color: rgba(164,218,1,.65); background: rgba(164,218,1,.09); }
-.cta-strip { border: 1px solid #e7edd7; background: #f7faef; }
+.cta-section {
+    background-image: linear-gradient(rgba(0, 12, 25, .78), rgba(0, 12, 25, .78)), url('https://images.daznservices.com/di/library/dazn_news_bet/3c/4f/baloncesto-generico_1q0koa9f3ca2l14rnv2pc05jmx.png?t=807791258');
+    background-position: center;
+    background-size: cover;
+    background-attachment: fixed;
+}
+.cta-strip { position: relative; z-index: 1; }
+.cta-section .section-kicker { color: var(--lime); }
+@media (max-width: 768px) {
+    .cta-section { background-attachment: scroll; }
+}
 @media (max-width: 640px) {
     .trainer-slider { --trainer-card-width: 86%; }
     .trainer-arrow { width: 36px; height: 36px; }
