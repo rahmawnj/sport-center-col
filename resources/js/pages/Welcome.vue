@@ -399,21 +399,21 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     <h2 id="pilih-layanan-title" class="section-title">Mau <span>olahraga seperti apa?</span></h2>
                 </div>
                 <div class="grid gap-4 md:grid-cols-3">
-                    <a href="#kelas" class="group rounded-2xl border border-sky-100 bg-sky-50/70 p-5 transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-lg">
+                    <a href="#kelas" class="group rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)]">
                         <span class="grid size-11 place-items-center rounded-xl bg-sky-100 text-sky-700"><i class="fa-solid fa-calendar-days"></i></span>
                         <p class="mt-4 text-xs font-black uppercase tracking-wider text-sky-700">Kelas terjadwal</p>
                         <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Ikut kelas di jam tertentu</h3>
                         <p class="mt-2 text-sm leading-6 text-slate-600">Cek hari, jam, durasi, dan harga kelas sebelum memilih jadwal.</p>
                         <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-sky-800">Lihat jadwal kelas <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
                     </a>
-                    <a href="#membership" class="group rounded-2xl border border-lime-200 bg-lime-50/70 p-5 transition hover:-translate-y-1 hover:border-lime-300 hover:shadow-lg">
+                    <a href="#membership" class="group rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)]">
                         <span class="grid size-11 place-items-center rounded-xl bg-lime-100 text-lime-800"><i class="fa-solid fa-id-card"></i></span>
                         <p class="mt-4 text-xs font-black uppercase tracking-wider text-lime-800">Membership</p>
                         <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Akses dengan masa aktif</h3>
                         <p class="mt-2 text-sm leading-6 text-slate-600">Pilih paket keanggotaan berdasarkan fasilitas dan lama berlakunya.</p>
                         <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-lime-900">Lihat membership <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
                     </a>
-                    <a href="/book" class="group rounded-2xl border border-violet-100 bg-violet-50/70 p-5 transition hover:-translate-y-1 hover:border-violet-200 hover:shadow-lg">
+                    <a href="/book" class="group rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)]">
                         <span class="grid size-11 place-items-center rounded-xl bg-violet-100 text-violet-700"><i class="fa-solid fa-calendar-check"></i></span>
                         <p class="mt-4 text-xs font-black uppercase tracking-wider text-violet-700">Booking lapangan</p>
                         <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Pilih lapangan dan jam bermain</h3>
