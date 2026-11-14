@@ -1,15 +1,14 @@
-<script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import {
     BadgeCheck,
     Building2,
+    Dumbbell,
     FileChartColumn,
     LayoutGrid,
     MapPin,
     Package as PackageIcon,
     Receipt,
     Users,
-    Dumbbell,
 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -40,25 +39,13 @@ const items: (NavItem | NavGroup)[] = [
         title: 'Laporan',
         icon: FileChartColumn,
         items: [
-            {
-                title: 'Penjualan Paket',
-                href: '/reports/package',
-                icon: PackageIcon,
-            },
-            {
-                title: 'Booking Lapangan',
-                href: '/reports/booking',
-                icon: MapPin,
-            },
-            {
-                title: 'Trainer',
-                href: '/reports/trainer',
-                icon: Dumbbell,
-            },
+            { title: 'Pembelian Membership', href: '/reports/membership', icon: BadgeCheck },
+            { title: 'Pembelian Paket Trainer', href: '/reports/trainer', icon: Dumbbell },
+            { title: 'Pembelian Booking Lapangan', href: '/reports/booking', icon: MapPin },
+            { title: 'Pembelian Kelas', href: '/reports/class', icon: Users },
         ],
     },
 ];
-</script>
 
 <template>
     <Sidebar collapsible="icon" variant="inset">
