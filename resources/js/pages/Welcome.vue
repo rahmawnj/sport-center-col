@@ -471,8 +471,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <p class="mt-3 max-w-xl text-slate-500">Temukan dukungan latihan dari pelatih yang terdaftar di pusat olahraga kami.</p>
                         </div>
                     </div>
-                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" class="trainer-card group block overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
+                    <div class="trainer-slider flex snap-x snap-mandatory gap-5 overflow-x-auto pb-5">
+                        <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" class="trainer-card group block w-[270px] min-w-[270px] snap-start overflow-hidden rounded-[15px] bg-white shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
                             <div class="trainer-avatar relative" :class="'trainer-avatar-' + (index % 4)">
                                 <i class="fa-solid fa-user-tie transition-transform duration-300 group-hover:scale-110"></i>
                                 <span class="absolute right-3 top-3 max-w-[85%] rounded-full bg-white/95 px-3 py-1.5 text-xs font-extrabold text-[#001428] shadow-sm">{{ trainer.specialty || 'Pelatih olahraga' }}</span>
@@ -749,7 +749,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .sport-card:hover { transform: translateY(-6px); box-shadow: 0 24px 50px rgba(0,20,40,.11); }
 .sport-card-image { height: 245px; overflow: hidden; background: #e9eee1; }
 .sport-icon { display: grid; width: 38px; height: 38px; flex-shrink: 0; place-items: center; border-radius: 50%; background: #f2f7df; color: #6e9000; }
-.trainer-card { transition: transform .2s ease, box-shadow .2s ease; }
+.trainer-card { flex: 0 0 270px; transition: transform .2s ease, box-shadow .2s ease; }\n.trainer-slider { scrollbar-width: thin; scrollbar-color: #a4da01 #e8eddf; }\n.trainer-slider::-webkit-scrollbar { height: 8px; }\n.trainer-slider::-webkit-scrollbar-track { border-radius: 999px; background: #e8eddf; }\n.trainer-slider::-webkit-scrollbar-thumb { border-radius: 999px; background: #a4da01; }
 .trainer-avatar { display: grid; width: 100%; height: 190px; place-items: center; border-radius: 0; color: var(--navy); font-size: 48px; }
 .trainer-avatar-0 { background: linear-gradient(135deg, #dceca5, #f4f7e8); }
 .trainer-avatar-1 { background: linear-gradient(135deg, #d8e9ef, #f2f7f8); }
