@@ -90,6 +90,8 @@ type Props = {
         name: string;
         slug: string;
         is_bookable_online: boolean;
+        has_booking: boolean;
+        has_session: boolean;
         has_membership: boolean;
         trainer_packages: TrainerPackage[];
         turnaround_minutes: number;
@@ -271,18 +273,25 @@ const formAction = computed(() =>
 const formMethod = computed(() => (editing.value ? 'put' : 'post'));
 
 const info = computed(() => [
-    { label: 'Status', value: statusMeta[props.facility.status].label },
     {
-        label: 'Booking online',
-        value: props.facility.is_bookable_online ? 'Ya' : 'Tidak',
+        label: 'Booking',
+        value: !props.facility.has_booking
+            ? 'Tidak tersedia'
+            : props.facility.is_bookable_online
+              ? 'Tersedia · Online'
+              : 'Tersedia · Kasir',
     },
     {
-        label: 'Jeda antar booking',
-        value: `${props.facility.turnaround_minutes ?? 0} menit`,
+        label: 'Membership',
+        value: props.facility.has_membership ? 'Tersedia' : 'Tidak tersedia',
     },
     {
-        label: 'Dibuat',
-        value: formatDate(props.facility.created_at),
+        label: 'Kelas',
+        value: props.facility.has_session ? 'Tersedia' : 'Tidak tersedia',
+    },
+    {
+        label: 'Personal Trainer',
+        value: props.facility.trainer_packages.length > 0 ? 'Tersedia' : 'Belum ada paket',
     },
 ]);
 
