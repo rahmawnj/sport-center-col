@@ -197,3 +197,9 @@
         @apply bg-background text-foreground;
     }
 }
+
+
+/* Consistent corner radius for interactive buttons across the application. */
+button, [role="button"], [data-slot="button"] {
+    border-radius: 15px !important;
+}
