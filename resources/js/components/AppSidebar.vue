@@ -9,6 +9,7 @@ import {
     MapPin,
     Package as PackageIcon,
     Receipt,
+    ShieldCheck,
     Users,
 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -33,6 +34,7 @@ const items: (NavItem | NavGroup)[] = [
         title: 'Users',
         icon: Users,
         items: [
+            { title: 'Admin', href: '/admins', icon: ShieldCheck },
             { title: 'Member', href: '/members', icon: Users },
             { title: 'Trainer', href: '/trainers', icon: Dumbbell },
         ],
