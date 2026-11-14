@@ -108,6 +108,14 @@ type Props = {
 
 const props = defineProps<Props>();
 
+const activeTab = ref('general');
+const facilityTabs = computed(() => [
+    ...(props.facility.has_booking ? [{ value: 'booking', label: 'Booking' }] : []),
+    ...(props.facility.has_membership ? [{ value: 'membership', label: 'Membership' }] : []),
+    ...(props.facility.has_session ? [{ value: 'session', label: 'Sesi Kelas' }] : []),
+    { value: 'general', label: 'Pengaturan General' },
+]);
+
 const showBookingSlotForm = ref(false);
 const bookingSlotEditing = ref<BookingTimeSlot | null>(null);
 const bookingSlotTitle = computed(() => bookingSlotEditing.value ? 'Edit jam booking' : 'Tambah jam booking');
@@ -696,7 +704,24 @@ function promoRange(rule: PricingRule) {
 
 
 
-        <section v-if="props.facility.has_booking" class="space-y-3">
+        <div class="flex flex-wrap gap-2 border-b pb-3" role="tablist" aria-label="Bagian pengaturan olahraga">
+            <button
+                v-for="tab in facilityTabs"
+                :key="tab.value"
+                type="button"
+                role="tab"
+                :aria-selected="activeTab === tab.value"
+                @click="activeTab = tab.value"
+                class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+                :class="activeTab === tab.value
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'"
+            >
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <section v-if="props.facility.has_booking && activeTab === 'booking'" class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <Clock class="size-4 text-primary" />
@@ -760,7 +785,7 @@ function promoRange(rule: PricingRule) {
 
 
 
-        <section v-if="props.facility.has_membership" class="space-y-5">
+        <section v-if="props.facility.has_membership && activeTab === 'membership'" class="space-y-5">
             <div class="border-b pb-3">
                 <h2 class="text-lg font-semibold">Membership</h2>
                 <p class="text-sm text-muted-foreground">Pengaturan paket keanggotaan dan paket personal trainer untuk olahraga ini.</p>
@@ -947,7 +972,7 @@ function promoRange(rule: PricingRule) {
         </section>
         </section>
 
-        <section v-if="props.facility.has_session" class="space-y-3">
+        <section v-if="props.facility.has_session && activeTab === 'session'" class="space-y-3">
             <div class="border-b pb-3">
                 <h2 class="text-lg font-semibold">Sesi Kelas</h2>
                 <p class="text-sm text-muted-foreground">Pengaturan kelas dan jadwal sesi olahraga.</p>
@@ -955,6 +980,7 @@ function promoRange(rule: PricingRule) {
             <FacilityClasses :facility-id="props.facility.id" :facility-name="props.facility.name" :classes="props.facility.classes" :trainers="props.facility.trainers" />
         </section>
 
+        <section v-if="activeTab === 'general'" class="space-y-6">
         <section class="space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
@@ -1151,6 +1177,7 @@ function promoRange(rule: PricingRule) {
                         Belum ada lapangan pada olahraga ini.
                     </div>
                 </section>
+        </section>
     </div>
 
     <div
