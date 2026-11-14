@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, ArrowRight, Building2, Check, Loader2, MapPin } from '@lucide/vue';
+import { ArrowLeft, ArrowRight, Building2, CalendarDays, Check, Loader2, MapPin } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,28 @@ const initialFacility = props.facilities.find((item) => item.id === props.initia
 const step = ref(initialFacility ? 2 : 1);
 const facility = ref<Facility | null>(initialFacility);
 const date = ref(today);
+const calendarOpen = ref(false);
+const calendarMonth = ref(new Date(now.getFullYear(), now.getMonth(), 1));
+const calendarWeekdays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+const weekDates = computed(() => Array.from({ length: 7 }, (_, index) => {
+    const value = new Date(now.getFullYear(), now.getMonth(), now.getDate() + index);
+    return { value: toDateInputValue(value), day: calendarWeekdays[(value.getDay() + 6) % 7], number: value.getDate() };
+}));
+const calendarMonths = computed(() => [0, 1].map((offset) => {
+    const first = new Date(calendarMonth.value.getFullYear(), calendarMonth.value.getMonth() + offset, 1);
+    const startOffset = (first.getDay() + 6) % 7;
+    const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    return {
+        title: new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(first),
+        cells: [
+            ...Array.from({ length: startOffset }, () => null),
+            ...Array.from({ length: days }, (_, index) => {
+                const value = new Date(first.getFullYear(), first.getMonth(), index + 1);
+                return { value: toDateInputValue(value), number: index + 1 };
+            }),
+        ],
+    };
+}));
 const slots = ref<Slot[]>([]);
 const courts = ref<Court[]>([]);
 const loadingSlots = ref(false);
@@ -94,6 +116,22 @@ const canNext = computed(() => {
         default: return false;
     }
 });
+
+function chooseDate(value: string) {
+    if (value < today || value > maxBookingDate) return;
+    date.value = value;
+    calendarOpen.value = false;
+}
+
+function shiftCalendarMonth(amount: number) {
+    const next = new Date(calendarMonth.value.getFullYear(), calendarMonth.value.getMonth() + amount, 1);
+    const lastAllowed = new Date(now.getFullYear(), now.getMonth() + 7, 1);
+    if (next <= lastAllowed) calendarMonth.value = next;
+}
+
+function isDateDisabled(value: string) {
+    return value < today || value > maxBookingDate;
+}
 
 function loadAvailability() {
     slot.value = null;
@@ -313,10 +351,44 @@ function formatIDR(value: number) {
                                     <h2 class="text-lg font-semibold">Pilih tanggal, jam & lapangan</h2>
                                     <p class="mt-1 text-sm text-slate-500">{{ facility?.name }}</p>
                                 </div>
-                                <div class="grid max-w-sm gap-2">
-                                    <Label for="booking-date" class="text-sm font-semibold text-slate-700">Tanggal booking</Label>
-                                    <div class="rounded-2xl bg-slate-50 p-3">
-                                        <Input id="booking-date" v-model="date" type="date" :min="today" :max="maxBookingDate" class="h-14 rounded-2xl border-0 bg-white px-4 text-base font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200 focus-visible:ring-2 focus-visible:ring-[#a4da01]" />
+                                <div class="space-y-3">
+                                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+                                        <div class="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+                                            <button v-for="item in weekDates" :key="item.value" type="button"
+                                                class="min-w-[72px] rounded-xl px-3 py-3 text-center transition-colors"
+                                                :class="date === item.value ? 'bg-[#a40025] text-white shadow-sm' : 'text-slate-600 hover:bg-rose-50'"
+                                                @click="chooseDate(item.value)">
+                                                <span class="block text-xs" :class="date === item.value ? 'text-white/80' : 'text-slate-400'">{{ item.day }}</span>
+                                                <span class="mt-1 block text-sm font-bold">{{ item.number }} {{ new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(new Date(item.value + 'T00:00:00')) }}</span>
+                                            </button>
+                                        </div>
+                                        <button type="button" class="flex size-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-[#a40025] hover:bg-rose-50"
+                                            aria-label="Buka kalender" @click="calendarOpen = !calendarOpen">
+                                            <CalendarDays class="size-5" />
+                                        </button>
+                                    </div>
+                                    <div v-if="calendarOpen" class="rounded-2xl border border-slate-100 bg-white p-4 shadow-xl">
+                                        <div class="mb-4 flex items-center justify-between">
+                                            <button type="button" class="rounded-lg p-2 hover:bg-slate-100" aria-label="Bulan sebelumnya" @click="shiftCalendarMonth(-1)"><ArrowLeft class="size-4" /></button>
+                                            <span class="text-sm font-semibold text-slate-700">Pilih tanggal booking</span>
+                                            <button type="button" class="rounded-lg p-2 hover:bg-slate-100" aria-label="Bulan berikutnya" @click="shiftCalendarMonth(1)"><ArrowRight class="size-4" /></button>
+                                        </div>
+                                        <div class="grid gap-6 md:grid-cols-2">
+                                            <div v-for="month in calendarMonths" :key="month.title" class="min-w-0">
+                                                <h3 class="mb-3 text-center font-semibold capitalize">{{ month.title }}</h3>
+                                                <div class="mb-2 grid grid-cols-7 text-center text-xs font-medium text-slate-400">
+                                                    <span v-for="day in calendarWeekdays" :key="day">{{ day }}</span>
+                                                </div>
+                                                <div class="grid grid-cols-7 gap-y-1">
+                                                    <span v-for="(cell, index) in month.cells" :key="index" class="flex min-h-11 items-center justify-center">
+                                                        <button v-if="cell" type="button" :disabled="isDateDisabled(cell.value)"
+                                                            class="flex size-10 items-center justify-center rounded-full text-sm transition-colors"
+                                                            :class="date === cell.value ? 'bg-[#a40025] font-bold text-white' : isDateDisabled(cell.value) ? 'cursor-not-allowed text-slate-300' : 'text-slate-700 hover:bg-rose-50'"
+                                                            @click="chooseDate(cell.value)">{{ cell.number }}</button>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div v-if="loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
