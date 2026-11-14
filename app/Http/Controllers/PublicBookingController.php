@@ -128,6 +128,9 @@ class PublicBookingController extends Controller
             'date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
             'start_time' => ['required', 'date_format:H:i'],
             'duration_hours' => ['required', 'integer', 'min:1', 'max:16'],
+            'selected_slots' => ['required', 'array', 'min:1', 'max:16'],
+            'selected_slots.*.start_time' => ['required', 'date_format:H:i'],
+            'selected_slots.*.end_time' => ['required', 'date_format:H:i'],
             'payment_method' => ['nullable', 'in:cash,bank_transfer'],
             'terms_accepted' => ['required', 'accepted'],
         ], $contactRules));
@@ -196,9 +199,8 @@ class PublicBookingController extends Controller
     private function bookingPrice(Facility $facility, array $data): float
     {
         $date = Carbon::parse($data['date']);
-        $start = $this->toMinutes($data['start_time'] ?? '00:00');
-        $duration = max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
-        $end = $start + $duration;
+        $selectedSlots = collect($data['selected_slots'] ?? [])->sortBy('start_time')->values();
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
         $windows = BookingTimeSlot::query()
             ->where('facility_id', $facility->id)
             ->where('day', strtolower($date->englishDayOfWeek))
@@ -206,15 +208,25 @@ class PublicBookingController extends Controller
             ->get();
 
         $total = 0.0;
-        for ($cursor = $start; $cursor < $end; $cursor += 60) {
-            $window = $windows->first(fn (BookingTimeSlot $slot) => $cursor >= $this->toMinutes((string) $slot->start_time)
-                && $cursor + 60 <= $this->toMinutes((string) $slot->end_time));
-
-            if (! $window) {
-                throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
+        $previousEnd = null;
+        $step = 60 + $turnaround;
+        foreach ($selectedSlots as $selected) {
+            $slotStart = $this->toMinutes($selected['start_time']);
+            $slotEnd = $this->toMinutes($selected['end_time']);
+            if ($slotEnd - $slotStart !== 60 || ($previousEnd !== null && $slotStart !== $previousEnd + $turnaround)) {
+                throw ValidationException::withMessages(['selected_slots' => 'Pilih jam secara berurutan seperti booking kasir.']);
             }
-
+            $window = $windows->first(function (BookingTimeSlot $window) use ($slotStart, $slotEnd, $step) {
+                $windowStart = $this->toMinutes((string) $window->start_time);
+                $windowEnd = $this->toMinutes((string) $window->end_time);
+                return $slotStart >= $windowStart && $slotEnd <= $windowEnd
+                    && ($slotStart - $windowStart) % $step === 0;
+            });
+            if (! $window) {
+                throw ValidationException::withMessages(['selected_slots' => 'Ada jam yang tidak sesuai Master Jam Booking.']);
+            }
             $total += (float) $window->price;
+            $previousEnd = $slotEnd;
         }
 
         return $total + $this->courtAdjustment($data['court_id'] ?? null);
@@ -233,10 +245,10 @@ class PublicBookingController extends Controller
     private function storeBooking(Request $request, Facility $facility, array $data): Booking
     {
         $date = Carbon::parse($data['date']);
-        $startMinutes = $this->toMinutes($data['start_time']);
-        $durationHours = max(1, (int) $data['duration_hours']);
-        $durationMinutes = $durationHours * 60;
-        $endMinutes = $startMinutes + $durationMinutes;
+        $selectedSlots = collect($data['selected_slots'] ?? [])->sortBy('start_time')->values();
+        $startMinutes = $this->toMinutes($selectedSlots->first()['start_time'] ?? $data['start_time']);
+        $endMinutes = $this->toMinutes($selectedSlots->last()['end_time'] ?? $data['start_time']);
+        $durationMinutes = $endMinutes - $startMinutes;
         $turnaround = max(0, (int) $facility->turnaround_minutes);
 
         $courtIsBookable = $facility->courts()
@@ -250,8 +262,8 @@ class PublicBookingController extends Controller
             ]);
         }
 
-        if (! $this->isMasterSlotStart($facility->id, $date, $startMinutes, $durationMinutes)) {
-            throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih tidak sesuai Master Jam Booking. Silakan pilih slot yang tersedia.']);
+        if ($selectedSlots->isEmpty() || $selectedSlots->count() !== (int) $data['duration_hours']) {
+            throw ValidationException::withMessages(['selected_slots' => 'Pilih minimal satu jam booking.']);
         }
 
         if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
