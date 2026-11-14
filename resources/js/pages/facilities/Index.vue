@@ -86,10 +86,6 @@ const featureOptions = [
     { value: '1', label: 'Enable — fitur dibuka' },
     { value: '0', label: 'Disable — fitur ditutup' },
 ];
-const bookableOptions = [
-    { value: '1', label: 'Ya — bisa dibooking online' },
-    { value: '0', label: 'Tidak' },
-];
 const form = ref({
     status: 'active',
     is_bookable_online: '1',
@@ -475,6 +471,11 @@ function initials(value: string) {
                 @success="closeForm"
                 v-slot="{ errors, processing }"
             >
+                <input
+                    type="hidden"
+                    name="is_bookable_online"
+                    :value="form.is_bookable_online"
+                />
                 <div class="grid gap-4">
                     <div class="grid gap-2">
                         <Label for="facility-name">Nama olahraga</Label>
@@ -503,23 +504,6 @@ function initials(value: string) {
                                 class="text-xs text-destructive"
                             >
                                 {{ errors.status }}
-                            </p>
-                        </div>
-                        <div class="grid gap-2">
-                            <Label for="facility-bookable"
-                                >Booking online</Label
-                            >
-                            <FormSelect
-                                id="facility-bookable"
-                                v-model="form.is_bookable_online"
-                                name="is_bookable_online"
-                                :options="bookableOptions"
-                            />
-                            <p
-                                v-if="errors.is_bookable_online"
-                                class="text-xs text-destructive"
-                            >
-                                {{ errors.is_bookable_online }}
                             </p>
                         </div>
                         <div class="grid gap-2">
