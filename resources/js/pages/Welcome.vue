@@ -352,7 +352,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <Link href="/book" class="btn-lime inline-flex items-center gap-3 rounded-full px-7 py-4 font-extrabold">
                                 Pesan Lapangan <i class="fa-solid fa-arrow-right"></i>
                             </Link>
-                            <a href="#olahraga" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-7 py-4 font-bold text-white transition hover:bg-white/10">
+                            <a href="#olahraga" class="public-action-button inline-flex items-center gap-2 rounded-[15px] border border-white/20 px-7 py-4 font-bold text-white transition hover:bg-white/10">
                                 Jelajahi olahraga <i class="fa-solid fa-arrow-down"></i>
                             </a>
                         </div>
@@ -705,7 +705,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 
 <style scoped>
 .dream-home { --lime: #a4da01; --navy: #001428; font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif; }
-.btn-lime { background: var(--lime); color: var(--navy); transition: transform .2s ease, background .2s ease; }
+.btn-lime { border-radius: 15px; background: var(--lime); color: var(--navy); transition: transform .2s ease, background .2s ease; }\n.dream-home button, .dream-home .public-action-button, .dream-home a[class*="px-"][class*="py-"] { border-radius: 15px !important; }
 .btn-lime:hover { background: #b8ec24; transform: translateY(-2px); }
 .brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: var(--lime); color: var(--navy); font-size: 18px; }
 .nav-link { position: relative; padding: 10px 0; transition: color .2s ease; }
