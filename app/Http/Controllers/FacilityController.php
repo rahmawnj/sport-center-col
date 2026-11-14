@@ -6,6 +6,7 @@ use App\Models\Facility;
 use App\Models\BookingTimeSlot;
 use App\Models\ClassSchedule;
 use App\Models\SessionParticipant;
+use App\Models\TrainerPackage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -32,6 +33,7 @@ class FacilityController extends Controller
                 'name' => $facility->name,
                 'slug' => $facility->slug,
                 'is_bookable_online' => (bool) $facility->is_bookable_online,
+                'has_membership' => (bool) $facility->has_membership,
                 'has_membership' => (bool) $facility->has_membership,
                 'has_booking' => (bool) $facility->has_booking,
                 'has_session' => (bool) $facility->has_session,
@@ -107,6 +109,16 @@ class FacilityController extends Controller
                         'price' => (float) $rule->price,
                         'priority' => $rule->priority,
                     ])->values(),
+                ])->values(),
+                'trainer_packages' => TrainerPackage::query()->where('facility_id', $facility->id)->orderBy('name')->get()->map(fn ($package) => [
+                    'id' => $package->id,
+                    'name' => $package->name,
+                    'total_sessions' => $package->total_sessions,
+                    'duration_days' => $package->duration_days,
+                    'price' => (float) $package->price,
+                    'trainer_share_percentage' => (float) $package->trainer_share_percentage,
+                    'description' => $package->description,
+                    'is_active' => (bool) $package->is_active,
                 ])->values(),
                 'trainers' => $facility->trainers->map(fn ($trainer) => [
                     'id' => $trainer->id,
