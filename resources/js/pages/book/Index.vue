@@ -160,10 +160,9 @@ function chooseSlot(item: Slot) {
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
     if (chosen.some((entry, index) => index > 0 && toMinutes(entry.start_time) !== toMinutes(chosen[index - 1].start_time) + 60)) {
-        const previous = chosen.findIndex((entry, index) => index > 0 && toMinutes(entry.start_time) !== toMinutes(chosen[index - 1].start_time) + 60);
-        const clickedWasAfterGap = chosen.findIndex((entry) => entry.start_time === item.start_time) >= previous;
-        selectedSlots.value = chosen.slice(0, clickedWasAfterGap ? previous : previous + 1).map((entry) => entry.start_time);
-        return;
+        selected.clear();
+        selected.add(item.start_time);
+        chosen.splice(0, chosen.length, item);
     }
 
     selectedSlots.value = chosen.map((entry) => entry.start_time);
