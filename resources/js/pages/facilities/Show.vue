@@ -844,8 +844,8 @@ function promoRange(rule: PricingRule) {
                                             formatDuration(pkg.duration_minutes)
                                         }}</span>
                                     
-    <div v-if="showTrainerPackageForm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm" @click.self="closeTrainerPackageForm">
-        <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border bg-background/90 shadow-2xl backdrop-blur-xl">
+    <div v-if="showTrainerPackageForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="closeTrainerPackageForm">
+        <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border bg-background shadow-2xl">
             <div class="flex items-start justify-between border-b p-5">
                 <div><p class="text-sm font-medium text-primary">{{ props.facility.name }}</p><h2 class="mt-1 text-xl font-semibold">{{ trainerPackageTitle }}</h2></div>
                 <Button variant="ghost" size="icon" @click="closeTrainerPackageForm"><X class="size-4" /></Button>
