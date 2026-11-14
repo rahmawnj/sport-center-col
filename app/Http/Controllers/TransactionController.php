@@ -51,6 +51,8 @@ class TransactionController extends Controller
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
                 'type' => $transaction->transactionable_type,
+                'type_label' => $this->transactionTypeLabel($transaction->transactionable_type),
+                'item_summary' => $this->transactionItemSummary($transaction),
                 'scan_count' => null,
                 'created_at' => $transaction->created_at?->toISOString(),
             ]);
@@ -67,6 +69,68 @@ class TransactionController extends Controller
                 'pending' => Transaction::where('payment_status', 'unpaid')->count(),
             ],
         ]);
+    }
+
+    private function transactionTypeLabel(?string $type): string
+    {
+        return match ($type) {
+            'membership' => 'Membership',
+            'trainer_package' => 'Paket Trainer',
+            'booking' => 'Booking Lapangan',
+            'class' => 'Kelas',
+            'entry' => 'Tiket Masuk',
+            default => ucfirst(str_replace('_', ' ', (string) $type)),
+        };
+    }
+
+    private function transactionItemSummary(Transaction $transaction): string
+    {
+        if ($transaction->transactionable_type === 'membership') {
+            $membership = UserMembership::query()->with('package.facility')->where('transaction_id', $transaction->id)->first();
+            $trainer = MemberTrainerPackage::query()->with(['trainerPackage', 'trainer'])->where('transaction_id', $transaction->id)->first();
+            $parts = array_filter([
+                $membership?->package?->name,
+                $membership?->package?->facility?->name,
+                $trainer ? 'Coach: '.($trainer->trainer?->name ?? 'Belum ditentukan').' · '.($trainer->trainerPackage?->name ?? 'Paket trainer') : null,
+            ]);
+
+            return implode(' · ', $parts) ?: 'Detail membership belum tersedia';
+        }
+
+        if ($transaction->transactionable_type === 'trainer_package') {
+            $purchase = MemberTrainerPackage::query()->with(['trainerPackage', 'facility', 'trainer'])->where('transaction_id', $transaction->id)->first();
+
+            return implode(' · ', array_filter([
+                $purchase?->trainerPackage?->name,
+                $purchase?->facility?->name,
+                $purchase?->trainer?->name ? 'Coach: '.$purchase->trainer->name : null,
+            ])) ?: 'Detail paket trainer belum tersedia';
+        }
+
+        if ($transaction->transactionable_type === 'booking') {
+            $bookingId = preg_match('/^BK-(\\d+)$/', (string) $transaction->invoice_number, $matches) ? (int) $matches[1] : null;
+            $booking = $bookingId ? Booking::query()->with(['court.facility', 'trainerAddon.trainer'])->find($bookingId) : null;
+
+            return implode(' · ', array_filter([
+                $booking?->court?->facility?->name,
+                $booking?->court?->name,
+                $booking?->date?->format('d/m/Y'),
+                $booking?->trainerAddon?->trainer?->name ? 'Coach: '.$booking->trainerAddon->trainer->name : null,
+            ])) ?: 'Detail booking belum tersedia';
+        }
+
+        if ($transaction->transactionable_type === 'class') {
+            $participant = SessionParticipant::query()->with(['schedule.sportClass.facility', 'schedule.trainer'])->where('transaction_id', $transaction->id)->first();
+
+            return implode(' · ', array_filter([
+                $participant?->schedule?->sportClass?->name,
+                $participant?->schedule?->sportClass?->facility?->name,
+                $participant?->schedule?->trainer?->name ? 'Coach: '.$participant->schedule->trainer->name : null,
+                $participant?->session_date?->format('d/m/Y'),
+            ])) ?: 'Detail kelas belum tersedia';
+        }
+
+        return '—';
     }
 
     /**
@@ -420,6 +484,40 @@ class TransactionController extends Controller
                         : 'Menunggu aktivasi pembayaran'],
                     ['label' => 'Status membership', 'value' => ucfirst((string) $membership->status)],
                 ];
+
+                $trainerPurchase = MemberTrainerPackage::query()
+                    ->with(['trainerPackage', 'facility', 'trainer'])
+                    ->where('transaction_id', $transaction->id)
+                    ->first();
+
+                if ($trainerPurchase) {
+                    $itemName = 'Membership + Personal Trainer';
+                    $details = array_merge($details, [
+                        ['label' => 'Paket trainer', 'value' => $trainerPurchase->trainerPackage?->name],
+                        ['label' => 'Fasilitas trainer', 'value' => $trainerPurchase->facility?->name],
+                        ['label' => 'Coach', 'value' => $trainerPurchase->trainer?->name ?? 'Belum ditentukan'],
+                        ['label' => 'Jumlah sesi', 'value' => (string) $trainerPurchase->total_sessions],
+                        ['label' => 'Sisa sesi', 'value' => (string) $trainerPurchase->remaining_sessions],
+                        ['label' => 'Status paket trainer', 'value' => ucfirst((string) $trainerPurchase->status)],
+                    ]);
+                }
+
+                $trainerPurchase = MemberTrainerPackage::query()
+                    ->with(['trainerPackage', 'facility', 'trainer'])
+                    ->where('transaction_id', $transaction->id)
+                    ->first();
+
+                if ($trainerPurchase) {
+                    $itemName = 'Membership + Personal Trainer';
+                    $details = array_merge($details, [
+                        ['label' => 'Paket trainer', 'value' => $trainerPurchase->trainerPackage?->name],
+                        ['label' => 'Fasilitas trainer', 'value' => $trainerPurchase->facility?->name],
+                        ['label' => 'Coach', 'value' => $trainerPurchase->trainer?->name ?? 'Belum ditentukan'],
+                        ['label' => 'Jumlah sesi', 'value' => (string) $trainerPurchase->total_sessions],
+                        ['label' => 'Sisa sesi', 'value' => (string) $trainerPurchase->remaining_sessions],
+                        ['label' => 'Status paket trainer', 'value' => ucfirst((string) $trainerPurchase->status)],
+                    ]);
+                }
             }
         } elseif ($transaction->transactionable_type === 'trainer_package') {
             $trainerPurchase = MemberTrainerPackage::query()
