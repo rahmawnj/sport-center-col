@@ -42,7 +42,6 @@ const slots = ref<Slot[]>([]);
 const loadingSlots = ref(false);
 const slot = ref<Slot | null>(null);
 const selectedSlots = ref<string[]>([]);
-const slotSelectionError = ref('');
 const courtId = ref<number | null>(null);
 const termsAccepted = ref(false);
 
@@ -93,7 +92,6 @@ const canNext = computed(() => {
 watch(date, () => {
     slot.value = null;
     selectedSlots.value = [];
-    slotSelectionError.value = '';
     courtId.value = null;
     slots.value = [];
 
@@ -121,6 +119,11 @@ function chooseFacility(item: Facility) {
     selectedSlots.value = [];
     courtId.value = null;
     step.value = 2;
+}
+
+function toMinutes(time: string) {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
 }
 
 function chooseSlot(item: Slot) {
@@ -156,8 +159,10 @@ function chooseSlot(item: Slot) {
         .filter((entry): entry is Slot => !!entry)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-    if (new Set(chosen.map((entry) => entry.window_id)).size > 1) {
-        slotSelectionError.value = 'Booking tidak bisa melewati pergantian rentang harga. Pilih jam dalam satu rentang harga.';
+    if (chosen.some((entry, index) => index > 0 && toMinutes(entry.start_time) !== toMinutes(chosen[index - 1].start_time) + 60)) {
+        const previous = chosen.findIndex((entry, index) => index > 0 && toMinutes(entry.start_time) !== toMinutes(chosen[index - 1].start_time) + 60);
+        const clickedWasAfterGap = chosen.findIndex((entry) => entry.start_time === item.start_time) >= previous;
+        selectedSlots.value = chosen.slice(0, clickedWasAfterGap ? previous : previous + 1).map((entry) => entry.start_time);
         return;
     }
 
@@ -310,7 +315,6 @@ function formatIDR(value: number) {
                                     </div>
                                     <p v-else class="text-sm text-muted-foreground">Tidak ada jadwal tersedia pada tanggal ini.</p>
                                 </template>
-                                <p v-if="slotSelectionError" class="text-sm text-destructive">{{ slotSelectionError }}</p>
 
                                 <div class="space-y-3 border-t border-slate-100 pt-5">
                                     <div><h3 class="font-semibold">Pilih lapangan</h3><p v-if="slot" class="mt-1 text-sm text-slate-500">{{ slot.start_time }}–{{ slot.end_time }}</p></div>
