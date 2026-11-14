@@ -694,9 +694,9 @@ function promoRange(rule: PricingRule) {
         </div>
 
 
-        <FacilityClasses :facility-id="props.facility.id" :facility-name="props.facility.name" :classes="props.facility.classes" :trainers="props.facility.trainers" />
 
-        <section class="space-y-3">
+
+        <section v-if="props.facility.has_booking" class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <Clock class="size-4 text-primary" />
@@ -758,6 +758,13 @@ function promoRange(rule: PricingRule) {
 
         
 
+
+
+        <section v-if="props.facility.has_membership" class="space-y-5">
+            <div class="border-b pb-3">
+                <h2 class="text-lg font-semibold">Membership</h2>
+                <p class="text-sm text-muted-foreground">Pengaturan paket keanggotaan dan paket personal trainer untuk olahraga ini.</p>
+            </div>
         <section class="space-y-3">
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
@@ -808,28 +815,7 @@ function promoRange(rule: PricingRule) {
                                             formatDuration(pkg.duration_minutes)
                                         }}</span>
                                     
-    <div v-if="showTrainerPackageForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="closeTrainerPackageForm">
-        <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border bg-background shadow-2xl">
-            <div class="flex items-start justify-between border-b p-5">
-                <div><p class="text-sm font-medium text-primary">{{ props.facility.name }}</p><h2 class="mt-1 text-xl font-semibold">{{ trainerPackageTitle }}</h2></div>
-                <Button variant="ghost" size="icon" @click="closeTrainerPackageForm"><X class="size-4" /></Button>
-            </div>
-            <form class="space-y-4 p-5" @submit.prevent="saveTrainerPackage">
-                <input v-model="trainerPackageForm.facility_id" type="hidden" />
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="grid gap-2 sm:col-span-2"><Label>Nama paket</Label><Input v-model="trainerPackageForm.name" placeholder="Personal Trainer 10 Sesi" /><p v-if="trainerPackageForm.errors.name" class="text-xs text-destructive">{{ trainerPackageForm.errors.name }}</p></div>
-                    <div class="grid gap-2"><Label>Jumlah sesi</Label><Input v-model.number="trainerPackageForm.total_sessions" type="number" min="1" /><p v-if="trainerPackageForm.errors.total_sessions" class="text-xs text-destructive">{{ trainerPackageForm.errors.total_sessions }}</p></div>
-                    <div class="grid gap-2"><Label>Masa berlaku (hari)</Label><Input v-model.number="trainerPackageForm.duration_days" type="number" min="1" /><p v-if="trainerPackageForm.errors.duration_days" class="text-xs text-destructive">{{ trainerPackageForm.errors.duration_days }}</p></div>
-                    <div class="grid gap-2"><Label>Harga (Rp)</Label><Input v-model="trainerPackageForm.price" type="number" min="0" placeholder="900000" /><p v-if="trainerPackageForm.errors.price" class="text-xs text-destructive">{{ trainerPackageForm.errors.price }}</p></div>
-                    <div class="grid gap-2"><Label>Bagian trainer (%)</Label><Input v-model.number="trainerPackageForm.trainer_share_percentage" type="number" min="0" max="100" step="0.01" /><p v-if="trainerPackageForm.errors.trainer_share_percentage" class="text-xs text-destructive">{{ trainerPackageForm.errors.trainer_share_percentage }}</p><p class="text-xs text-muted-foreground">Persentase dari harga paket yang menjadi hak trainer.</p></div>
-                    <div class="grid gap-2 sm:col-span-2"><Label>Deskripsi</Label><textarea v-model="trainerPackageForm.description" rows="3" class="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="Deskripsi paket..." /><p v-if="trainerPackageForm.errors.description" class="text-xs text-destructive">{{ trainerPackageForm.errors.description }}</p></div>
-                    <label v-if="editingTrainerPackage" class="flex items-center gap-2 text-sm sm:col-span-2"><input v-model="trainerPackageForm.is_active" type="checkbox" class="size-4" /> Paket aktif dan bisa dijual</label>
-                </div>
-                <div class="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="ghost" @click="closeTrainerPackageForm">Batal</Button><Button type="submit" :disabled="trainerPackageForm.processing">{{ trainerPackageForm.processing ? 'Menyimpan...' : 'Simpan paket' }}</Button></div>
-            </form>
-        </div>
-    </div>
-</template>
+    
                                     <template
                                         v-if="
                                             pkg.type === 'membership' &&
@@ -923,8 +909,6 @@ function promoRange(rule: PricingRule) {
                 Belum ada paket pada olahraga ini.
             </div>
         </section>
-
-
         <section v-if="props.facility.has_membership" class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
@@ -961,8 +945,15 @@ function promoRange(rule: PricingRule) {
             </div>
             <div v-else class="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Belum ada paket personal trainer untuk olahraga ini.</div>
         </section>
+        </section>
 
-
+        <section v-if="props.facility.has_session" class="space-y-3">
+            <div class="border-b pb-3">
+                <h2 class="text-lg font-semibold">Sesi Kelas</h2>
+                <p class="text-sm text-muted-foreground">Pengaturan kelas dan jadwal sesi olahraga.</p>
+            </div>
+            <FacilityClasses :facility-id="props.facility.id" :facility-name="props.facility.name" :classes="props.facility.classes" :trainers="props.facility.trainers" />
+        </section>
 
         <section class="space-y-3">
                     <div class="flex items-center justify-between gap-2">
@@ -1795,4 +1786,26 @@ function promoRange(rule: PricingRule) {
             </Form>
         </div>
     </div>
+    <div v-if="showTrainerPackageForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="closeTrainerPackageForm">
+        <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border bg-background shadow-2xl">
+            <div class="flex items-start justify-between border-b p-5">
+                <div><p class="text-sm font-medium text-primary">{{ props.facility.name }}</p><h2 class="mt-1 text-xl font-semibold">{{ trainerPackageTitle }}</h2></div>
+                <Button variant="ghost" size="icon" @click="closeTrainerPackageForm"><X class="size-4" /></Button>
+            </div>
+            <form class="space-y-4 p-5" @submit.prevent="saveTrainerPackage">
+                <input v-model="trainerPackageForm.facility_id" type="hidden" />
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-2 sm:col-span-2"><Label>Nama paket</Label><Input v-model="trainerPackageForm.name" placeholder="Personal Trainer 10 Sesi" /><p v-if="trainerPackageForm.errors.name" class="text-xs text-destructive">{{ trainerPackageForm.errors.name }}</p></div>
+                    <div class="grid gap-2"><Label>Jumlah sesi</Label><Input v-model.number="trainerPackageForm.total_sessions" type="number" min="1" /><p v-if="trainerPackageForm.errors.total_sessions" class="text-xs text-destructive">{{ trainerPackageForm.errors.total_sessions }}</p></div>
+                    <div class="grid gap-2"><Label>Masa berlaku (hari)</Label><Input v-model.number="trainerPackageForm.duration_days" type="number" min="1" /><p v-if="trainerPackageForm.errors.duration_days" class="text-xs text-destructive">{{ trainerPackageForm.errors.duration_days }}</p></div>
+                    <div class="grid gap-2"><Label>Harga (Rp)</Label><Input v-model="trainerPackageForm.price" type="number" min="0" placeholder="900000" /><p v-if="trainerPackageForm.errors.price" class="text-xs text-destructive">{{ trainerPackageForm.errors.price }}</p></div>
+                    <div class="grid gap-2"><Label>Bagian trainer (%)</Label><Input v-model.number="trainerPackageForm.trainer_share_percentage" type="number" min="0" max="100" step="0.01" /><p v-if="trainerPackageForm.errors.trainer_share_percentage" class="text-xs text-destructive">{{ trainerPackageForm.errors.trainer_share_percentage }}</p><p class="text-xs text-muted-foreground">Persentase dari harga paket yang menjadi hak trainer.</p></div>
+                    <div class="grid gap-2 sm:col-span-2"><Label>Deskripsi</Label><textarea v-model="trainerPackageForm.description" rows="3" class="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="Deskripsi paket..." /><p v-if="trainerPackageForm.errors.description" class="text-xs text-destructive">{{ trainerPackageForm.errors.description }}</p></div>
+                    <label v-if="editingTrainerPackage" class="flex items-center gap-2 text-sm sm:col-span-2"><input v-model="trainerPackageForm.is_active" type="checkbox" class="size-4" /> Paket aktif dan bisa dijual</label>
+                </div>
+                <div class="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="ghost" @click="closeTrainerPackageForm">Batal</Button><Button type="submit" :disabled="trainerPackageForm.processing">{{ trainerPackageForm.processing ? 'Menyimpan...' : 'Simpan paket' }}</Button></div>
+            </form>
+        </div>
+    </div>
+
 </template>
