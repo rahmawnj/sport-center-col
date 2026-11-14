@@ -124,9 +124,18 @@ class PublicHomeController extends Controller
 
         $trainers = Trainer::query()
             ->whereNull('deleted_at')
+            ->with(['facilities' => fn ($query) => $query
+                ->where('facilities.status', 'active')
+                ->select('facilities.id', 'facilities.name')])
             ->orderBy('name')
             ->limit(4)
-            ->get(['id', 'name', 'specialty']);
+            ->get(['id', 'name', 'specialty'])
+            ->map(fn (Trainer $trainer) => [
+                'id' => $trainer->id,
+                'name' => $trainer->name,
+                'specialty' => $trainer->specialty,
+                'sports' => $trainer->facilities->pluck('name')->values(),
+            ]);
 
         $trainerPackages = TrainerPackage::query()
             ->where('is_active', true)
