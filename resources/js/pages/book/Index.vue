@@ -245,10 +245,7 @@ function formatIDR(value: number) {
                     <div class="relative mb-6 overflow-hidden rounded-3xl bg-[#001428] px-6 py-7 text-white shadow-lg sm:px-8 sm:py-9">
                         <div class="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full border-[28px] border-white/5"></div>
                         <div class="relative max-w-2xl">
-                            <p class="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[#c9f36a]">Sport Center · Online booking</p>
                             <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Booking olahraga</h1>
-                            <p class="mt-2 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">Pilih olahraga favoritmu, tentukan waktu bermain, dan amankan lapangan dalam beberapa langkah mudah.</p>
-                            <div class="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100"><Check class="size-3.5 text-[#c9f36a]" /> Jadwal tersedia hingga 7 hari ke depan</div>
                         </div>
                     </div>
 
@@ -286,19 +283,17 @@ function formatIDR(value: number) {
                             <div class="space-y-5">
                                 <div>
                                     <h2 class="text-lg font-semibold">Pilih tanggal, jam & lapangan</h2>
-                                    <p class="mt-1 text-sm text-slate-500">Olahraga: <strong>{{ facility?.name }}</strong>. Pilih satu atau beberapa jam berurutan, lalu pilih lapangan.</p>
+                                    <p class="mt-1 text-sm text-slate-500">{{ facility?.name }}</p>
                                 </div>
                                 <div class="grid max-w-sm gap-2">
                                     <Label for="booking-date" class="text-sm font-semibold text-slate-700">Tanggal booking</Label>
                                     <div class="rounded-2xl bg-slate-50 p-3">
                                         <Input id="booking-date" v-model="date" type="date" :min="today" :max="maxBookingDate" class="h-14 rounded-2xl border-0 bg-white px-4 text-base font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200 focus-visible:ring-2 focus-visible:ring-[#a4da01]" />
-                                        <p class="mt-2 text-xs text-slate-500">Pilih tanggal mulai hari ini sampai {{ maxBookingDate }} (maksimal 7 hari ke depan).</p>
                                     </div>
                                 </div>
                                 <div v-if="loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
                                 <template v-else-if="date">
                                     <div v-if="slots.length" class="space-y-3">
-                                        <p class="text-sm text-slate-600">Pilih jam. Jam di antaranya otomatis ikut dipilih.</p>
                                         <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                             <label v-for="item in slots" :key="item.start_time"
                                                 class="flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50 p-3 transition-colors has-[:disabled]:cursor-not-allowed has-[:checked]:bg-lime-100 hover:bg-lime-50"
@@ -362,7 +357,7 @@ function formatIDR(value: number) {
                                 <div class="mt-2 flex justify-between gap-2 border-t pt-2"><span class="text-muted-foreground">Total</span><span class="font-semibold text-primary">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</span></div>
                             </div>
                             <div v-if="props.currentUser" class="rounded-2xl border border-lime-200 bg-lime-50/70 p-5">
-                                <div class="mb-4 flex items-center gap-3"><div class="flex size-11 items-center justify-center rounded-xl bg-[#a4da01] text-[#001428]"><Check class="size-5" /></div><div><p class="font-semibold text-slate-900">Data member terisi otomatis</p><p class="mt-1 text-sm text-slate-600">Booking akan ditautkan ke akun yang sedang login.</p></div></div>
+                                <div class="mb-4 flex items-center gap-3"><div class="flex size-11 items-center justify-center rounded-xl bg-[#a4da01] text-[#001428]"><Check class="size-5" /></div><div><p class="font-semibold text-slate-900">Data member terisi otomatis</p></div></div>
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div class="grid gap-2"><Label for="guest-name">Nama</Label><Input id="guest-name" v-model="form.guest_name" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" /></div>
                                     <div class="grid gap-2"><Label for="guest-email">Email</Label><Input id="guest-email" v-model="form.guest_email" type="email" readonly class="h-14 rounded-2xl border-0 bg-white px-4 text-base shadow-none" /></div>
@@ -377,7 +372,7 @@ function formatIDR(value: number) {
                         </section>
 
                         <section v-else-if="step === 4" class="space-y-5">
-                            <div><h2 class="text-xl font-bold">Konfirmasi pesanan</h2><p class="mt-1 text-sm text-slate-500">Periksa kembali detail booking sebelum dilanjutkan.</p></div>
+                            <h2 class="text-xl font-bold">Konfirmasi pesanan</h2>
                             <div class="rounded-2xl border border-slate-200 p-5">
                                 <div class="border-b border-slate-100 pb-4"><p class="font-semibold">{{ facility?.name }}</p><p class="mt-1 text-sm text-slate-500">{{ date }} · {{ slot?.start_time }}–{{ slot?.end_time }}</p></div>
                                 <div class="grid gap-4 py-4 sm:grid-cols-2">
@@ -387,22 +382,21 @@ function formatIDR(value: number) {
                                     <div><p class="text-sm text-slate-500">Lapangan</p><p class="mt-1 font-semibold">{{ selectedCourt?.name }}</p></div>
                                     <div><p class="text-sm text-slate-500">Durasi</p><p class="mt-1 font-semibold">{{ selectedDurationLabel }}</p></div>
                                 </div>
-                                <div class="flex items-center justify-between border-t border-slate-200 pt-4"><div><p class="font-semibold">Total pesanan</p><p class="mt-1 text-xs text-slate-500">Berdasarkan Master Jam Booking dan biaya lapangan</p></div><p class="text-2xl font-bold">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
+                                <div class="flex items-center justify-between border-t border-slate-200 pt-4"><div><p class="font-semibold">Total pesanan</p></div><p class="text-2xl font-bold">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p></div>
                             </div>
                         </section>
 
                         <section v-else class="space-y-5">
-                            <div><h2 class="text-xl font-bold">Pembayaran & persetujuan</h2><p class="mt-1 text-sm text-slate-500">Konfirmasi booking dan persetujuan syarat dan ketentuan.</p></div>
+                            <h2 class="text-xl font-bold">Pembayaran & persetujuan</h2>
                             <div class="rounded-2xl bg-[#001428] p-6 text-white">
                                 <div class="flex items-center gap-3"><div class="flex size-12 items-center justify-center rounded-full bg-[#a4da01] text-[#001428]"><Check class="size-6" :stroke-width="3" /></div><div><p class="text-lg font-bold">Konfirmasi booking</p><p class="mt-1 text-sm text-slate-300">Total pesanan</p></div></div>
                                 <p class="mt-5 text-3xl font-bold text-[#c9f36a]">{{ displayPrice !== null ? formatIDR(displayPrice) : '—' }}</p>
-                                <p class="mt-2 text-sm leading-6 text-slate-300">Konfirmasi ini menyimpan booking dan belum memproses pembayaran online. Detail pembayaran dapat dikonfirmasi dengan pengelola.</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-300">Pembayaran dikonfirmasi dengan pengelola.</p>
                             </div>
                             <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:bg-slate-50" :class="termsAccepted ? 'border-[#a4da01] bg-lime-50' : ''">
                                 <input v-model="termsAccepted" type="checkbox" class="mt-1 size-4 accent-[#8dbb00]" />
                                 <span class="text-sm leading-6 text-slate-700">Saya telah memeriksa detail pesanan dan menyetujui syarat serta ketentuan booking olahraga.</span>
                             </label>
-                            <p v-if="!termsAccepted" class="text-xs text-slate-500">Centang persetujuan untuk mengaktifkan tombol konfirmasi.</p>
                             <p v-if="form.errors.start_time || form.errors.court_id || form.errors.facility_id" class="text-sm text-destructive">{{ form.errors.start_time || form.errors.court_id || form.errors.facility_id }}</p>
                         </section>
 
