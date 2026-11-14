@@ -32,6 +32,12 @@ class TransactionController extends Controller
     {
         $search = trim((string) $request->input('search', ''));
         $status = $request->input('status', 'all');
+        $filters = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
 
         $statusMap = ['paid' => 'fully_paid', 'pending' => 'unpaid', 'partial' => 'dp_paid'];
         $dbStatus = $statusMap[$status] ?? null;
@@ -39,6 +45,8 @@ class TransactionController extends Controller
         $transactions = Transaction::query()
             ->when($search !== '', fn ($query) => $query->where('guest_name', 'like', "%{$search}%"))
             ->when($dbStatus, fn ($query) => $query->where('payment_status', $dbStatus))
+            ->when($from, fn ($query) => $query->whereDate('created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('created_at', '<=', $to))
             ->latest()
             ->paginate(10)
             ->withQueryString()
@@ -59,7 +67,7 @@ class TransactionController extends Controller
 
         return Inertia::render('transactions/Index', [
             'transactions' => $transactions,
-            'filters' => ['search' => $search, 'status' => $status],
+            'filters' => ['search' => $search, 'status' => $status, 'from' => $from, 'to' => $to],
             'stats' => [
                 'today' => (float) Transaction::whereDate('created_at', today())
                     ->where('payment_status', 'fully_paid')
