@@ -248,7 +248,6 @@ const dayLabel = (day: string) => ({
 const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-
     if (hours && remainingMinutes) {
 return `${hours} jam ${remainingMinutes} menit`;
 }
@@ -497,8 +496,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Masa aktif</p><p class="mt-1 font-extrabold text-[#001428]">{{ item.duration_days }} hari</p></div>
                             <div class="rounded-xl bg-slate-50 p-3"><p class="text-xs text-slate-500">Jenis paket</p><p class="mt-1 font-extrabold text-[#001428]">Membership</p></div>
                         </div>
-                        <div class="mt-5 border-t border-slate-100 pt-5">
-                            <p class="text-xs font-semibold text-slate-500">Harga paket</p>
+                        <div class="mt-5 border-t border-slate-100 pt-5">                            <p class="text-xs font-semibold text-slate-500">Harga paket</p>
                             <p class="mt-1 text-2xl font-black text-[#001428]">{{ formatCurrency(item.price ?? 0) }}</p>
                             <button type="button" @click="openMembershipCheckout(item)" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a4da01] px-5 py-3 text-sm font-black text-[#001428] transition hover:bg-[#b8ec24] focus:outline-none focus:ring-2 focus:ring-[#789900] focus:ring-offset-2">
                                 Pilih Membership <i class="fa-solid fa-arrow-right"></i>
@@ -606,7 +604,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <button type="button" @click="closeMembershipCheckout" class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Tutup modal"><i class="fa-solid fa-xmark"></i></button>
                         </div>
 
-                        <div class="mt-7">
+                        <div v-if="trainerPackages.some((item) => item.facility_id === selectedMembershipPackage?.facility_id)" class="mt-7">
                             <div class="flex items-center justify-between gap-3">
                                 <h3 class="font-extrabold text-[#001428]">1. Tambahkan paket trainer (opsional)</h3>
                                 <span class="text-xs font-semibold text-slate-400">Boleh dilewati</span>
@@ -622,7 +620,6 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                                     <span class="mt-2 block text-sm font-black text-[#668500]">{{ formatCurrency(trainerPackage.price) }}</span>
                                 </button>
                             </div>
-                            <p v-if="!trainerPackages.some((item) => item.facility_id === selectedMembershipPackage?.facility_id)" class="mt-3 text-sm text-slate-500">Belum ada paket trainer untuk olahraga ini. Kamu tetap bisa membeli membership saja.</p>
                         </div>
 
                         <div v-if="selectedMembershipTrainerPackage" class="mt-7">
@@ -747,8 +744,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .membership-card-featured { border-color: rgba(164,218,1,.65); background: rgba(164,218,1,.09); }
 .cta-strip { border: 1px solid #e7edd7; background: #f7faef; }
 @media (max-width: 640px) {
-    .hero-visual { min-height: 350px; }
-    .hero-image-main { height: 305px; width: 82%; }
+    .hero-visual { min-height: 350px; }    .hero-image-main { height: 305px; width: 82%; }
     .hero-image-small { height: 140px; width: 43%; }
     .hero-floating-card { right: 0; bottom: 16px; min-width: 185px; padding: 13px 15px; }
     .hero-floating-card .text-lg { font-size: 15px; }
