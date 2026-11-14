@@ -356,10 +356,6 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                                 Jelajahi olahraga <i class="fa-solid fa-arrow-down"></i>
                             </a>
                         </div>
-                        <div class="mt-10 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-300">
-                            <span><i class="fa-solid fa-circle-check mr-2 text-[#a4da01]"></i>Pemesanan praktis</span>
-                            <span><i class="fa-solid fa-circle-check mr-2 text-[#a4da01]"></i>Tarif transparan</span>
-                        </div>
                     </div>
 
                     <div class="hero-visual relative mx-auto w-full max-w-xl">
@@ -376,8 +372,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                 <div class="hero-bottom-line"></div>
             </section>
 
-            <section class="relative z-10 mx-auto -mt-1 max-w-7xl px-5 lg:px-8">
-                <div ref="statsPanel" class="stats-panel grid grid-cols-2 gap-5 rounded-2xl border border-white/60 bg-white/65 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur-xl supports-[backdrop-filter]:bg-white/55 md:grid-cols-4 md:px-10 md:py-7">
+            <section class="relative z-10 mx-auto -mt-14 max-w-7xl px-5 lg:px-8 md:-mt-16">
+                <div ref="statsPanel" class="stats-panel grid grid-cols-2 gap-x-5 gap-y-8 rounded-2xl border p-6 shadow-xl md:grid-cols-4 md:gap-8 md:px-10 md:py-8">
                     <div class="stat-item"><span class="stat-number">{{ animatedStats.facilities }}</span><span class="stat-label">Jenis olahraga</span></div>
                     <div class="stat-item"><span class="stat-number">{{ animatedStats.courts }}</span><span class="stat-label">Lapangan tersedia</span></div>
                     <div class="stat-item"><span class="stat-number">{{ animatedStats.trainers }}</span><span class="stat-label">Pelatih terdaftar</span></div>
@@ -722,9 +718,9 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .hero-circle-label { position: absolute; top: 34px; left: 0; display: flex; width: 84px; height: 84px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 50%; background: var(--lime); color: var(--navy); font-size: 10px; font-weight: 900; letter-spacing: .12em; transform: rotate(-12deg); }
 .hero-circle-label i { font-size: 22px; }
 .hero-bottom-line { position: absolute; right: 0; bottom: 0; left: 0; height: 5px; background: linear-gradient(90deg, transparent, var(--lime), transparent); opacity: .8; }
-.stats-panel { -webkit-backdrop-filter: blur(22px) saturate(155%); backdrop-filter: blur(22px) saturate(155%); background: rgba(255,255,255,.64); border-color: rgba(255,255,255,.78); box-shadow: 0 18px 48px rgba(0,20,40,.12), inset 0 1px 0 rgba(255,255,255,.8); }\n.stat-item { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-.stat-number { font-size: 30px; font-weight: 900; letter-spacing: -.04em; }
-.stat-label { color: #64748b; font-size: 12px; font-weight: 600; }
+.stats-panel { background: var(--lime); border-color: var(--lime); box-shadow: 0 18px 48px rgba(0,20,40,.16); }\n.stat-item { display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; }
+.stat-number { color: var(--navy); font-size: 38px; font-weight: 900; line-height: 1; letter-spacing: -.04em; }
+.stat-label { color: var(--navy); font-size: 15px; font-weight: 700; line-height: 1.35; }
 .section-kicker { color: #789900; font-size: 11px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
 .section-title { margin-top: 10px; color: var(--navy); font-size: clamp(28px, 3vw, 40px); font-weight: 900; line-height: 1.16; letter-spacing: -.04em; }
 .section-title span { color: #7da500; }
@@ -750,6 +746,6 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
     .hero-floating-card { right: 0; bottom: 16px; min-width: 185px; padding: 13px 15px; }
     .hero-floating-card .text-lg { font-size: 15px; }
     .hero-circle-label { top: 15px; width: 68px; height: 68px; }
-    .stat-number { font-size: 25px; }
+    .stat-number { font-size: 32px; }
 }
 </style>
