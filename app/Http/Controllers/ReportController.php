@@ -1,17 +1,17 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\Booking;
-use App\\Models\\MemberTrainerPackage;
-use App\\Models\\SessionParticipant;
-use App\\Models\\Transaction;
-use App\\Models\\UserMembership;
-use Illuminate\\Database\\Eloquent\\Builder;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\DB;
-use Inertia\\Inertia;
-use Inertia\\Response;
+use App\Models\Booking;
+use App\Models\MemberTrainerPackage;
+use App\Models\SessionParticipant;
+use App\Models\Transaction;
+use App\Models\UserMembership;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ReportController extends Controller
 {
