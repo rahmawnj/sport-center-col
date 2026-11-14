@@ -373,11 +373,23 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
             </section>
 
             <section class="relative z-10 mx-auto -mt-14 max-w-7xl px-5 lg:px-8 md:-mt-16">
-                <div ref="statsPanel" class="stats-panel grid grid-cols-2 gap-x-5 gap-y-8 rounded-2xl border p-6 shadow-xl md:grid-cols-4 md:gap-8 md:px-10 md:py-8">
-                    <div class="stat-item"><span class="stat-number">{{ animatedStats.facilities }}</span><span class="stat-label">Jenis olahraga</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ animatedStats.courts }}</span><span class="stat-label">Lapangan tersedia</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ animatedStats.trainers }}</span><span class="stat-label">Pelatih terdaftar</span></div>
-                    <div class="stat-item"><span class="stat-number">{{ animatedStats.membershipPackages }}</span><span class="stat-label">Paket keanggotaan</span></div>
+                <div ref="statsPanel" class="stats-panel grid grid-cols-2 rounded-2xl border p-5 shadow-xl md:grid-cols-4 md:px-8 md:py-7">
+                    <div class="stat-item">
+                        <span class="stat-icon"><i class="fa-solid fa-dumbbell"></i></span>
+                        <span class="stat-copy"><span class="stat-number">{{ animatedStats.facilities }}</span><span class="stat-label">Jenis olahraga</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
+                        <span class="stat-copy"><span class="stat-number">{{ animatedStats.courts }}</span><span class="stat-label">Lapangan tersedia</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon"><i class="fa-solid fa-user-tie"></i></span>
+                        <span class="stat-copy"><span class="stat-number">{{ animatedStats.trainers }}</span><span class="stat-label">Pelatih terdaftar</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon"><i class="fa-solid fa-id-card"></i></span>
+                        <span class="stat-copy"><span class="stat-number">{{ animatedStats.membershipPackages }}</span><span class="stat-label">Paket keanggotaan</span></span>
+                    </div>
                 </div>
             </section>
 
@@ -718,9 +730,13 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .hero-circle-label { position: absolute; top: 34px; left: 0; display: flex; width: 84px; height: 84px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 50%; background: var(--lime); color: var(--navy); font-size: 10px; font-weight: 900; letter-spacing: .12em; transform: rotate(-12deg); }
 .hero-circle-label i { font-size: 22px; }
 .hero-bottom-line { position: absolute; right: 0; bottom: 0; left: 0; height: 5px; background: linear-gradient(90deg, transparent, var(--lime), transparent); opacity: .8; }
-.stats-panel { background: var(--lime); border-color: var(--lime); box-shadow: 0 18px 48px rgba(0,20,40,.16); }\n.stat-item { display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; }
-.stat-number { color: var(--navy); font-size: 38px; font-weight: 900; line-height: 1; letter-spacing: -.04em; }
-.stat-label { color: var(--navy); font-size: 15px; font-weight: 700; line-height: 1.35; }
+.stats-panel { background: var(--lime); border-color: var(--lime); box-shadow: 0 18px 48px rgba(0,20,40,.16); }
+.stat-item { position: relative; display: flex; min-width: 0; align-items: center; justify-content: center; gap: 13px; padding: 8px 16px; }
+.stat-item:not(:last-child)::after { position: absolute; top: 12%; right: 0; width: 1px; height: 76%; background: rgba(0,20,40,.28); content: ''; }
+.stat-icon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 13px; background: rgba(0,20,40,.10); color: var(--navy); font-size: 19px; }
+.stat-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.stat-number { color: var(--navy); font-size: 27px; font-weight: 900; line-height: 1; letter-spacing: -.035em; }
+.stat-label { color: var(--navy); font-size: 16px; font-weight: 800; line-height: 1.25; }
 .section-kicker { color: #789900; font-size: 11px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
 .section-title { margin-top: 10px; color: var(--navy); font-size: clamp(28px, 3vw, 40px); font-weight: 900; line-height: 1.16; letter-spacing: -.04em; }
 .section-title span { color: #7da500; }
@@ -746,6 +762,13 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
     .hero-floating-card { right: 0; bottom: 16px; min-width: 185px; padding: 13px 15px; }
     .hero-floating-card .text-lg { font-size: 15px; }
     .hero-circle-label { top: 15px; width: 68px; height: 68px; }
-    .stat-number { font-size: 32px; }
+    .stats-panel { row-gap: 0; }
+    .stat-item { justify-content: flex-start; gap: 10px; padding: 14px 8px; }
+    .stat-item:nth-child(odd)::after { top: 12%; right: 0; height: 76%; }
+    .stat-item:nth-child(even)::after { display: none; }
+    .stat-item:nth-child(-n+2) { border-bottom: 1px solid rgba(0,20,40,.22); }
+    .stat-icon { width: 36px; height: 36px; flex-basis: 36px; font-size: 16px; }
+    .stat-number { font-size: 24px; }
+    .stat-label { font-size: 15px; }
 }
 </style>
