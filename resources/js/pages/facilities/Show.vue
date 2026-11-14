@@ -973,10 +973,6 @@ function promoRange(rule: PricingRule) {
         </section>
 
         <section v-if="props.facility.has_session && activeTab === 'session'" class="space-y-3">
-            <div class="border-b pb-3">
-                <h2 class="text-lg font-semibold">Sesi Kelas</h2>
-                <p class="text-sm text-muted-foreground">Pengaturan kelas dan jadwal sesi olahraga.</p>
-            </div>
             <FacilityClasses :facility-id="props.facility.id" :facility-name="props.facility.name" :classes="props.facility.classes" :trainers="props.facility.trainers" />
         </section>
 
