@@ -248,8 +248,8 @@ class ReportController extends Controller
 
     private function applyJoinedDateFilter($query, ?string $from, ?string $to, string $column): void
     {
-        $query->when($from, fn ($query) => $query->whereDate($column, '>=', $from))
-            ->when($to, fn ($query) => $query->whereDate($column, '<=', $to));
+        $query->when($from, fn ($query) => $query->whereRaw("DATE($column) >= ?", [$from]))
+            ->when($to, fn ($query) => $query->whereRaw("DATE($column) <= ?", [$to]));
     }
 
     private function paymentStatus(?string $status): string
