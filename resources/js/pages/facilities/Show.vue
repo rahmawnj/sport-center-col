@@ -299,15 +299,15 @@ const info = computed(() => [
         disabled: false,
     },
     {
-        key: 'has_trainer',
-        label: 'Personal Trainer',
-        enabled: props.facility.trainer_packages.some((item) => item.is_active),
-        value: props.facility.trainer_packages.length === 0
-            ? 'Belum ada paket'
-            : props.facility.trainer_packages.some((item) => item.is_active)
-              ? 'Tersedia'
-              : 'Tidak tersedia',
-        disabled: props.facility.trainer_packages.length === 0,
+        key: 'status',
+        label: 'Status Olahraga',
+        enabled: props.facility.status === 'active',
+        value: props.facility.status === 'active'
+            ? 'Aktif'
+            : props.facility.status === 'maintenance'
+              ? 'Maintenance'
+              : 'Nonaktif',
+        disabled: false,
     },
 ]);
 
@@ -690,9 +690,6 @@ function promoRange(rule: PricingRule) {
                 >
                     {{ updatingCapability === item.key ? 'Menyimpan...' : item.enabled ? 'Nonaktifkan' : 'Aktifkan' }}
                 </Button>
-                <p v-if="item.disabled" class="text-xs text-muted-foreground">
-                    Tambahkan paket personal trainer terlebih dahulu.
-                </p>
             </div>
         </div>
 
