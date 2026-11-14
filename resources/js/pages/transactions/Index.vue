@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { CheckCircle2, Clock, Eye, Pencil, Receipt, Wallet } from '@lucide/vue';
+import { CalendarRange, CheckCircle2, Clock, Eye, Pencil, Receipt, Wallet } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SummaryCards from '@/components/SummaryCards.vue';
@@ -28,7 +28,7 @@ type Props = {
         total: number;
         links: LinkItem[];
     };
-    filters: { search: string; status: string };
+    filters: { search: string; status: string; from: string | null; to: string | null };
     stats: { today: number; total: number; paid: number; pending: number };
 };
 
@@ -39,6 +39,18 @@ const flash = computed(() => (page.props.flash ?? {}) as { success?: string | nu
 
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'all');
+const from = ref(props.filters.from ?? '');
+const to = ref(props.filters.to ?? '');
+const rangeOpen = ref(false);
+const datePresets = [
+    { value: 'today', label: 'Hari ini' },
+    { value: '7days', label: '7 hari terakhir' },
+    { value: '30days', label: '30 hari terakhir' },
+    { value: 'month', label: 'Bulan ini' },
+] as const;
+const rangeStart = ref(from.value);
+const rangeEnd = ref(to.value);
+const viewMonth = ref(monthStart(from.value || toISO(new Date())));
 const statusOptions = [
     { value: 'all', label: 'Semua status' },
     { value: 'paid', label: 'Lunas' },
@@ -112,12 +124,94 @@ const statCards = computed(() => [
     },
 ]);
 
+function parseDate(value: string) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+function toISO(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+function monthStart(value: string | Date) {
+    const date = typeof value === 'string' ? parseDate(value) : value;
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+const monthViews = computed(() => [0, 1].map((offset) => {
+    const month = new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth() + offset, 1);
+    const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+    const mondayOffset = (firstDay.getDay() + 6) % 7;
+    const gridStart = new Date(firstDay);
+    gridStart.setDate(firstDay.getDate() - mondayOffset);
+    const days = Array.from({ length: 42 }, (_, index) => {
+        const date = new Date(gridStart);
+        date.setDate(gridStart.getDate() + index);
+        return { value: toISO(date), day: date.getDate(), inMonth: date.getMonth() === month.getMonth() };
+    });
+    return {
+        key: `${month.getFullYear()}-${month.getMonth()}`,
+        title: new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(month),
+        days,
+    };
+}));
+const rangeLabel = computed(() => {
+    if (!from.value && !to.value) return 'Pilih rentang tanggal';
+    return `${formatDate(from.value)} – ${formatDate(to.value)}`;
+});
+function formatDate(value: string) {
+    if (!value) return 'Pilih tanggal';
+    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(parseDate(value));
+}
+function shiftMonths(amount: number) {
+    viewMonth.value = new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth() + amount, 1);
+}
+function isInRange(value: string) {
+    return !!rangeStart.value && !!rangeEnd.value && value >= rangeStart.value && value <= rangeEnd.value;
+}
+function isRangeEdge(value: string) {
+    return value === rangeStart.value || value === rangeEnd.value;
+}
+function chooseDay(value: string) {
+    if (!rangeStart.value || rangeEnd.value) {
+        rangeStart.value = value;
+        rangeEnd.value = '';
+        return;
+    }
+    if (value < rangeStart.value) {
+        rangeStart.value = value;
+        rangeEnd.value = '';
+        return;
+    }
+    rangeEnd.value = value;
+    from.value = rangeStart.value;
+    to.value = rangeEnd.value;
+    rangeOpen.value = false;
+    filter();
+}
+function applyPreset(preset: 'today' | '7days' | '30days' | 'month') {
+    const end = new Date();
+    const start = new Date(end);
+    if (preset === '7days') start.setDate(end.getDate() - 6);
+    if (preset === '30days') start.setDate(end.getDate() - 29);
+    if (preset === 'month') start.setDate(1);
+    from.value = toISO(start);
+    to.value = toISO(end);
+    rangeStart.value = from.value;
+    rangeEnd.value = to.value;
+    viewMonth.value = monthStart(from.value);
+    rangeOpen.value = false;
+    filter();
+}
+
 function filter() {
     router.get(
         '/transactions',
         {
             search: search.value || undefined,
             status: status.value === 'all' ? undefined : status.value,
+            from: from.value || undefined,
+            to: to.value || undefined,
         },
         { preserveState: true, replace: true },
     );
@@ -126,6 +220,11 @@ function filter() {
 function reset() {
     search.value = '';
     status.value = 'all';
+    from.value = '';
+    to.value = '';
+    rangeStart.value = '';
+    rangeEnd.value = '';
+    rangeOpen.value = false;
     filter();
 }
 
@@ -181,18 +280,63 @@ function formatDateTime(value: string | null) {
 
         <div class="space-y-4">
             <div class="rounded-2xl border bg-card p-4 shadow-sm">
-                <TableFilters
-                    v-model:search="search"
-                    v-model:status="status"
-                    search-placeholder="Cari nama pelanggan..."
-                    :status-options="statusOptions"
-                    @filter="filter"
-                    @reset="reset"
-                />
+                <div class="flex flex-col gap-3">
+                    <TableFilters
+                        v-model:search="search"
+                        v-model:status="status"
+                        search-placeholder="Cari nama pelanggan..."
+                        :status-options="statusOptions"
+                        @filter="filter"
+                        @reset="reset"
+                    />
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative">
+                            <button
+                                type="button"
+                                class="flex h-10 min-w-[260px] items-center justify-between gap-3 rounded-lg border bg-background px-3 text-sm shadow-sm transition-colors hover:bg-muted/50"
+                                :aria-expanded="rangeOpen"
+                                @click="rangeOpen = !rangeOpen"
+                            >
+                                <span class="flex items-center gap-2">
+                                    <CalendarRange class="size-4 text-muted-foreground" />
+                                    <span>{{ rangeLabel }}</span>
+                                </span>
+                                <span class="text-xs text-muted-foreground">▾</span>
+                            </button>
+                            <div v-if="rangeOpen" class="absolute left-0 z-30 mt-2 w-[min(680px,calc(100vw-2.5rem))] rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl">
+                                <div class="mb-4 flex flex-wrap gap-2">
+                                    <button v-for="preset in datePresets" :key="preset.value" type="button" class="rounded-md border px-3 py-1.5 text-xs hover:bg-muted" @click="applyPreset(preset.value)">{{ preset.label }}</button>
+                                </div>
+                                <div class="mb-3 flex items-center justify-between">
+                                    <button type="button" class="rounded-md border px-2.5 py-1 text-sm hover:bg-muted" aria-label="Bulan sebelumnya" @click="shiftMonths(-1)">‹</button>
+                                    <p class="text-xs text-muted-foreground">Pilih tanggal awal, lalu tanggal akhir</p>
+                                    <button type="button" class="rounded-md border px-2.5 py-1 text-sm hover:bg-muted" aria-label="Bulan berikutnya" @click="shiftMonths(1)">›</button>
+                                </div>
+                                <div class="grid gap-5 sm:grid-cols-2">
+                                    <div v-for="month in monthViews" :key="month.key" class="min-w-0">
+                                        <p class="mb-3 text-center text-sm font-semibold capitalize">{{ month.title }}</p>
+                                        <div class="mb-1 grid grid-cols-7 text-center text-xs text-muted-foreground">
+                                            <span v-for="day in ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']" :key="day" class="py-1">{{ day }}</span>
+                                        </div>
+                                        <div class="grid grid-cols-7 gap-y-1">
+                                            <button v-for="day in month.days" :key="day.value" type="button" class="mx-auto flex size-8 items-center justify-center rounded-full text-xs transition-colors" :class="[!day.inMonth ? 'text-muted-foreground/40' : 'hover:bg-muted', isInRange(day.value) ? 'rounded-none bg-primary/10 text-primary' : '', isRangeEdge(day.value) ? 'rounded-full bg-primary text-primary-foreground hover:bg-primary' : '']" @click="chooseDay(day.value)">{{ day.day }}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
+                                    <span>{{ rangeStart ? formatDate(rangeStart) : 'Tanggal awal' }} – {{ rangeEnd ? formatDate(rangeEnd) : 'Tanggal akhir' }}</span>
+                                    <button type="button" class="font-medium text-primary hover:underline" @click="reset">Hapus rentang</button>
+                                </div>
+                            </div>
+                        </div>
+                        <Button variant="ghost" @click="reset">Reset filter</Button>
+                    </div>
+                </div>
             </div>
 
             <div class="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                <table class="w-full text-sm">
+                <div class="overflow-x-auto">
+                <table class="w-full min-w-[1250px] text-sm">
                     <thead class="border-b bg-muted/40 text-left">
                         <tr>
                             <th class="px-4 py-3 font-medium">Waktu</th>
@@ -298,7 +442,7 @@ function formatDateTime(value: string | null) {
                         </tr>
                         <tr v-if="!props.transactions.data.length">
                             <td
-                                colspan="9"
+                                colspan="10"
                                 class="px-4 py-12 text-center text-muted-foreground"
                             >
                                 <Receipt
@@ -314,6 +458,7 @@ function formatDateTime(value: string | null) {
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <div
