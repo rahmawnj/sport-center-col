@@ -31,6 +31,7 @@ type TrainerItem = {
     id: number;
     name: string;
     specialty: string | null;
+    sports: string[];
 };
 
 type TrainerPackageItem = {
@@ -471,14 +472,16 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         </div>
                     </div>
                     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" class="trainer-card group block rounded-2xl bg-white p-5 focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
-                            <div class="trainer-avatar" :class="'trainer-avatar-' + (index % 4)">
+                        <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" class="trainer-card group block overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
+                            <div class="trainer-avatar relative" :class="'trainer-avatar-' + (index % 4)">
                                 <i class="fa-solid fa-user-tie transition-transform duration-300 group-hover:scale-110"></i>
+                                <span class="absolute right-3 top-3 max-w-[75%] truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-extrabold text-[#001428] shadow-sm">{{ trainer.sports?.length ? trainer.sports.join(' · ') : (trainer.specialty || 'Pelatih') }}</span>
                             </div>
-                            <p class="mt-5 text-xs font-extrabold uppercase tracking-[.15em] text-[#7a9d00]">Pelatih</p>
-                            <h3 class="mt-2 text-lg font-extrabold">{{ trainer.name }}</h3>
-                            <p class="mt-1 text-sm text-slate-500">{{ trainer.specialty || 'Pelatih olahraga' }}</p>
-                            <span class="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#001428] transition group-hover:text-[#729700]">Lihat detail <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                            <div class="p-5">
+                                <h3 class="text-lg font-extrabold text-[#001428]">{{ trainer.name }}</h3>
+                                <p class="mt-1 text-sm text-slate-500">{{ trainer.specialty || 'Pelatih olahraga' }}</p>
+                                <span class="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#001428] transition group-hover:text-[#729700]">Lihat detail <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                            </div>
                         </Link>
                     </div>
                 </div>
@@ -744,9 +747,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .sport-card:hover { transform: translateY(-6px); box-shadow: 0 24px 50px rgba(0,20,40,.11); }
 .sport-card-image { height: 245px; overflow: hidden; background: #e9eee1; }
 .sport-icon { display: grid; width: 38px; height: 38px; flex-shrink: 0; place-items: center; border-radius: 50%; background: #f2f7df; color: #6e9000; }
-.trainer-card { border: 1px solid #e9eee1; transition: transform .2s ease, box-shadow .2s ease; }
-.trainer-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,20,40,.07); }
-.trainer-avatar { display: grid; width: 100%; height: 135px; place-items: center; border-radius: 14px; color: var(--navy); font-size: 38px; }
+.trainer-card { transition: transform .2s ease, box-shadow .2s ease; }
+.trainer-avatar { display: grid; width: 100%; height: 190px; place-items: center; border-radius: 0; color: var(--navy); font-size: 48px; }
 .trainer-avatar-0 { background: linear-gradient(135deg, #dceca5, #f4f7e8); }
 .trainer-avatar-1 { background: linear-gradient(135deg, #d8e9ef, #f2f7f8); }
 .trainer-avatar-2 { background: linear-gradient(135deg, #f3dfc9, #fbf4eb); }
