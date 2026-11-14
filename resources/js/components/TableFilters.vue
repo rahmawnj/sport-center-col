@@ -42,6 +42,7 @@ const emit = defineEmits<{
                 @keyup.enter="emit('filter')"
             />
         </div>
+        <slot name="after-search" />
         <Select v-if="statusOptions?.length" v-model="status">
             <SelectTrigger class="w-full lg:w-48">
                 <SelectValue placeholder="Pilih filter" />
