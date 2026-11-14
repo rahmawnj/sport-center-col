@@ -168,6 +168,25 @@ const continueTrainerCheckout = () => {
 };
 
 
+const trainerSlider = ref<HTMLElement | null>(null);
+const activeTrainerIndex = ref(0);
+let trainerAutoSlide: ReturnType<typeof setInterval> | null = null;
+
+const moveTrainerSlider = (index: number) => {
+    if (!props.trainers.length) return;
+    activeTrainerIndex.value = (index + props.trainers.length) % props.trainers.length;
+    const card = trainerSlider.value?.children[activeTrainerIndex.value] as HTMLElement | undefined;
+    if (!card || !trainerSlider.value) return;
+
+    trainerSlider.value.scrollTo({
+        left: card.offsetLeft - (trainerSlider.value.clientWidth - card.clientWidth) / 2,
+        behavior: 'smooth',
+    });
+};
+
+const nextTrainer = () => moveTrainerSlider(activeTrainerIndex.value + 1);
+const previousTrainer = () => moveTrainerSlider(activeTrainerIndex.value - 1);
+
 const statsPanel = ref<HTMLElement | null>(null);
 const animatedStats = ref({
     facilities: 0,
@@ -214,9 +233,11 @@ animationFrame = requestAnimationFrame(tick);
 };
 
 onMounted(() => {
-    if (!statsPanel.value) {
-return;
-}
+    if (props.trainers.length > 1) {
+        trainerAutoSlide = setInterval(nextTrainer, 3000);
+    }
+
+    if (!statsPanel.value) return;
 
     statsObserver = new IntersectionObserver(
         ([entry]) => {
@@ -234,6 +255,7 @@ return;
 onBeforeUnmount(() => {
     statsObserver?.disconnect();
     cancelAnimationFrame(animationFrame);
+    if (trainerAutoSlide) clearInterval(trainerAutoSlide);
 });
 
 const dayLabel = (day: string) => ({
@@ -471,8 +493,10 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <p class="mt-3 max-w-xl text-slate-500">Temukan dukungan latihan dari pelatih yang terdaftar di pusat olahraga kami.</p>
                         </div>
                     </div>
-                    <div class="trainer-slider flex snap-x snap-mandatory gap-5 overflow-x-auto pb-5">
-                        <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" class="trainer-card group block w-[270px] min-w-[270px] snap-start overflow-hidden rounded-[15px] bg-white shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
+                    <div class="relative">
+                        <button v-if="trainers.length > 1" type="button" @click="previousTrainer" aria-label="Pelatih sebelumnya" class="trainer-arrow left-0"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div ref="trainerSlider" class="trainer-slider flex snap-x snap-mandatory gap-5 overflow-x-hidden py-5">
+                        <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" :class="{ 'is-active': activeTrainerIndex === index }" class="trainer-card group block shrink-0 snap-center overflow-hidden rounded-[15px] bg-white shadow-[0_10px_30px_rgba(0,20,40,0.08)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,20,40,0.14)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
                             <div class="trainer-avatar relative" :class="'trainer-avatar-' + (index % 4)">
                                 <i class="fa-solid fa-user-tie transition-transform duration-300 group-hover:scale-110"></i>
                                 <span class="absolute right-3 top-3 max-w-[85%] rounded-full bg-white/95 px-3 py-1.5 text-xs font-extrabold text-[#001428] shadow-sm">{{ trainer.specialty || 'Pelatih olahraga' }}</span>
@@ -485,6 +509,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                                 <p v-else class="mt-3 text-sm text-slate-400">Belum ada olahraga yang dipilih</p>
                             </div>
                         </Link>
+                        </div>
+                        <button v-if="trainers.length > 1" type="button" @click="nextTrainer" aria-label="Pelatih berikutnya" class="trainer-arrow right-0"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
             </section>
@@ -761,6 +787,8 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
 .membership-card-featured { border-color: rgba(164,218,1,.65); background: rgba(164,218,1,.09); }
 .cta-strip { border: 1px solid #e7edd7; background: #f7faef; }
 @media (max-width: 640px) {
+    .trainer-slider { --trainer-card-width: 86%; }
+    .trainer-arrow { width: 36px; height: 36px; }
     .hero-visual { min-height: 350px; }    .hero-image-main { height: 305px; width: 82%; }
     .hero-image-small { height: 140px; width: 43%; }
     .hero-floating-card { right: 0; bottom: 16px; min-width: 185px; padding: 13px 15px; }
