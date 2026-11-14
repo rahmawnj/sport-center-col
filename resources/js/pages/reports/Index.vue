@@ -11,8 +11,6 @@ import { computed, ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SummaryCards from '@/components/SummaryCards.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 type PaymentStatus = 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
 type ReportType = { value: string; label: string };
@@ -61,6 +59,12 @@ const props = defineProps<Props>();
 const from = ref(props.filters.from ?? '');
 const to = ref(props.filters.to ?? '');
 const rangeOpen = ref(false);
+const datePresets = [
+    { value: 'today', label: 'Hari ini' },
+    { value: '7days', label: '7 hari terakhir' },
+    { value: '30days', label: '30 hari terakhir' },
+    { value: 'month', label: 'Bulan ini' },
+] as const;
 const rangeStart = ref(from.value);
 const rangeEnd = ref(to.value);
 const viewMonth = ref(monthStart(from.value || new Date().toISOString().slice(0, 10)));
@@ -232,7 +236,7 @@ function stateClass(value?: string) {
                     </button>
                     <div v-if="rangeOpen" class="absolute left-0 z-30 mt-2 w-[min(680px,calc(100vw-2.5rem))] rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl">
                         <div class="mb-4 flex flex-wrap gap-2">
-                            <button v-for="preset in [{ value: 'today', label: 'Hari ini' }, { value: '7days', label: '7 hari terakhir' }, { value: '30days', label: '30 hari terakhir' }, { value: 'month', label: 'Bulan ini' }]" :key="preset.value" type="button" class="rounded-md border px-3 py-1.5 text-xs hover:bg-muted" @click="applyPreset(preset.value as 'today' | '7days' | '30days' | 'month')">
+                            <button v-for="preset in datePresets" :key="preset.value" type="button" class="rounded-md border px-3 py-1.5 text-xs hover:bg-muted" @click="applyPreset(preset.value)">
                                 {{ preset.label }}
                             </button>
                         </div>
