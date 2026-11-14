@@ -165,7 +165,6 @@ class TrainerDashboardController extends Controller
             'profile' => [
                 'name' => $trainer->name,
                 'email' => $trainer->user?->email,
-                'phone' => $trainer->phone,
                 'specialty' => $trainer->specialty,
                 'facilities' => $trainer->facilities->pluck('name')->all(),
             ],
