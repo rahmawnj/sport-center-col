@@ -37,7 +37,7 @@ const maxBookingDate = toDateInputValue(new Date(now.getFullYear(), now.getMonth
 const initialFacility = props.facilities.find((item) => item.id === props.initialFacilityId) ?? null;
 const step = ref(initialFacility ? 2 : 1);
 const facility = ref<Facility | null>(initialFacility);
-const date = ref('');
+const date = ref(today);
 const slots = ref<Slot[]>([]);
 const courts = ref<Court[]>([]);
 const loadingSlots = ref(false);
@@ -123,12 +123,12 @@ function loadAvailability() {
         .finally(() => { loadingSlots.value = false; });
 }
 
-watch(date, loadAvailability);
+watch(date, loadAvailability, { immediate: true });
 
 function chooseFacility(item: Facility) {
     facility.value = item;
     form.facility_id = item.id;
-    date.value = '';
+    date.value = today;
     slots.value = [];
     courts.value = [];
     slot.value = null;
@@ -351,9 +351,8 @@ function formatIDR(value: number) {
                                                 <span class="block font-medium" :class="item.is_available ? 'text-slate-800' : 'text-slate-500'">{{ item.name }}</span>
                                                 <span v-if="item.amenities?.length" class="mt-0.5 block text-xs text-slate-500">{{ item.amenities.join(' · ') }}</span>
                                                 <span v-if="item.price_adjustment" class="mt-0.5 block text-xs font-medium text-emerald-700">+{{ formatIDR(item.price_adjustment) }}</span>
-                                                <span v-if="!date || !slot" class="mt-1 block text-xs font-medium text-slate-400">Pilih tanggal dan jam terlebih dahulu</span>
-                                                <span v-else-if="!item.is_available" class="mt-1 block text-xs font-semibold text-rose-600">Sudah dibooking pada jam ini</span>
-                                                <span v-else class="mt-1 block text-xs font-semibold text-emerald-700">Tersedia</span>
+                                                <span v-if="slot && !item.is_available" class="mt-1 block text-xs font-semibold text-rose-600">Sudah dibooking pada jam ini</span>
+                                                <span v-else-if="slot && item.is_available" class="mt-1 block text-xs font-semibold text-emerald-700">Tersedia</span>
                                             </div>
                                             <Check v-if="courtId === item.id" class="ml-auto size-4 shrink-0 text-primary" />
                                         </button>
