@@ -67,18 +67,13 @@ class ReportController extends Controller
                 'package.facility',
                 'transaction',
             ])
-            ->when($from || $to, fn (Builder $query) => $query->where(function (Builder $query) use ($from, $to) {
-                $query->whereHas('transaction', fn (Builder $transaction) => $this->applyDateFilter($transaction, $from, $to))
-                    ->orWhere(function (Builder $legacy) use ($from, $to) {
-                        $legacy->whereDoesntHave('transaction');
-                        $this->applyDateFilter($legacy, $from, $to, 'user_memberships.created_at');
-                    });
-            }));
+            ->when($from, fn (Builder $query) => $query->whereDate('user_memberships.created_at', '>=', $from))
+            ->when($to, fn (Builder $query) => $query->whereDate('user_memberships.created_at', '<=', $to));
 
         $aggregate = DB::table('user_memberships')
             ->leftJoin('transactions', 'transactions.id', '=', 'user_memberships.transaction_id')
             ->leftJoin('packages', 'packages.id', '=', 'user_memberships.package_id');
-        $this->applyJoinedDateFilter($aggregate, $from, $to, 'COALESCE(transactions.created_at, user_memberships.created_at)');
+        $this->applyJoinedDateFilter($aggregate, $from, $to, 'user_memberships.created_at');
         $paymentStatus = "COALESCE(transactions.payment_status, CASE WHEN user_memberships.status = 'active' THEN 'fully_paid' ELSE 'unpaid' END)";
         $summary = [
             'count' => (clone $aggregate)->count('user_memberships.id'),
@@ -103,7 +98,7 @@ class ReportController extends Controller
                 'payment_status' => $this->paymentStatus($membership->transaction?->payment_status ?? ($membership->status === 'active' ? 'fully_paid' : 'unpaid')),
                 'payment_method' => $membership->transaction?->payment_method,
                 'amount' => (float) ($membership->package?->price ?? 0),
-                'created_at' => ($membership->transaction?->created_at ?? $membership->created_at)?->toISOString(),
+                'created_at' => $membership->created_at?->toISOString(),
             ]);
 
         return $this->render($type, $rows, $summary, $from, $to);
@@ -113,12 +108,13 @@ class ReportController extends Controller
     {
         $base = MemberTrainerPackage::query()
             ->with(['transaction', 'trainer', 'trainerPackage', 'facility', 'user.memberProfile'])
-            ->whereHas('transaction', fn (Builder $query) => $this->applyDateFilter($query, $from, $to));
+            ->when($from, fn (Builder $query) => $query->whereDate('member_trainer_packages.created_at', '>=', $from))
+            ->when($to, fn (Builder $query) => $query->whereDate('member_trainer_packages.created_at', '<=', $to));
 
         $aggregate = DB::table('member_trainer_packages')
-            ->join('transactions', 'transactions.id', '=', 'member_trainer_packages.transaction_id')
+            ->leftJoin('transactions', 'transactions.id', '=', 'member_trainer_packages.transaction_id')
             ->leftJoin('trainer_packages', 'trainer_packages.id', '=', 'member_trainer_packages.trainer_package_id');
-        $this->applyJoinedDateFilter($aggregate, $from, $to, 'transactions.created_at');
+        $this->applyJoinedDateFilter($aggregate, $from, $to, 'member_trainer_packages.created_at');
         $summary = [
             'count' => (clone $aggregate)->count('member_trainer_packages.id'),
             'paid' => (float) (clone $aggregate)->where('transactions.payment_status', 'fully_paid')->sum('trainer_packages.price'),
@@ -141,7 +137,7 @@ class ReportController extends Controller
                 'payment_status' => $this->paymentStatus($item->transaction?->payment_status),
                 'payment_method' => $item->transaction?->payment_method,
                 'amount' => (float) ($item->trainerPackage?->price ?? 0),
-                'created_at' => ($item->transaction?->created_at ?? $item->created_at)?->toISOString(),
+                'created_at' => $item->created_at?->toISOString(),
             ]);
 
         return $this->render($type, $rows, $summary, $from, $to);
@@ -205,15 +201,12 @@ class ReportController extends Controller
                 'schedule.trainer',
                 'transaction',
             ])
-            ->whereHas('transaction', function (Builder $query) use ($from, $to) {
-                $query->where('transactionable_type', 'class');
-                $this->applyDateFilter($query, $from, $to);
-            });
+            ->when($from, fn (Builder $query) => $query->whereDate('session_participants.created_at', '>=', $from))
+            ->when($to, fn (Builder $query) => $query->whereDate('session_participants.created_at', '<=', $to));
 
         $aggregate = DB::table('session_participants')
-            ->join('transactions', 'transactions.id', '=', 'session_participants.transaction_id');
-        $this->applyJoinedDateFilter($aggregate, $from, $to, 'transactions.created_at');
-        $aggregate->where('transactions.transactionable_type', 'class');
+            ->leftJoin('transactions', 'transactions.id', '=', 'session_participants.transaction_id');
+        $this->applyJoinedDateFilter($aggregate, $from, $to, 'session_participants.created_at');
         $summary = [
             'count' => (clone $aggregate)->count('session_participants.id'),
             'paid' => (float) (clone $aggregate)->where('transactions.payment_status', 'fully_paid')->sum('session_participants.price'),
@@ -239,7 +232,7 @@ class ReportController extends Controller
                 'payment_status' => $this->paymentStatus($participant->transaction?->payment_status),
                 'payment_method' => $participant->transaction?->payment_method,
                 'amount' => (float) $participant->price,
-                'created_at' => ($participant->transaction?->created_at ?? $participant->created_at)?->toISOString(),
+                'created_at' => $participant->created_at?->toISOString(),
             ]);
 
         return $this->render($type, $rows, $summary, $from, $to);
