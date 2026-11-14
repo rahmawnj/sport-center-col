@@ -31,7 +31,9 @@ const props = defineProps<{
 }>();
 
 const now = new Date();
-const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+const toDateInputValue = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+const today = toDateInputValue(now);
+const maxBookingDate = toDateInputValue(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
 const initialFacility = props.facilities.find((item) => item.id === props.initialFacilityId) ?? null;
 const step = ref(initialFacility ? 2 : 1);
 const facility = ref<Facility | null>(initialFacility);
