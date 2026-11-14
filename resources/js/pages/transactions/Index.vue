@@ -16,6 +16,9 @@ type Transaction = {
     amount: number;
     payment_method: string | null;
     payment_status: PaymentStatus;
+    type: string;
+    type_label: string;
+    item_summary: string;
     scan_count: number | null;
     created_at: string | null;
 };
