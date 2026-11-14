@@ -291,49 +291,52 @@ function formatDateTime(value: string | null) {
                         :status-options="statusOptions"
                         @filter="filter"
                         @reset="reset"
-                    />
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="relative">
-                            <button
-                                type="button"
-                                class="flex h-10 min-w-[260px] items-center justify-between gap-3 rounded-lg border bg-background px-3 text-sm shadow-sm transition-colors hover:bg-muted/50"
-                                :aria-expanded="rangeOpen"
-                                @click="rangeOpen = !rangeOpen"
-                            >
-                                <span class="flex items-center gap-2">
-                                    <CalendarRange class="size-4 text-muted-foreground" />
-                                    <span>{{ rangeLabel }}</span>
-                                </span>
-                                <span class="text-xs text-muted-foreground">▾</span>
-                            </button>
-                            <div v-if="rangeOpen" class="absolute left-0 z-30 mt-2 w-[min(680px,calc(100vw-2.5rem))] rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl">
-                                <div class="mb-4 flex flex-wrap gap-2">
-                                    <button v-for="preset in datePresets" :key="preset.value" type="button" class="rounded-md border px-3 py-1.5 text-xs hover:bg-muted" @click="applyPreset(preset.value)">{{ preset.label }}</button>
-                                </div>
-                                <div class="mb-3 flex items-center justify-between">
-                                    <button type="button" class="rounded-md border px-2.5 py-1 text-sm hover:bg-muted" aria-label="Bulan sebelumnya" @click="shiftMonths(-1)">‹</button>
-                                    <p class="text-xs text-muted-foreground">Pilih tanggal awal, lalu tanggal akhir</p>
-                                    <button type="button" class="rounded-md border px-2.5 py-1 text-sm hover:bg-muted" aria-label="Bulan berikutnya" @click="shiftMonths(1)">›</button>
-                                </div>
-                                <div class="grid gap-5 sm:grid-cols-2">
-                                    <div v-for="month in monthViews" :key="month.key" class="min-w-0">
-                                        <p class="mb-3 text-center text-sm font-semibold capitalize">{{ month.title }}</p>
-                                        <div class="mb-1 grid grid-cols-7 text-center text-xs text-muted-foreground">
-                                            <span v-for="day in ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']" :key="day" class="py-1">{{ day }}</span>
-                                        </div>
-                                        <div class="grid grid-cols-7 gap-y-1">
-                                            <button v-for="day in month.days" :key="day.value" type="button" class="mx-auto flex size-8 items-center justify-center rounded-full text-xs transition-colors" :class="[!day.inMonth ? 'text-muted-foreground/40' : 'hover:bg-muted', isInRange(day.value) ? 'rounded-none bg-primary/10 text-primary' : '', isRangeEdge(day.value) ? 'rounded-full bg-primary text-primary-foreground hover:bg-primary' : '']" @click="chooseDay(day.value)">{{ day.day }}</button>
+                    >
+                        <template #after-search>
+                            <div class="relative">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    class="size-10 shrink-0"
+                                    title="Filter rentang tanggal"
+                                    aria-label="Filter rentang tanggal"
+                                    :aria-expanded="rangeOpen"
+                                    @click="rangeOpen = !rangeOpen"
+                                >
+                                    <CalendarRange class="size-4" />
+                                </Button>
+                                <div v-if="rangeOpen" class="absolute left-0 z-30 mt-2 w-[min(680px,calc(100vw-2.5rem))] rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl">
+                                    <div class="mb-3 flex items-center justify-between gap-3">
+                                        <p class="text-sm font-medium">{{ rangeLabel }}</p>
+                                        <button type="button" class="text-xs font-medium text-primary hover:underline" @click="reset">Hapus rentang</button>
+                                    </div>
+                                    <div class="mb-4 flex flex-wrap gap-2">
+                                        <button v-for="preset in datePresets" :key="preset.value" type="button" class="rounded-md border px-3 py-1.5 text-xs hover:bg-muted" @click="applyPreset(preset.value)">{{ preset.label }}</button>
+                                    </div>
+                                    <div class="mb-3 flex items-center justify-between">
+                                        <button type="button" class="rounded-md border px-2.5 py-1 text-sm hover:bg-muted" aria-label="Bulan sebelumnya" @click="shiftMonths(-1)">‹</button>
+                                        <p class="text-xs text-muted-foreground">Pilih tanggal awal, lalu tanggal akhir</p>
+                                        <button type="button" class="rounded-md border px-2.5 py-1 text-sm hover:bg-muted" aria-label="Bulan berikutnya" @click="shiftMonths(1)">›</button>
+                                    </div>
+                                    <div class="grid gap-5 sm:grid-cols-2">
+                                        <div v-for="month in monthViews" :key="month.key" class="min-w-0">
+                                            <p class="mb-3 text-center text-sm font-semibold capitalize">{{ month.title }}</p>
+                                            <div class="mb-1 grid grid-cols-7 text-center text-xs text-muted-foreground">
+                                                <span v-for="day in ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']" :key="day" class="py-1">{{ day }}</span>
+                                            </div>
+                                            <div class="grid grid-cols-7 gap-y-1">
+                                                <button v-for="day in month.days" :key="day.value" type="button" class="mx-auto flex size-8 items-center justify-center rounded-full text-xs transition-colors" :class="[!day.inMonth ? 'text-muted-foreground/40' : 'hover:bg-muted', isInRange(day.value) ? 'rounded-none bg-primary/10 text-primary' : '', isRangeEdge(day.value) ? 'rounded-full bg-primary text-primary-foreground hover:bg-primary' : '']" @click="chooseDay(day.value)">{{ day.day }}</button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
-                                    <span>{{ rangeStart ? formatDate(rangeStart) : 'Tanggal awal' }} – {{ rangeEnd ? formatDate(rangeEnd) : 'Tanggal akhir' }}</span>
-                                    <button type="button" class="font-medium text-primary hover:underline" @click="reset">Hapus rentang</button>
+                                    <div class="mt-4 border-t pt-3 text-xs text-muted-foreground">
+                                        {{ rangeStart ? formatDate(rangeStart) : 'Tanggal awal' }} – {{ rangeEnd ? formatDate(rangeEnd) : 'Tanggal akhir' }}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <Button variant="ghost" @click="reset">Reset filter</Button>
-                    </div>
+                        </template>
+                    </TableFilters>
                 </div>
             </div>
 
