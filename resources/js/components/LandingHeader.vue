@@ -27,12 +27,12 @@ const closeMenu = () => {
             </nav>
 
             <div class="flex shrink-0 items-center gap-3">
-                <Link v-if="$page.props.auth.user" :href="dashboard()" class="hidden text-sm font-semibold transition hover:text-[#729700] sm:inline-flex">Dasbor</Link>
-                <Link v-else :href="login()" class="public-primary-button rounded-full px-5 py-2.5 text-sm font-extrabold">Login</Link>
+                <Link v-if="$page.props.auth.user" :href="dashboard()" class="public-primary-button inline-flex items-center rounded-[15px] px-5 py-2.5 text-sm font-extrabold">Dasbor</Link>
+                <Link v-else :href="login()" class="public-primary-button inline-flex items-center rounded-[15px] px-5 py-2.5 text-sm font-extrabold">Login</Link>
 
                 <button
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#001428] transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a4da01] lg:hidden"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-[15px] text-[#001428] transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a4da01] lg:hidden"
                     :aria-expanded="isMenuOpen"
                     aria-controls="mobile-public-navigation"
                     :aria-label="isMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'"
@@ -68,7 +68,7 @@ const closeMenu = () => {
                     <Link href="/#membership" class="mobile-nav-link" @click="closeMenu">Paket</Link>
                     <Link href="/book" class="mobile-nav-link" @click="closeMenu">Booking</Link>
                     <Link href="/kelas" class="mobile-nav-link" @click="closeMenu">Kelas</Link>
-                    <Link v-if="$page.props.auth.user" :href="dashboard()" class="mobile-nav-link border-b-0 font-bold" @click="closeMenu">Dasbor</Link>
+                    <Link v-if="$page.props.auth.user" :href="dashboard()" class="mobile-nav-link mt-2 rounded-[15px] border-b-0 bg-[#a4da01] px-4 text-center font-extrabold" @click="closeMenu">Dasbor</Link>
                 </div>
             </nav>
         </Transition>
