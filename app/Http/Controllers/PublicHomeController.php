@@ -128,7 +128,6 @@ class PublicHomeController extends Controller
                 ->where('facilities.status', 'active')
                 ->select('facilities.id', 'facilities.name')])
             ->orderBy('name')
-            ->limit(4)
             ->get(['id', 'name', 'specialty'])
             ->map(fn (Trainer $trainer) => [
                 'id' => $trainer->id,
