@@ -50,7 +50,65 @@ class TrainerController extends Controller
     {
         $trainer->load(['facilities:id,name', 'user:id,name,email']);
 
-        return Inertia::render('trainers/Show', ['trainer' => $trainer]);
+        $memberPackages = $trainer->memberPackages()
+            ->with(['user:id,name,email', 'trainerPackage:id,name,price', 'facility:id,name'])
+            ->latest()
+            ->get();
+
+        $completedSessions = \\App\\Models\\TrainerSessionSchedule::query()
+            ->whereIn('member_trainer_package_id', $memberPackages->pluck('id'))
+            ->where('status', 'completed')
+            ->where('member_attended', true)
+            ->where('trainer_attended', true)
+            ->selectRaw('member_trainer_package_id, COUNT(*) as completed_count')
+            ->groupBy('member_trainer_package_id')
+            ->pluck('completed_count', 'member_trainer_package_id');
+
+        $packageHistory = $memberPackages->map(function ($item) use ($completedSessions) {
+            $completed = min(
+                (int) ($completedSessions[$item->id] ?? 0),
+                (int) $item->total_sessions,
+            );
+            $price = (float) ($item->trainerPackage?->price ?? 0);
+            $percentage = (float) ($item->trainer_share_percentage ?? $item->trainerPackage?->trainer_share_percentage ?? 0);
+            $maximumShare = $price * $percentage / 100;
+            $earned = $item->total_sessions > 0
+                ? $maximumShare * $completed / $item->total_sessions
+                : 0;
+
+            return [
+                'id' => $item->id,
+                'member_name' => $item->user?->name ?? 'Member',
+                'package_name' => $item->trainerPackage?->name ?? 'Paket trainer',
+                'facility_name' => $item->facility?->name ?? '—',
+                'start_date' => $item->start_date?->toDateString(),
+                'expires_at' => $item->expires_at?->toDateString(),
+                'status' => $item->status,
+                'total_sessions' => (int) $item->total_sessions,
+                'completed_sessions' => $completed,
+                'share_percentage' => $percentage,
+                'earned_amount' => round($earned, 2),
+            ];
+        })->values();
+
+        return Inertia::render('trainers/Show', [
+            'trainer' => [
+                'id' => $trainer->id,
+                'name' => $trainer->name,
+                'specialty' => $trainer->specialty,
+                'created_at' => $trainer->created_at?->toISOString(),
+                'updated_at' => $trainer->updated_at?->toISOString(),
+                'user_name' => $trainer->user?->name,
+                'user_email' => $trainer->user?->email,
+                'facilities' => $trainer->facilities->pluck('name')->values(),
+                'stats' => [
+                    'packages_count' => $packageHistory->count(),
+                    'completed_sessions' => $packageHistory->sum('completed_sessions'),
+                    'earned_total' => round($packageHistory->sum('earned_amount'), 2),
+                ],
+                'packages' => $packageHistory,
+            ],
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
