@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowRight, Check, Clock, Loader2, MapPin } from '@lucide/vu
 import { computed, onMounted, ref } from 'vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
+defineOptions({ layout: null });
+
 type Session = {
     id: number;
     session_date: string;
