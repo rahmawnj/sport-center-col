@@ -210,6 +210,34 @@ class FacilityController extends Controller
         return back()->with('success', 'Olahraga berhasil diperbarui.');
     }
 
+    public function updateCapabilities(Request $request, Facility $facility): RedirectResponse
+    {
+        $data = $request->validate([
+            'capability' => ['required', Rule::in(['has_booking', 'has_membership', 'has_session', 'has_trainer'])],
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $enabled = (bool) $data['enabled'];
+
+        if ($data['capability'] === 'has_trainer') {
+            $packages = TrainerPackage::query()->where('facility_id', $facility->id);
+
+            if (! $packages->exists() && $enabled) {
+                return back()->withErrors(['capability' => 'Buat minimal satu paket personal trainer terlebih dahulu.']);
+            }
+
+            $packages->update(['is_active' => $enabled]);
+        } else {
+            $facility->update([$data['capability'] => $enabled]);
+
+            if ($data['capability'] === 'has_booking' && ! $enabled) {
+                $facility->update(['is_bookable_online' => false]);
+            }
+        }
+
+        return back()->with('success', 'Layanan olahraga berhasil diperbarui.');
+    }
+
     public function destroy(Facility $facility): RedirectResponse
     {
         abort_if(
