@@ -76,6 +76,7 @@ class FacilityController extends Controller
                 'name' => $facility->name,
                 'slug' => $facility->slug,
                 'is_bookable_online' => (bool) $facility->is_bookable_online,
+                'has_membership' => (bool) $facility->has_membership,
                 'turnaround_minutes' => $facility->turnaround_minutes,
                 'status' => $facility->status,
                 'created_at' => $facility->created_at?->toISOString(),
