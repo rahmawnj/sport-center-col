@@ -71,6 +71,7 @@ type PricingRuleInput = {
     priority: string;
 };
 type Trainer = { id: number; name: string; specialty: string | null };
+type TrainerPackage = { id: number; name: string; total_sessions: number; duration_days: number; price: number; trainer_share_percentage: number; description: string | null; is_active: boolean };
 type TrainerAddon = { trainer_id: number; trainer_name: string; price: number };
 type Package = {
     id: number;
@@ -89,6 +90,8 @@ type Props = {
         name: string;
         slug: string;
         is_bookable_online: boolean;
+        has_membership: boolean;
+        trainer_packages: TrainerPackage[];
         turnaround_minutes: number;
         status: FacilityStatus;
         created_at: string | null;
@@ -361,6 +364,70 @@ function removePackage(pkg: Package) {
     }
 
     router.delete(`/packages/${pkg.id}`, { preserveScroll: true });
+}
+
+
+const showTrainerPackageForm = ref(false);
+const editingTrainerPackage = ref<TrainerPackage | null>(null);
+const trainerPackageForm = useForm({
+    name: '',
+    facility_id: String(props.facility.id),
+    total_sessions: 5,
+    duration_days: 30,
+    price: '',
+    trainer_share_percentage: 0,
+    description: '',
+    is_active: true,
+});
+const trainerPackageTitle = computed(() => editingTrainerPackage.value ? 'Edit paket trainer' : 'Tambah paket trainer');
+
+function openTrainerPackageCreate() {
+    editingTrainerPackage.value = null;
+    trainerPackageForm.reset();
+    trainerPackageForm.clearErrors();
+    trainerPackageForm.name = '';
+    trainerPackageForm.facility_id = String(props.facility.id);
+    trainerPackageForm.total_sessions = 5;
+    trainerPackageForm.duration_days = 30;
+    trainerPackageForm.price = '';
+    trainerPackageForm.trainer_share_percentage = 0;
+    trainerPackageForm.description = '';
+    trainerPackageForm.is_active = true;
+    showTrainerPackageForm.value = true;
+}
+function openTrainerPackageEdit(item: TrainerPackage) {
+    editingTrainerPackage.value = item;
+    trainerPackageForm.clearErrors();
+    trainerPackageForm.name = item.name;
+    trainerPackageForm.facility_id = String(props.facility.id);
+    trainerPackageForm.total_sessions = item.total_sessions;
+    trainerPackageForm.duration_days = item.duration_days;
+    trainerPackageForm.price = String(item.price);
+    trainerPackageForm.trainer_share_percentage = item.trainer_share_percentage;
+    trainerPackageForm.description = item.description ?? '';
+    trainerPackageForm.is_active = item.is_active;
+    showTrainerPackageForm.value = true;
+}
+function closeTrainerPackageForm() {
+    showTrainerPackageForm.value = false;
+    editingTrainerPackage.value = null;
+    trainerPackageForm.clearErrors();
+}
+function saveTrainerPackage() {
+    const options = { preserveScroll: true, onSuccess: closeTrainerPackageForm };
+    if (editingTrainerPackage.value) {
+        trainerPackageForm.put('/trainer-packages/' + editingTrainerPackage.value.id, options);
+    } else {
+        trainerPackageForm.post('/trainer-packages', options);
+    }
+}
+function removeTrainerPackage(item: TrainerPackage) {
+    if (window.confirm('Hapus paket trainer ' + item.name + '?')) {
+        router.delete('/trainer-packages/' + item.id, { preserveScroll: true });
+    }
+}
+function formatTrainerPackagePrice(value: number) {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
 }
 
 const showCourtForm = ref(false);
@@ -776,7 +843,29 @@ function promoRange(rule: PricingRule) {
                                         <span>{{
                                             formatDuration(pkg.duration_minutes)
                                         }}</span>
-                                    </template>
+                                    
+    <div v-if="showTrainerPackageForm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" @click.self="closeTrainerPackageForm">
+        <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border bg-background shadow-2xl">
+            <div class="flex items-start justify-between border-b p-5">
+                <div><p class="text-sm font-medium text-primary">{{ props.facility.name }}</p><h2 class="mt-1 text-xl font-semibold">{{ trainerPackageTitle }}</h2></div>
+                <Button variant="ghost" size="icon" @click="closeTrainerPackageForm"><X class="size-4" /></Button>
+            </div>
+            <form class="space-y-4 p-5" @submit.prevent="saveTrainerPackage">
+                <input v-model="trainerPackageForm.facility_id" type="hidden" />
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-2 sm:col-span-2"><Label>Nama paket</Label><Input v-model="trainerPackageForm.name" placeholder="Personal Trainer 10 Sesi" /><p v-if="trainerPackageForm.errors.name" class="text-xs text-destructive">{{ trainerPackageForm.errors.name }}</p></div>
+                    <div class="grid gap-2"><Label>Jumlah sesi</Label><Input v-model.number="trainerPackageForm.total_sessions" type="number" min="1" /><p v-if="trainerPackageForm.errors.total_sessions" class="text-xs text-destructive">{{ trainerPackageForm.errors.total_sessions }}</p></div>
+                    <div class="grid gap-2"><Label>Masa berlaku (hari)</Label><Input v-model.number="trainerPackageForm.duration_days" type="number" min="1" /><p v-if="trainerPackageForm.errors.duration_days" class="text-xs text-destructive">{{ trainerPackageForm.errors.duration_days }}</p></div>
+                    <div class="grid gap-2"><Label>Harga (Rp)</Label><Input v-model="trainerPackageForm.price" type="number" min="0" placeholder="900000" /><p v-if="trainerPackageForm.errors.price" class="text-xs text-destructive">{{ trainerPackageForm.errors.price }}</p></div>
+                    <div class="grid gap-2"><Label>Bagian trainer (%)</Label><Input v-model.number="trainerPackageForm.trainer_share_percentage" type="number" min="0" max="100" step="0.01" /><p v-if="trainerPackageForm.errors.trainer_share_percentage" class="text-xs text-destructive">{{ trainerPackageForm.errors.trainer_share_percentage }}</p><p class="text-xs text-muted-foreground">Persentase dari harga paket yang menjadi hak trainer.</p></div>
+                    <div class="grid gap-2 sm:col-span-2"><Label>Deskripsi</Label><textarea v-model="trainerPackageForm.description" rows="3" class="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="Deskripsi paket..." /><p v-if="trainerPackageForm.errors.description" class="text-xs text-destructive">{{ trainerPackageForm.errors.description }}</p></div>
+                    <label v-if="editingTrainerPackage" class="flex items-center gap-2 text-sm sm:col-span-2"><input v-model="trainerPackageForm.is_active" type="checkbox" class="size-4" /> Paket aktif dan bisa dijual</label>
+                </div>
+                <div class="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="ghost" @click="closeTrainerPackageForm">Batal</Button><Button type="submit" :disabled="trainerPackageForm.processing">{{ trainerPackageForm.processing ? 'Menyimpan...' : 'Simpan paket' }}</Button></div>
+            </form>
+        </div>
+    </div>
+</template>
                                     <template
                                         v-if="
                                             pkg.type === 'membership' &&
@@ -869,6 +958,44 @@ function promoRange(rule: PricingRule) {
             >
                 Belum ada paket pada olahraga ini.
             </div>
+        </section>
+
+
+        <section v-if="props.facility.has_membership" class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <PackageIcon class="size-4 text-primary" />
+                    <div>
+                        <h2 class="font-semibold">Paket Personal Trainer</h2>
+                        <p class="text-xs text-muted-foreground">Paket latihan khusus untuk olahraga {{ props.facility.name }}.</p>
+                    </div>
+                    <span class="text-sm text-muted-foreground">({{ props.facility.trainer_packages.length }})</span>
+                </div>
+                <Button size="sm" @click="openTrainerPackageCreate"><Plus class="mr-2 size-4" /> Tambah paket trainer</Button>
+            </div>
+            <div v-if="props.facility.trainer_packages.length" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <article v-for="item in props.facility.trainer_packages" :key="item.id" class="rounded-2xl border bg-card p-4 shadow-sm">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h3 class="font-semibold">{{ item.name }}</h3>
+                            <p class="mt-1 text-xs text-muted-foreground">{{ item.total_sessions }} sesi · {{ item.duration_days }} hari</p>
+                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger :as-child="true"><Button variant="ghost" size="icon" title="Aksi"><EllipsisVertical class="size-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem @click="openTrainerPackageEdit(item)"><Pencil class="size-4" /> Edit</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem variant="destructive" @click="removeTrainerPackage(item)"><Trash2 class="size-4" /> Hapus</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                    <p class="mt-3 text-xl font-bold">{{ formatTrainerPackagePrice(item.price) }}</p>
+                    <p class="mt-1 text-xs text-muted-foreground">Bagian trainer: {{ Number(item.trainer_share_percentage).toLocaleString('id-ID') }}%</p>
+                    <p v-if="item.description" class="mt-3 text-sm text-muted-foreground">{{ item.description }}</p>
+                    <span class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="item.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'">{{ item.is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                </article>
+            </div>
+            <div v-else class="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Belum ada paket personal trainer untuk olahraga ini.</div>
         </section>
 
         <section class="space-y-3">
