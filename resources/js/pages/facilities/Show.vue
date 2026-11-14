@@ -677,32 +677,30 @@ function promoRange(rule: PricingRule) {
             <div
                 v-for="item in info"
                 :key="item.key"
-                class="flex flex-col justify-between gap-4 rounded-2xl border bg-card p-4 shadow-sm"
+                class="flex items-center justify-between gap-4 rounded-2xl border bg-card p-4 shadow-sm"
             >
-                <div>
-                    <div class="text-sm text-muted-foreground">{{ item.label }}</div>
-                    <div class="mt-2 flex items-center gap-2">
-                        <span
-                            class="size-2 rounded-full"
-                            :class="item.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/40'"
-                        />
-                        <span class="font-medium">{{ item.value }}</span>
-                    </div>
+                <div class="min-w-0">
+                    <div class="font-medium">{{ item.label }}</div>
+                    <div class="mt-1 text-sm text-muted-foreground">{{ item.value }}</div>
                 </div>
-                <Button
-                    size="sm"
-                    variant="outline"
-                    class="w-full"
+                <button
+                    type="button"
+                    role="switch"
+                    :aria-checked="item.enabled"
+                    :aria-label="`Aktifkan atau nonaktifkan ${item.label}`"
                     :disabled="item.disabled || updatingCapability !== null"
                     @click="toggleCapability(item)"
+                    class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    :class="item.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/40'"
                 >
-                    {{ updatingCapability === item.key ? 'Menyimpan...' : item.enabled ? 'Nonaktifkan' : 'Aktifkan' }}
-                </Button>
+                    <span
+                        class="inline-block size-5 transform rounded-full bg-white shadow-sm transition-transform duration-200"
+                        :class="item.enabled ? 'translate-x-5' : 'translate-x-0.5'"
+                    />
+                    <span v-if="updatingCapability === item.key" class="sr-only">Menyimpan...</span>
+                </button>
             </div>
         </div>
-
-
-
 
         <div class="w-full overflow-x-auto">
             <div class="inline-flex min-w-max items-center rounded-lg border bg-muted p-1" role="tablist" aria-label="Bagian pengaturan olahraga">
