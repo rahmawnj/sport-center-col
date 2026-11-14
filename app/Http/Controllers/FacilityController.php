@@ -224,9 +224,6 @@ class FacilityController extends Controller
         } else {
             $facility->update([$data['capability'] => $enabled]);
 
-            if ($data['capability'] === 'has_booking' && ! $enabled) {
-                $facility->update(['is_bookable_online' => false]);
-            }
         }
 
         return back()->with('success', 'Status olahraga berhasil diperbarui.');
