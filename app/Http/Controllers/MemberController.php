@@ -58,7 +58,10 @@ class MemberController extends Controller
     public function show(MemberProfile $member): Response
     {
         $member->load([
-            'user.userMemberships.package',
+            'user.userMemberships.package.facility',
+            'user.trainerPackages.trainerPackage',
+            'user.trainerPackages.facility',
+            'user.trainerPackages.trainer',
         ]);
 
         $user = $member->user;
@@ -82,6 +85,37 @@ class MemberController extends Controller
             })
             ->values();
 
+        $activeMemberships = $user->userMemberships
+            ->filter(fn ($item) => $item->status === 'active'
+                && $item->start_date?->lte(today())
+                && $item->end_date?->gte(today()))
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'package_name' => $item->package?->name ?? 'Paket tidak tersedia',
+                'facility_name' => $item->package?->facility?->name ?? '—',
+                'start_date' => $item->start_date?->toDateString(),
+                'end_date' => $item->end_date?->toDateString(),
+            ])
+            ->values();
+
+        $activeTrainerPackages = $user->trainerPackages
+            ->filter(fn ($item) => $item->status === 'active'
+                && $item->start_date?->lte(today())
+                && $item->expires_at?->gte(today())
+                && $item->used_sessions < $item->total_sessions)
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'package_name' => $item->trainerPackage?->name ?? 'Paket trainer',
+                'facility_name' => $item->facility?->name ?? '—',
+                'trainer_name' => $item->trainer?->name ?? 'Belum ditentukan',
+                'start_date' => $item->start_date?->toDateString(),
+                'expires_at' => $item->expires_at?->toDateString(),
+                'total_sessions' => $item->total_sessions,
+                'used_sessions' => $item->used_sessions,
+                'remaining_sessions' => max(0, $item->total_sessions - $item->used_sessions),
+            ])
+            ->values();
+
         return Inertia::render('members/Show', [
             'member' => [
                 'id' => $member->id,
@@ -100,6 +134,8 @@ class MemberController extends Controller
                 'registered_at' => $user->created_at?->toISOString(),
                 'memberships_count' => $memberships->count(),
                 'memberships' => $memberships,
+                'active_memberships' => $activeMemberships,
+                'active_trainer_packages' => $activeTrainerPackages,
             ],
         ]);
     }
