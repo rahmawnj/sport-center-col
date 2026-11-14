@@ -199,19 +199,25 @@ class PublicBookingController extends Controller
         $start = $this->toMinutes($data['start_time'] ?? '00:00');
         $duration = max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
         $end = $start + $duration;
-        $window = BookingTimeSlot::query()
+        $windows = BookingTimeSlot::query()
             ->where('facility_id', $facility->id)
             ->where('day', strtolower($date->englishDayOfWeek))
             ->where('is_active', true)
-            ->get()
-            ->first(fn (BookingTimeSlot $slot) => $start >= $this->toMinutes((string) $slot->start_time)
-                && $end <= $this->toMinutes((string) $slot->end_time));
+            ->get();
 
-        if (! $window) {
-            throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
+        $total = 0.0;
+        for ($cursor = $start; $cursor < $end; $cursor += 60) {
+            $window = $windows->first(fn (BookingTimeSlot $slot) => $cursor >= $this->toMinutes((string) $slot->start_time)
+                && $cursor + 60 <= $this->toMinutes((string) $slot->end_time));
+
+            if (! $window) {
+                throw ValidationException::withMessages(['start_time' => 'Jadwal berada di luar jam operasional atau belum memiliki harga.']);
+            }
+
+            $total += (float) $window->price;
         }
 
-        return ((float) $window->price * (max(1, (int) $data['duration_hours']))) + $this->courtAdjustment($data['court_id'] ?? null);
+        return $total + $this->courtAdjustment($data['court_id'] ?? null);
     }
 
     private function courtAdjustment(mixed $courtId): float
@@ -370,20 +376,34 @@ class PublicBookingController extends Controller
         $day = strtolower($date->englishDayOfWeek);
         $turnaround = max(0, (int) Facility::query()->whereKey($facilityId)->value('turnaround_minutes'));
         $step = 60 + $turnaround;
-
-        return BookingTimeSlot::query()
+        $windows = BookingTimeSlot::query()
             ->where('facility_id', $facilityId)
             ->where('day', $day)
             ->where('is_active', true)
-            ->get(['start_time', 'end_time'])
-            ->contains(function (BookingTimeSlot $window) use ($startMinutes, $durationMinutes, $step) {
-                $windowStart = $this->toMinutes((string) $window->start_time);
-                $windowEnd = $this->toMinutes((string) $window->end_time);
+            ->get();
 
-                return $startMinutes >= $windowStart
-                    && ($startMinutes - $windowStart) % $step === 0
-                    && $startMinutes + $durationMinutes <= $windowEnd;
-            });
+        $startWindow = $windows->first(function (BookingTimeSlot $window) use ($startMinutes, $step) {
+            $windowStart = $this->toMinutes((string) $window->start_time);
+            $windowEnd = $this->toMinutes((string) $window->end_time);
+
+            return $startMinutes >= $windowStart
+                && $startMinutes < $windowEnd
+                && ($startMinutes - $windowStart) % $step === 0;
+        });
+
+        if (! $startWindow) {
+            return false;
+        }
+
+        $endMinutes = $startMinutes + $durationMinutes;
+        for ($cursor = $startMinutes; $cursor < $endMinutes; $cursor += 60) {
+            if (! $windows->contains(fn (BookingTimeSlot $window) => $cursor >= $this->toMinutes((string) $window->start_time)
+                && $cursor + 60 <= $this->toMinutes((string) $window->end_time))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
