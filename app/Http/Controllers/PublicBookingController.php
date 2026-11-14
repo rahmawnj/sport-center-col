@@ -63,7 +63,7 @@ class PublicBookingController extends Controller
         $data = $request->validate([
             'facility_id' => ['nullable', 'required_without:package_id', 'integer', 'exists:facilities,id'],
             'package_id' => ['nullable', 'required_without:facility_id', 'integer', 'exists:packages,id'],
-            'date' => ['required', 'date', 'after_or_equal:today'],
+            'date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
         ]);
 
@@ -125,7 +125,7 @@ class PublicBookingController extends Controller
         $data = $request->validate(array_merge([
             'facility_id' => ['required', 'integer', 'exists:facilities,id'],
             'court_id' => ['required', 'integer', 'exists:courts,id'],
-            'date' => ['required', 'date', 'after_or_equal:today'],
+            'date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
             'start_time' => ['required', 'date_format:H:i'],
             'duration_hours' => ['required', 'integer', 'min:1', 'max:16'],
             'payment_method' => ['nullable', 'in:cash,bank_transfer'],
