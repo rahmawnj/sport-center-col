@@ -204,13 +204,13 @@ function stateClass(value?: string) {
     <div class="space-y-6 p-4 md:p-6">
         <PageHeader eyebrow="Laporan" :title="pageTitle" description="Rekap pembelian, pelanggan, dan status pembayaran." />
 
-        <div class="flex flex-wrap gap-2">
+        <div class="inline-flex max-w-full overflow-x-auto rounded-lg border bg-background">
             <Link
                 v-for="tab in props.types"
                 :key="tab.value"
                 :href="`/reports/${tab.value}`"
-                class="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
-                :class="props.type === tab.value ? 'border-primary bg-primary/10 text-primary' : 'text-muted-foreground hover:border-primary hover:text-primary'"
+                class="inline-flex shrink-0 items-center gap-2 border-r px-4 py-2 text-sm font-medium transition-colors last:border-r-0"
+                :class="props.type === tab.value ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'"
             >
                 <FileChartColumn class="size-4" />
                 {{ tab.label }}
