@@ -34,7 +34,6 @@ class TrainerController extends Controller
                 'user_name' => $trainer->user?->name,
                 'user_email' => $trainer->user?->email,
                 'specialty' => $trainer->specialty,
-                'phone' => $trainer->phone,
                 'facility_ids' => $trainer->facilities->pluck('id')->map(fn ($id) => (int) $id)->all(),
                 'facilities' => $trainer->facilities->pluck('name')->all(),
             ]);
@@ -61,7 +60,6 @@ class TrainerController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8'],
             'specialty' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:255'],
             'facility_ids' => ['required', 'array', 'min:1'],
             'facility_ids.*' => ['integer', 'distinct', Rule::exists('facilities', 'id')->where('has_membership', true)],
         ]);
@@ -80,7 +78,6 @@ class TrainerController extends Controller
                 'user_id' => $user->id,
                 'name' => $data['name'],
                 'specialty' => $data['specialty'] ?? null,
-                'phone' => $data['phone'] ?? null,
             ]);
             $trainer->facilities()->sync($data['facility_ids']);
         });
@@ -120,7 +117,6 @@ class TrainerController extends Controller
                 'user_id' => $user->id,
                 'name' => $data['name'],
                 'specialty' => $data['specialty'] ?? null,
-                'phone' => $data['phone'] ?? null,
             ]);
             $trainer->facilities()->sync($data['facility_ids']);
         });
