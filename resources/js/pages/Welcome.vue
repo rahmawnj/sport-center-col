@@ -480,9 +480,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <div class="p-5">
                                 <h3 class="text-lg font-extrabold text-[#001428]">{{ trainer.name }}</h3>
                                 <p class="mt-1 text-sm text-slate-500">{{ trainer.specialty || 'Pelatih olahraga' }}</p>
-                                <div class="mt-5 flex justify-end">
-                                    <span class="inline-flex items-center gap-2 rounded-full bg-[#a4da01] px-4 py-2.5 text-sm font-extrabold text-[#001428] transition group-hover:bg-[#91c000]">Lihat detail <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
-                                </div>
+
                             </div>
                         </Link>
                     </div>
