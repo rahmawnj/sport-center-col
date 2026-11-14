@@ -102,201 +102,78 @@ function formatDateTime(value: string | null) {
 </script>
 
 <template>
-    <Head :title="`Transaksi #${meta.id}`" />
-    <div class="space-y-6 p-4 md:p-6">
-        <Link
-            href="/transactions"
-            class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-            <ArrowLeft class="size-4" />
-            Kembali ke transaksi
-        </Link>
-
-        <PageHeader
-            eyebrow="Detail transaksi"
-            :title="`Transaksi #${meta.id}`"
-            :description="`Dibuat ${formatDateTime(meta.created_at)}`"
-        >
-            <span
-                class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium"
-                :class="status.badge"
-            >
-                <span class="size-1.5 rounded-full" :class="status.dot" />
+    <Head :title="`Detail Transaksi #${meta.id}`" />
+    <div class="mx-auto max-w-6xl space-y-5 p-4 md:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <Link href="/transactions" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <ArrowLeft class="size-4" />
+                Kembali ke transaksi
+            </Link>
+            <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium" :class="status.badge">
+                <span class="size-2 rounded-full" :class="status.dot" />
                 {{ status.label }}
             </span>
-        </PageHeader>
+        </div>
 
-        <div class="grid gap-4 lg:grid-cols-3">
-            <!-- Amount highlight -->
-            <div
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 text-white shadow-lg lg:col-span-1"
-                :class="status.gradient"
-            >
-                <div
-                    class="pointer-events-none absolute -top-8 -right-8 size-28 rounded-full bg-white/15 blur-2xl"
-                ></div>
-                <p class="relative text-xs font-medium tracking-wide uppercase">
-                    Total pembayaran
-                </p>
-                <p class="relative mt-2 text-3xl font-bold tracking-tight">
-                    {{ formatIDR(meta.amount) }}
-                </p>
-                <div
-                    class="relative mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur-sm"
-                >
-                    <CreditCard class="size-3.5" />
-                    {{
-                        meta.payment_method
-                            ? (methodLabel[meta.payment_method] ??
-                              meta.payment_method)
-                            : 'Belum ada metode'
-                    }}
+        <div class="rounded-2xl border bg-card p-5 shadow-sm md:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-5">
+                <div class="min-w-0">
+                    <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Detail transaksi · {{ meta.item_name }}</p>
+                    <h1 class="mt-2 break-all font-mono text-xl font-semibold tracking-tight">{{ meta.invoice_number || 'Invoice belum tersedia' }}</h1>
+                    <p class="mt-1 text-sm text-muted-foreground">{{ formatDateTime(meta.created_at) }}</p>
+                    <p class="mt-4 text-sm text-muted-foreground">Pelanggan</p>
+                    <p class="font-medium">{{ meta.customer_name || 'Umum / walk-in' }}</p>
+                </div>
+                <div class="min-w-[220px] rounded-xl bg-muted/50 p-4">
+                    <p class="text-xs text-muted-foreground">Total pembayaran</p>
+                    <p class="mt-1 text-2xl font-bold tracking-tight">{{ formatIDR(meta.amount) }}</p>
+                    <div class="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                        <CreditCard class="size-4" />
+                        {{ meta.payment_method ? (methodLabel[meta.payment_method] ?? meta.payment_method) : 'Belum ada metode' }}
+                    </div>
                 </div>
             </div>
-
-            <!-- Info -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-                <div
-                    class="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm"
-                >
-                    <div
-                        class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400"
-                    >
-                        <User class="size-5" />
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-xs text-muted-foreground">
-                            Pelanggan
-                        </div>
-                        <div class="truncate font-medium">
-                            {{ meta.customer_name || 'Umum / walk-in' }}
-                        </div>
-                    </div>
+            <div class="mt-5 grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                    <p class="text-xs text-muted-foreground">Referensi</p>
+                    <p class="mt-1 text-sm font-medium">{{ meta.reference }}</p>
                 </div>
-
-                <div
-                    class="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm"
-                >
-                    <div
-                        class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400"
-                    >
-                        <Hash class="size-5" />
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-xs text-muted-foreground">
-                            Referensi
-                        </div>
-                        <div class="truncate font-medium">
-                            {{ meta.reference }}
-                        </div>
-                    </div>
+                <div>
+                    <p class="text-xs text-muted-foreground">Status pembayaran</p>
+                    <p class="mt-1 text-sm font-medium">{{ status.label }}</p>
                 </div>
-
-                <div
-                    class="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm"
-                >
-                    <div
-                        class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    >
-                        <BadgeCheck class="size-5" />
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-xs text-muted-foreground">Status</div>
-                        <div class="font-medium">{{ status.label }}</div>
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm"
-                >
-                    <div
-                        class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                    >
-                        <Clock class="size-5" />
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-xs text-muted-foreground">Waktu</div>
-                        <div class="truncate font-medium">
-                            {{ formatDateTime(meta.created_at) }}
-                        </div>
-                    </div>
+                <div>
+                    <p class="text-xs text-muted-foreground">Waktu transaksi</p>
+                    <p class="mt-1 text-sm font-medium">{{ formatDateTime(meta.created_at) }}</p>
                 </div>
             </div>
         </div>
 
-        <!-- Invoice & QR -->
-        <div
-            class="grid gap-5 rounded-2xl border bg-card p-5 shadow-sm sm:grid-cols-[auto_1fr] sm:items-center"
-        >
-            <div class="flex justify-center">
-                <div class="rounded-xl bg-white p-3 shadow-inner">
-                    <QrcodeVue
-                        :value="meta.qr_code ?? ''"
-                        :size="140"
-                        level="M"
-                        render-as="svg"
-                    />
+        <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <section class="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                <div class="border-b px-5 py-4">
+                    <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Rincian pesanan</p>
+                    <h2 class="mt-1 text-lg font-semibold">{{ meta.item_name }}</h2>
                 </div>
-            </div>
-            <div class="space-y-2 text-center sm:text-left">
-                <p
-                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                >
-                    Nomor invoice
-                </p>
-                <p class="font-mono text-lg font-bold tracking-tight">
-                    {{ meta.invoice_number || '—' }}
-                </p>
-                <p class="text-xs text-muted-foreground">
-                    Scan QR untuk memverifikasi keaslian transaksi ini.
-                </p>
-                <Button
-                    v-if="meta.qr_code"
-                    as-child
-                    variant="outline"
-                    size="sm"
-                >
-                    <a
-                        :href="`/verify?code=${meta.qr_code}`"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        Buka halaman verifikasi
-                    </a>
+                <dl v-if="meta.details.length" class="divide-y">
+                    <div v-for="detail in meta.details" :key="detail.label" class="grid gap-1 px-5 py-3 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-4">
+                        <dt class="text-sm text-muted-foreground">{{ detail.label }}</dt>
+                        <dd class="break-words text-sm font-medium sm:text-right">{{ detail.value || '—' }}</dd>
+                    </div>
+                </dl>
+                <div v-else class="px-5 py-8 text-center text-sm text-muted-foreground">Rincian pesanan belum tersedia.</div>
+            </section>
+
+            <aside v-if="meta.qr_code" class="rounded-2xl border bg-card p-4 text-center shadow-sm">
+                <p class="text-sm font-semibold">QR verifikasi</p>
+                <div class="mx-auto mt-3 inline-flex rounded-xl bg-white p-3">
+                    <QrcodeVue :value="meta.qr_code" :size="150" level="M" render-as="svg" />
+                </div>
+                <p class="mt-2 break-all font-mono text-xs text-muted-foreground">{{ meta.qr_code }}</p>
+                <Button as-child variant="outline" size="sm" class="mt-3 w-full">
+                    <a :href="`/verify?code=${meta.qr_code}`" target="_blank" rel="noopener noreferrer">Buka verifikasi</a>
                 </Button>
-            </div>
-        </div>
-
-        <!-- Item details -->
-        <div
-            v-if="meta.details.length"
-            class="overflow-hidden rounded-2xl border bg-card shadow-sm"
-        >
-            <div class="border-b bg-muted/40 px-4 py-3">
-                <p class="text-xs text-muted-foreground">Yang dipesan</p>
-                <p class="mt-1 font-semibold">{{ meta.item_name }}</p>
-            </div>
-            <dl class="divide-y">
-                <div
-                    v-for="detail in meta.details"
-                    :key="detail.label"
-                    class="flex items-center justify-between gap-4 px-4 py-3 text-sm"
-                >
-                    <dt class="text-muted-foreground">{{ detail.label }}</dt>
-                    <dd class="text-right font-medium">
-                        {{ detail.value || '—' }}
-                    </dd>
-                </div>
-            </dl>
-        </div>
-
-        <div v-else class="flex justify-end">
-            <Button as-child variant="outline">
-                <Link href="/transactions">
-                    <ArrowLeft class="mr-2 size-4" />
-                    Kembali
-                </Link>
-            </Button>
+            </aside>
         </div>
     </div>
 </template>
