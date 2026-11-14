@@ -285,11 +285,7 @@ const info = computed(() => [
         key: 'has_booking',
         label: 'Booking',
         enabled: props.facility.has_booking,
-        value: !props.facility.has_booking
-            ? 'Tidak tersedia'
-            : props.facility.is_bookable_online
-              ? 'Tersedia · Online'
-              : 'Tersedia · Kasir',
+        value: props.facility.has_booking ? 'Tersedia' : 'Tidak tersedia',
         disabled: false,
     },
     {
