@@ -308,13 +308,30 @@ function initials(value: string) {
                             {{ errors.specialty }}
                         </p>
                     </div>
-                    <div class="grid gap-2">
-                        <Label for="trainer-facilities">Olahraga yang diajarkan</Label>
-                        <select id="trainer-facilities" name="facility_ids[]" multiple required :value="editing?.facility_ids ?? []" class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm">
-                            <option v-for="facility in props.facilities" :key="facility.id" :value="facility.id">{{ facility.name }}</option>
-                        </select>
-                        <p class="text-xs text-muted-foreground">Pilih satu atau lebih olahraga yang dapat diajarkan trainer ini.</p>
+                    <div class="grid gap-3">
+                        <div>
+                            <Label>Olahraga yang diajarkan</Label>
+                            <p class="mt-1 text-xs text-muted-foreground">Centang semua olahraga yang dapat diajarkan trainer ini.</p>
+                        </div>
+                        <div v-if="props.facilities.length" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <label
+                                v-for="facility in props.facilities"
+                                :key="facility.id"
+                                class="flex cursor-pointer items-center gap-3 rounded-xl border bg-background px-3 py-3 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                            >
+                                <input
+                                    type="checkbox"
+                                    name="facility_ids[]"
+                                    :value="facility.id"
+                                    :checked="editing?.facility_ids?.includes(facility.id) ?? false"
+                                    class="size-4 shrink-0 rounded border-input accent-primary"
+                                />
+                                <span class="font-medium">{{ facility.name }}</span>
+                            </label>
+                        </div>
+                        <p v-else class="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">Belum ada data olahraga yang tersedia.</p>
                         <p v-if="errors.facility_ids" class="text-xs text-destructive">{{ errors.facility_ids }}</p>
+                        <p v-if="errors['facility_ids.0']" class="text-xs text-destructive">{{ errors['facility_ids.0'] }}</p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 border-t pt-4">
