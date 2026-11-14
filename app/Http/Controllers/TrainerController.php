@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use App\Models\Role;
 use App\Models\Trainer;
+use App\Models\TrainerSessionSchedule;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\RedirectResponse;
@@ -55,7 +56,7 @@ class TrainerController extends Controller
             ->latest()
             ->get();
 
-        $completedSessions = \\App\\Models\\TrainerSessionSchedule::query()
+        $completedSessions = TrainerSessionSchedule::query()
             ->whereIn('member_trainer_package_id', $memberPackages->pluck('id'))
             ->where('status', 'completed')
             ->where('member_attended', true)
