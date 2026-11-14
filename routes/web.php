@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ClassManagementController;
 use App\Http\Controllers\MemberClassController;
 use App\Http\Controllers\BookingTimeSlotController;
