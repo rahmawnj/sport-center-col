@@ -413,12 +413,12 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         <p class="mt-2 text-sm leading-6 text-slate-600">Pilih paket keanggotaan berdasarkan fasilitas dan lama berlakunya.</p>
                         <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-lime-900">Lihat membership <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
                     </a>
-                    <a href="#paket-trainer" class="group rounded-2xl border border-violet-100 bg-violet-50/70 p-5 transition hover:-translate-y-1 hover:border-violet-200 hover:shadow-lg">
-                        <span class="grid size-11 place-items-center rounded-xl bg-violet-100 text-violet-700"><i class="fa-solid fa-user-tie"></i></span>
-                        <p class="mt-4 text-xs font-black uppercase tracking-wider text-violet-700">Paket personal trainer</p>
-                        <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Latihan privat per sesi</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">Paket berisi sejumlah sesi latihan bersama trainer pilihanmu.</p>
-                        <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-violet-800">Lihat paket trainer <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
+                    <a href="/book" class="group rounded-2xl border border-violet-100 bg-violet-50/70 p-5 transition hover:-translate-y-1 hover:border-violet-200 hover:shadow-lg">
+                        <span class="grid size-11 place-items-center rounded-xl bg-violet-100 text-violet-700"><i class="fa-solid fa-calendar-check"></i></span>
+                        <p class="mt-4 text-xs font-black uppercase tracking-wider text-violet-700">Booking lapangan</p>
+                        <h3 class="mt-1 text-lg font-extrabold text-[#001428]">Pilih lapangan dan jam bermain</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Cek ketersediaan lapangan, tentukan waktu, lalu amankan jadwal bermainmu.</p>
+                        <span class="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-violet-800">Booking lapangan <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i></span>
                     </a>
                 </div>
             </section>
