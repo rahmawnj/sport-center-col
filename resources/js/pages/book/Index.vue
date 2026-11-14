@@ -242,9 +242,14 @@ function formatIDR(value: number) {
                 </section>
 
                 <template v-else>
-                    <div class="mb-5">
-                        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Booking olahraga</h1>
-                        <p class="mt-1 text-sm text-muted-foreground">Pilih olahraga, tentukan jadwal, lalu konfirmasi dengan data kontakmu.</p>
+                    <div class="relative mb-6 overflow-hidden rounded-3xl bg-[#001428] px-6 py-7 text-white shadow-lg sm:px-8 sm:py-9">
+                        <div class="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full border-[28px] border-white/5"></div>
+                        <div class="relative max-w-2xl">
+                            <p class="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[#c9f36a]">Sport Center · Online booking</p>
+                            <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Booking olahraga</h1>
+                            <p class="mt-2 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">Pilih olahraga favoritmu, tentukan waktu bermain, dan amankan lapangan dalam beberapa langkah mudah.</p>
+                            <div class="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100"><Check class="size-3.5 text-[#c9f36a]" /> Jadwal tersedia hingga 7 hari ke depan</div>
+                        </div>
                     </div>
 
                     <div class="mt-6 flex flex-wrap items-center gap-2">
@@ -286,8 +291,8 @@ function formatIDR(value: number) {
                                 <div class="grid max-w-sm gap-2">
                                     <Label for="booking-date" class="text-sm font-semibold text-slate-700">Tanggal booking</Label>
                                     <div class="rounded-2xl bg-slate-50 p-3">
-                                        <Input id="booking-date" v-model="date" type="date" :min="today" class="h-14 rounded-2xl border-0 bg-slate-50 px-4 text-base font-semibold text-slate-800 shadow-none" />
-                                        <p class="mt-2 text-xs text-slate-500">Pilih tanggal untuk melihat jam dan lapangan yang tersedia.</p>
+                                        <Input id="booking-date" v-model="date" type="date" :min="today" :max="maxBookingDate" class="h-14 rounded-2xl border-0 bg-white px-4 text-base font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200 focus-visible:ring-2 focus-visible:ring-[#a4da01]" />
+                                        <p class="mt-2 text-xs text-slate-500">Pilih tanggal mulai hari ini sampai {{ maxBookingDate }} (maksimal 7 hari ke depan).</p>
                                     </div>
                                 </div>
                                 <div v-if="loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
