@@ -313,7 +313,7 @@ function formatIDR(value: number) {
                                 <p v-if="slotSelectionError" class="text-sm text-destructive">{{ slotSelectionError }}</p>
 
                                 <div class="space-y-3 border-t border-slate-100 pt-5">
-                                    <div><h3 class="font-semibold">Pilih lapangan</h3><p class="mt-1 text-sm text-slate-500">{{ slot ? slot.start_time + '–' + slot.end_time : 'Pilih jam terlebih dahulu.' }}</p></div>
+                                    <div><h3 class="font-semibold">Pilih lapangan</h3><p v-if="slot" class="mt-1 text-sm text-slate-500">{{ slot.start_time }}–{{ slot.end_time }}</p></div>
                                     <div v-if="slot?.courts.length" class="grid gap-3 sm:grid-cols-2">
                                         <button v-for="item in slot.courts" :key="item.id" type="button" :disabled="!item.is_available"
                                             class="flex items-center gap-3 rounded-xl border p-4 text-left transition-colors"
@@ -330,7 +330,6 @@ function formatIDR(value: number) {
                                             <Check v-if="courtId === item.id" class="ml-auto size-4 shrink-0 text-primary" />
                                         </button>
                                     </div>
-                                    <p v-else class="text-sm text-muted-foreground">Pilih tanggal dan jam untuk melihat lapangan yang tersedia.</p>
                                 </div>
                             </div>
                             <aside class="h-fit rounded-2xl border border-slate-200 bg-slate-50 p-5 lg:sticky lg:top-24">
