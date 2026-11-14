@@ -1,14 +1,14 @@
 <?php
 
-use App\\Models\\Facility;
-use App\\Models\\MemberProfile;
-use App\\Models\\Package;
-use App\\Models\\Role;
-use App\\Models\\Transaction;
-use App\\Models\\User;
-use App\\Models\\UserMembership;
-use Illuminate\\Foundation\\Testing\\RefreshDatabase;
-use Inertia\\Testing\\AssertableInertia as Assert;
+use App\Models\Facility;
+use App\Models\MemberProfile;
+use App\Models\Package;
+use App\Models\Role;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Models\UserMembership;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
