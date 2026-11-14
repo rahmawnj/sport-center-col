@@ -502,22 +502,7 @@ class TransactionController extends Controller
                     ]);
                 }
 
-                $trainerPurchase = MemberTrainerPackage::query()
-                    ->with(['trainerPackage', 'facility', 'trainer'])
-                    ->where('transaction_id', $transaction->id)
-                    ->first();
 
-                if ($trainerPurchase) {
-                    $itemName = 'Membership + Personal Trainer';
-                    $details = array_merge($details, [
-                        ['label' => 'Paket trainer', 'value' => $trainerPurchase->trainerPackage?->name],
-                        ['label' => 'Fasilitas trainer', 'value' => $trainerPurchase->facility?->name],
-                        ['label' => 'Coach', 'value' => $trainerPurchase->trainer?->name ?? 'Belum ditentukan'],
-                        ['label' => 'Jumlah sesi', 'value' => (string) $trainerPurchase->total_sessions],
-                        ['label' => 'Sisa sesi', 'value' => (string) $trainerPurchase->remaining_sessions],
-                        ['label' => 'Status paket trainer', 'value' => ucfirst((string) $trainerPurchase->status)],
-                    ]);
-                }
             }
         } elseif ($transaction->transactionable_type === 'trainer_package') {
             $trainerPurchase = MemberTrainerPackage::query()
