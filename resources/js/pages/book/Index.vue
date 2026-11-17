@@ -63,6 +63,8 @@ const calendarMonths = computed(() => [0, 1].map((offset) => {
 const slots = ref<Slot[]>([]);
 const courts = ref<Court[]>([]);
 const loadingSlots = ref(false);
+const hasOperationalSchedule = ref(false);
+const availabilityError = ref(false);
 const slot = ref<Slot | null>(null);
 const selectedSlots = ref<string[]>([]);
 const courtId = ref<number | null>(null);
@@ -133,8 +135,14 @@ function isDateDisabled(value: string) {
     return value < today || value > maxBookingDate;
 }
 
+function isSlotAvailable(item: Slot) {
+    return item.courts.some((court) => court.is_available);
+}
+
 function loadAvailability() {
     slot.value = null;
+    hasOperationalSchedule.value = false;
+    availabilityError.value = false;
     selectedSlots.value = [];
     courtId.value = null;
     slots.value = [];
@@ -153,10 +161,12 @@ function loadAvailability() {
         .then((data) => {
             slots.value = data.slots ?? [];
             courts.value = data.courts ?? [];
+            hasOperationalSchedule.value = !!data.has_operational_schedule;
         })
         .catch(() => {
             slots.value = [];
             courts.value = [];
+            availabilityError.value = true;
         })
         .finally(() => { loadingSlots.value = false; });
 }
@@ -393,22 +403,46 @@ function formatIDR(value: number) {
                                 </div>
                                 <div v-if="loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
                                 <template v-else-if="date">
-                                    <div v-if="slots.length" class="space-y-3">
+                                    <div v-if="availabilityError" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                                        Gagal memuat ketersediaan. Silakan coba pilih tanggal kembali.
+                                    </div>
+                                    <div v-else-if="!hasOperationalSchedule" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                        <div class="flex items-start gap-3">
+                                            <span class="mt-0.5 size-2.5 shrink-0 rounded-full bg-slate-400"></span>
+                                            <div>
+                                                <p class="font-semibold text-slate-800">Belum ada jadwal operasional</p>
+                                                <p class="mt-1 text-sm text-slate-500">Olahraga ini belum memiliki jam booking aktif pada hari tersebut.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else-if="!slots.length" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                        Tidak ada jam booking tersisa pada tanggal ini.
+                                    </div>
+                                    <div v-else class="space-y-3">
+                                        <div class="flex flex-wrap gap-3 text-xs">
+                                            <span class="inline-flex items-center gap-2 rounded-full bg-lime-50 px-3 py-1.5 font-medium text-emerald-800"><span class="size-2 rounded-full bg-[#a4da01]"></span>Tersedia</span>
+                                            <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-medium text-rose-700"><span class="size-2 rounded-full bg-rose-500"></span>Penuh</span>
+                                        </div>
                                         <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                             <label v-for="item in slots" :key="item.start_time"
-                                                class="flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50 p-3 transition-colors has-[:disabled]:cursor-not-allowed has-[:checked]:bg-lime-100 hover:bg-lime-50"
-                                                :class="selectedSlots.includes(item.start_time) ? 'ring-2 ring-inset ring-[#a4da01]' : ''">
-                                                <input type="checkbox" :checked="selectedSlots.includes(item.start_time)" :disabled="!item.courts.some((court) => court.is_available)"
+                                                class="flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors"
+                                                :class="isSlotAvailable(item)
+                                                    ? selectedSlots.includes(item.start_time) ? 'border-[#a4da01] bg-lime-50 ring-1 ring-inset ring-[#a4da01]' : 'border-slate-200 bg-white hover:border-[#a4da01] hover:bg-lime-50'
+                                                    : 'cursor-not-allowed border-rose-100 bg-rose-50/70 opacity-80'">
+                                                <input type="checkbox" :checked="selectedSlots.includes(item.start_time)" :disabled="!isSlotAvailable(item)"
                                                     class="mt-1 size-4 accent-[#8dbb00] disabled:cursor-not-allowed" @change="chooseSlot(item)" />
-                                                <span class="min-w-0">
+                                                <span class="min-w-0 flex-1">
                                                     <span class="block font-semibold text-slate-800">{{ item.start_time }}–{{ item.end_time }}</span>
                                                     <span class="block text-sm font-medium text-slate-700">{{ formatIDR(item.price) }}</span>
-                                                    <span class="block text-xs text-slate-500">{{ item.courts.filter((court) => court.is_available).length }} lapangan tersedia</span>
+                                                    <span class="mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold"
+                                                        :class="isSlotAvailable(item) ? 'bg-lime-100 text-emerald-800' : 'bg-rose-100 text-rose-700'">
+                                                        <span class="size-1.5 rounded-full" :class="isSlotAvailable(item) ? 'bg-[#a4da01]' : 'bg-rose-500'"></span>
+                                                        {{ isSlotAvailable(item) ? `${item.courts.filter((court) => court.is_available).length} lapangan tersedia` : 'Penuh' }}
+                                                    </span>
                                                 </span>
                                             </label>
                                         </div>
                                     </div>
-                                    <p v-else class="text-sm text-muted-foreground">Tidak ada jadwal tersedia pada tanggal ini.</p>
                                 </template>
 
                                 <div class="space-y-3 border-t border-slate-100 pt-5">
