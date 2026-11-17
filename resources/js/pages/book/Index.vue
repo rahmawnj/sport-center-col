@@ -183,6 +183,7 @@ function chooseFacility(item: Facility) {
     selectedSlots.value = [];
     courtId.value = null;
     step.value = 2;
+    loadAvailability();
 }
 
 function toMinutes(time: string) {
