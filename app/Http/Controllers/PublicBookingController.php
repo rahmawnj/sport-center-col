@@ -76,6 +76,11 @@ class PublicBookingController extends Controller
             ? max(1, (int) $package->duration_minutes)
             : max(1, (int) ($data['duration_hours'] ?? 1)) * 60;
         $date = Carbon::parse($data['date']);
+        $hasOperationalSchedule = BookingTimeSlot::query()
+            ->where('facility_id', $facility->id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->exists();
 
         $bookings = Booking::with(['court:id,name', 'user:id,name'])
             ->whereIn('court_id', $facility->courts->pluck('id'))
@@ -104,6 +109,7 @@ class PublicBookingController extends Controller
 
         return response()->json([
             'slots' => $this->buildSlots($facility, $date, $slotDuration),
+            'has_operational_schedule' => $hasOperationalSchedule,
             'bookings' => $bookings,
             'courts' => $courts,
         ]);
