@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('payments', [MemberDashboardController::class, 'payments'])->name('payments');
         Route::get('payments/{transaction}', [MemberDashboardController::class, 'paymentShow'])->name('payments.show');
         Route::post('payments/{transaction}/cancel', [MemberDashboardController::class, 'cancelPayment'])->name('payments.cancel');
+        Route::get('qr-code', [MemberDashboardController::class, 'qrCode'])->name('qr-code');
         Route::get('profile', [MemberDashboardController::class, 'profile'])->name('profile');
         Route::redirect('settings', '/member/profile')->name('settings');
     });
