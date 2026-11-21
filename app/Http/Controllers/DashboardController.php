@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Court;
 use App\Models\Transaction;
+use App\Models\SessionParticipant;
 use App\Models\UserMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -25,6 +26,8 @@ class DashboardController extends Controller
             'transactions_today' => Transaction::whereDate('created_at', $today)->count(),
             'bookings_today' => Booking::whereDate('date', $today)
                 ->whereNotIn('status', ['cancelled'])->count(),
+            'classes_today' => SessionParticipant::whereDate('session_date', $today)
+                ->where('status', '!=', 'cancelled')->count(),
             'active_members' => UserMembership::where('status', '!=', 'cancelled')
                 ->whereDate('end_date', '>=', $today)->count(),
         ];
@@ -53,6 +56,31 @@ class DashboardController extends Controller
             ->whereNotIn('status', ['cancelled'])
             ->orderBy('start_time')
             ->get();
+
+        $todaysClasses = SessionParticipant::query()
+            ->with([
+                'user:id,name',
+                'schedule.sportClass.facility:id,name',
+                'schedule.trainer:id,name',
+                'transaction:id,payment_status,invoice_number',
+            ])
+            ->whereDate('session_date', $today)
+            ->where('status', '!=', 'cancelled')
+            ->get()
+            ->map(fn (SessionParticipant $participant) => [
+                'id' => $participant->id,
+                'class_name' => $participant->schedule?->sportClass?->name ?? 'Kelas',
+                'facility' => $participant->schedule?->sportClass?->facility?->name,
+                'trainer' => $participant->schedule?->trainer?->name,
+                'customer' => $participant->user?->name ?? 'Member',
+                'start_time' => substr((string) $participant->schedule?->start_time, 0, 5),
+                'end_time' => substr((string) $participant->schedule?->end_time, 0, 5),
+                'status' => $participant->status,
+                'payment_status' => $participant->transaction?->payment_status,
+                'invoice_number' => $participant->transaction?->invoice_number,
+            ])
+            ->sortBy('start_time')
+            ->values();
 
         $courtMonitor = Court::with('facility:id,name')
             ->orderBy('name')
@@ -95,6 +123,7 @@ class DashboardController extends Controller
             'bookingStatus' => $bookingStatus,
             'courtMonitor' => $courtMonitor,
             'bookings' => $bookings,
+            'todaysClasses' => $todaysClasses,
         ]);
     }
 }
