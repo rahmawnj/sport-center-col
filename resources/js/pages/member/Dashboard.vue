@@ -5,10 +5,12 @@ import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
 defineOptions({ layout: MemberDashboardLayout });
 type Booking = { id:number; date:string|null; start_time:string|null; end_time:string|null; court:string|null; facility:string|null; status:string };
+type ClassBooking = { id:number; transaction_id:number|null; class_name:string; facility:string|null; trainer:string|null; date:string|null; start_time:string; end_time:string; status:string; payment_status:string|null; invoice_number:string|null };
 type Membership = { id:number; package:string; facility:string|null; start_date:string|null; end_date:string|null; duration_days:number|null; status:string };
 defineProps<{
   stats:{upcoming_bookings:number;completed_bookings:number;active_memberships:number;payments_count:number;payments_total:number};
   bookings:Booking[];
+  classBookings:ClassBooking[];
   memberships:Membership[];
   currentMembership:{id:number;package:string;facility:string|null;start_date:string|null;end_date:string|null;duration_days:number|null}|null;
   upcomingMemberships:{id:number;package:string;facility:string|null;start_date:string|null;end_date:string|null;duration_days:number|null}[];
@@ -17,7 +19,7 @@ defineProps<{
 }>();
 const currency=(value:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value);
 const dateLabel=(value:string|null)=>value?new Date(value+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'Jadwal belum ditentukan';
-const statusLabel=(value:string)=>({pending:'Menunggu konfirmasi',confirmed:'Dikonfirmasi',completed:'Selesai',cancelled:'Dibatalkan',active:'Aktif',expired:'Kedaluwarsa'}[value]||value);
+const statusLabel=(value:string)=>({pending:'Menunggu pembayaran',confirmed:'Dikonfirmasi',attended:'Sudah diikuti',no_show:'Tidak hadir',completed:'Selesai',cancelled:'Dibatalkan',active:'Aktif',expired:'Kedaluwarsa'}[value]||value);
 const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;active_memberships:number;payments_count:number;payments_total:number}) => [
  {label:'Booking mendatang',value:String(stats.upcoming_bookings),note:'Jadwal yang sudah kamu pesan',icon:CalendarDays,tone:'lime'},
  {label:'Booking selesai',value:String(stats.completed_bookings),note:'Total sesi olahraga selesai',icon:Clock3,tone:'blue'},
@@ -84,6 +86,19 @@ const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;act
     </section>
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <article v-for="item in summaries(stats)" :key="item.label" class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,.03)] transition duration-200 hover:-translate-y-1 hover:shadow-lg"><div class="flex items-start justify-between gap-3"><div><p class="text-sm font-medium text-slate-500">{{ item.label }}</p><p class="mt-3 text-2xl font-bold tracking-tight text-slate-900">{{ item.value }}</p></div><div class="grid size-11 place-items-center rounded-xl" :class="{'bg-lime-100 text-lime-800':item.tone==='lime','bg-sky-100 text-sky-700':item.tone==='blue','bg-violet-100 text-violet-700':item.tone==='violet','bg-orange-100 text-orange-700':item.tone==='orange'}"><component :is="item.icon" class="size-5" /></div></div><p class="mt-4 text-xs text-slate-400">{{ item.note }}</p></article>
+    </section>
+    <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div class="flex items-center justify-between gap-3"><div><h2 class="font-bold text-slate-900">Kelas yang saya pesan</h2><p class="mt-1 text-sm text-slate-500">Riwayat kelas dan jadwal sesi yang kamu daftarkan</p></div><Link href="/member/classes" class="text-sm font-semibold text-lime-800 hover:underline">Lihat semua</Link></div>
+      <div v-if="classBookings.length" class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <Link v-for="item in classBookings" :key="item.id" :href="item.transaction_id ? '/member/payments/'+item.transaction_id : '/member/classes'" class="rounded-xl border border-slate-100 p-4 transition hover:border-lime-300 hover:bg-lime-50/30">
+          <div class="flex items-start justify-between gap-2"><div><p class="text-xs font-bold uppercase tracking-wider text-lime-700">{{ item.facility || 'Sport Center' }}</p><h3 class="mt-1 font-semibold text-slate-900">{{ item.class_name }}</h3></div><span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">{{ statusLabel(item.status) }}</span></div>
+          <p class="mt-3 text-xs text-slate-500">{{ dateLabel(item.date) }} · {{ item.start_time }}–{{ item.end_time }}</p>
+          <p class="mt-1 text-xs text-slate-500">Trainer: {{ item.trainer || 'Belum ditentukan' }}</p>
+          <p v-if="item.invoice_number" class="mt-2 text-[11px] text-slate-400">Invoice {{ item.invoice_number }}</p>
+          <p class="mt-3 text-xs font-semibold text-lime-800">Lihat detail →</p>
+        </Link>
+      </div>
+      <div v-else class="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center"><CalendarDays class="mx-auto size-7 text-slate-400" /><h3 class="mt-2 text-sm font-semibold text-slate-800">Belum ada kelas yang dipesan</h3><p class="mt-1 text-sm text-slate-500">Kelas yang kamu daftarkan akan muncul di sini.</p><Link href="/kelas" class="mt-4 inline-flex rounded-xl bg-[#a4da01] px-4 py-2.5 text-sm font-semibold text-[#001428]">Cari kelas</Link></div>
     </section>
     <section class="grid gap-5 xl:grid-cols-[1.35fr_1fr]">
       <div class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
