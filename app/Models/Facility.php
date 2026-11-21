@@ -10,6 +10,7 @@ class Facility extends Model
 {
     protected $fillable = [
         'name',
+        'image',
         'slug',
         'is_bookable_online',
         'has_membership',
