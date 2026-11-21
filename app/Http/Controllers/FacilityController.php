@@ -266,7 +266,7 @@ class FacilityController extends Controller
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'status' => ['required', Rule::in(['active', 'maintenance', 'inactive'])],
             'is_bookable_online' => ['boolean'],
             'has_membership' => ['boolean'],
