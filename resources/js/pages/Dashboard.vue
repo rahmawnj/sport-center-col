@@ -16,6 +16,7 @@ type Stats = {
     revenue_today: number;
     transactions_today: number;
     bookings_today: number;
+    classes_today: number;
     active_members: number;
     courts_in_use: number;
     courts_total: number;
@@ -39,6 +40,7 @@ type CourtMonitor = {
         end_time: string;
     } | null;
 };
+type ClassRow = { id:number; class_name:string; facility:string|null; trainer:string|null; customer:string; start_time:string; end_time:string; status:string; payment_status:string|null; invoice_number:string|null };
 type BookingRow = {
     id: number;
     court: string | null;
@@ -54,6 +56,7 @@ const props = defineProps<{
     bookingStatus: BookingStatus;
     courtMonitor: CourtMonitor[];
     bookings: BookingRow[];
+    todaysClasses: ClassRow[];
 }>();
 
 const statCards = computed(() => [
@@ -72,6 +75,12 @@ const statCards = computed(() => [
     {
         label: 'Booking hari ini',
         value: props.stats.bookings_today,
+        icon: CalendarClock,
+        accent: 'violet' as const,
+    },
+    {
+        label: 'Kelas hari ini',
+        value: props.stats.classes_today,
         icon: CalendarClock,
         accent: 'violet' as const,
     },
@@ -319,6 +328,34 @@ function formatIDR(value: number) {
                         </span>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Today's classes -->
+        <div class="rounded-2xl border bg-card p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="font-semibold">Kelas hari ini</h2>
+                    <p class="text-xs text-muted-foreground">Daftar member yang terdaftar pada sesi kelas hari ini</p>
+                </div>
+                <span class="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-600">{{ props.todaysClasses.length }} peserta</span>
+            </div>
+            <div class="mt-4 overflow-x-auto rounded-xl border">
+                <table class="w-full text-sm">
+                    <thead class="border-b bg-muted/40 text-left">
+                        <tr><th class="px-4 py-2.5 font-medium">Jam</th><th class="px-4 py-2.5 font-medium">Kelas</th><th class="px-4 py-2.5 font-medium">Member</th><th class="px-4 py-2.5 font-medium">Trainer</th><th class="px-4 py-2.5 font-medium">Status</th></tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <tr v-for="item in props.todaysClasses" :key="item.id" class="hover:bg-muted/30">
+                            <td class="whitespace-nowrap px-4 py-2.5 font-medium">{{ item.start_time }}–{{ item.end_time }}</td>
+                            <td class="px-4 py-2.5"><p class="font-medium">{{ item.class_name }}</p><p class="text-xs text-muted-foreground">{{ item.facility || '—' }}</p></td>
+                            <td class="px-4 py-2.5">{{ item.customer }}</td>
+                            <td class="px-4 py-2.5">{{ item.trainer || 'Belum ditentukan' }}</td>
+                            <td class="px-4 py-2.5"><span class="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{{ bookingStatusMeta[item.status]?.label ?? item.status }}</span></td>
+                        </tr>
+                        <tr v-if="!props.todaysClasses.length"><td colspan="5" class="px-4 py-10 text-center text-muted-foreground">Belum ada kelas yang dipesan untuk hari ini.</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
