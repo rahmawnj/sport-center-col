@@ -10,6 +10,7 @@ use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberDashboardController;
+use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\MembershipPackageController;
 use App\Http\Controllers\PackageController;
@@ -85,6 +86,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('payments/{transaction}/cancel', [MemberDashboardController::class, 'cancelPayment'])->name('payments.cancel');
         Route::get('qr-code', [MemberDashboardController::class, 'qrCode'])->name('qr-code');
         Route::get('profile', [MemberDashboardController::class, 'profile'])->name('profile');
+        Route::post('profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::redirect('settings', '/member/profile')->name('settings');
     });
 
