@@ -35,7 +35,7 @@ const user = computed(() => page.props.auth.user);
             <p class="mt-1 text-sm text-slate-500">Kelola informasi profil dan keamanan akun Sport Center dari halaman ini.</p>
         </header>
 
-        <section class="max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section class="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-center gap-4 border-b border-slate-100 bg-slate-50/70 p-6 sm:px-8">
                 <img v-if="profile.face_photo_url" :src="profile.face_photo_url" :alt="'Foto wajah ' + profile.name" class="size-16 rounded-2xl object-cover" />
                 <div v-else class="grid size-16 place-items-center rounded-2xl bg-lime-100 text-2xl font-black text-lime-800">{{ profile.name.slice(0, 1).toUpperCase() }}</div>
