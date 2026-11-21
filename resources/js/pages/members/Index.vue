@@ -33,6 +33,7 @@ type Member = {
     user_id: number;
     name: string;
     email: string;
+    image_profile_url: string | null;
     member_code: string | null;
     qr_code: string | null;
     phone: string;
@@ -215,8 +216,15 @@ function initials(value: string) {
                         >
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
+                                    <img
+                                        v-if="row.image_profile_url"
+                                        :src="row.image_profile_url"
+                                        :alt="'Foto ' + row.name"
+                                        class="size-10 shrink-0 rounded-xl border border-border object-cover"
+                                    />
                                     <div
-                                        class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary"
+                                        v-else
+                                        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-semibold text-primary"
                                     >
                                         {{ initials(row.name) }}
                                     </div>
