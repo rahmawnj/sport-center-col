@@ -6,6 +6,7 @@ import {
     ChevronDown,
     CircleUserRound,
     CreditCard,
+    QrCode,
     LayoutDashboard,
     LogOut,
     House,
@@ -40,6 +41,7 @@ const navigation = [
     { label: 'Booking Saya', href: '/member/bookings', icon: CalendarDays },
     { label: 'Kelas & Jadwal', href: '/member/classes', icon: Dumbbell },
     { label: 'Membership Saya', href: '/member/membership', icon: Trophy },
+    { label: 'QR Access', href: '/member/qr-code', icon: QrCode },
     { label: 'Pembayaran', href: '/member/payments', icon: CreditCard },
     { label: 'Profil Saya', href: '/member/profile', icon: CircleUserRound },
 ];
