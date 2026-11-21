@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Admin = { id: number; name: string; email: string; created_at: string | null };
+type Admin = { id: number; name: string; email: string; image_profile_url: string | null; created_at: string | null };
 type LinkItem = { url: string | null; label: string; active: boolean };
 const props = defineProps<{
     admins: { data: Admin[]; current_page: number; last_page: number; total: number; links: LinkItem[] };
@@ -20,22 +20,26 @@ const search = ref(props.filters.search ?? '');
 const showForm = ref(false);
 const editing = ref<Admin | null>(null);
 const formKey = ref(0);
+const imagePreview = ref<string | null>(null);
 const title = computed(() => editing.value ? 'Edit admin' : 'Tambah admin');
 const action = computed(() => editing.value ? `/admins/${editing.value.id}` : '/admins');
 const method = computed(() => editing.value ? 'put' : 'post');
 
 function openCreate() {
     editing.value = null;
+    imagePreview.value = null;
     formKey.value++;
     showForm.value = true;
 }
 function openEdit(admin: Admin) {
     editing.value = admin;
+    imagePreview.value = null;
     formKey.value++;
     showForm.value = true;
 }
 function closeForm() {
     showForm.value = false;
+    imagePreview.value = null;
     editing.value = null;
 }
 function filter() {
@@ -49,6 +53,11 @@ function remove(admin: Admin) {
     if (window.confirm(`Hapus akun admin ${admin.name}?`)) {
         router.delete(`/admins/${admin.id}`, { preserveScroll: true });
     }
+}
+function handleImageChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    imagePreview.value = file ? URL.createObjectURL(file) : null;
 }
 function initials(name: string) {
     return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
@@ -98,7 +107,7 @@ function formatDate(value: string | null) {
                         <tr v-for="admin in props.admins.data" :key="admin.id" class="hover:bg-muted/30">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">{{ initials(admin.name) }}</div>
+                                    <img v-if="admin.image_profile_url" :src="admin.image_profile_url" :alt="`Foto ${admin.name}`" class="size-10 shrink-0 rounded-xl border border-border object-cover" /><div v-else class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-semibold text-primary">{{ initials(admin.name) }}</div>
                                     <div><p class="font-medium">{{ admin.name }}</p><p class="text-xs text-muted-foreground">{{ admin.email }}</p></div>
                                     <span v-if="admin.id === props.currentUserId" class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Akun saya</span>
                                 </div>
@@ -133,7 +142,7 @@ function formatDate(value: string | null) {
                 <div><p class="text-sm font-medium text-primary">User management</p><h2 class="mt-1 text-xl font-semibold">{{ title }}</h2></div>
                 <Button variant="ghost" size="icon" @click="closeForm"><X class="size-4" /></Button>
             </div>
-            <Form :key="formKey" :action="action" :method="method" class="space-y-4 p-5" @success="closeForm" v-slot="{ errors, processing }">
+            <Form :key="formKey" :action="action" :method="method" :options="{ forceFormData: true, preserveScroll: true }" class="space-y-4 p-5" @success="closeForm" v-slot="{ errors, processing }">
                 <div class="grid gap-2">
                     <Label for="admin-name">Nama admin</Label>
                     <Input id="admin-name" name="name" :default-value="editing?.name" required placeholder="Nama lengkap" />
@@ -143,6 +152,18 @@ function formatDate(value: string | null) {
                     <Label for="admin-email">Email login</Label>
                     <Input id="admin-email" name="email" type="email" :default-value="editing?.email" required placeholder="admin@email.com" />
                     <p v-if="errors.email" class="text-xs text-destructive">{{ errors.email }}</p>
+                </div>
+                <div class="grid gap-2">
+                    <Label for="admin-image">Foto profil</Label>
+                    <div class="flex items-center gap-4">
+                        <img v-if="imagePreview || editing?.image_profile_url" :src="imagePreview || editing?.image_profile_url || undefined" :alt="`Foto ${editing?.name || 'admin'}`" class="size-16 rounded-xl border border-border object-cover" />
+                        <div v-else class="grid size-16 place-items-center rounded-xl bg-primary/10 text-lg font-bold text-primary">{{ editing ? initials(editing.name) : 'A' }}</div>
+                        <div class="min-w-0 flex-1">
+                            <Input id="admin-image" name="image_profile" type="file" accept="image/png,image/jpeg,image/webp" @change="handleImageChange" />
+                            <p class="mt-1 text-xs text-muted-foreground">JPG, PNG, atau WEBP · Maksimal 2 MB.</p>
+                        </div>
+                    </div>
+                    <p v-if="errors.image_profile" class="text-xs text-destructive">{{ errors.image_profile }}</p>
                 </div>
                 <div class="grid gap-2">
                     <Label for="admin-password">Password</Label>
