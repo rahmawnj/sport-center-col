@@ -34,6 +34,7 @@ type FacilityStatus = 'active' | 'maintenance' | 'inactive';
 type Facility = {
     id: number;
     name: string;
+    image: string | null;
     slug: string;
     is_bookable_online: boolean;
     has_membership: boolean;
@@ -70,7 +71,7 @@ const title = computed(() =>
 const action = computed(() =>
     editing.value ? `/facilities/${editing.value.id}` : '/facilities',
 );
-const method = computed(() => (editing.value ? 'put' : 'post'));
+const method = 'post';
 const statusOptions = [
     { value: 'all', label: 'Semua status' },
     { value: 'active', label: 'Aktif' },
@@ -264,17 +265,9 @@ function initials(value: string) {
                         class="relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br"
                         :class="headerGradient[row.status]"
                     >
-                        <div
-                            class="absolute -top-8 -right-8 size-28 rounded-full bg-white/20 blur-2xl"
-                        ></div>
-                        <div
-                            class="absolute -bottom-10 -left-6 size-24 rounded-full bg-black/10 blur-2xl"
-                        ></div>
-                        <span
-                            class="relative text-3xl font-bold tracking-tight text-white drop-shadow-sm"
-                        >
-                            {{ initials(row.name) }}
-                        </span>
+                        <img v-if="row.image" :src="row.image" :alt="row.name" class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        <div v-else class="absolute -top-8 -right-8 size-28 rounded-full bg-white/20 blur-2xl"></div>
+                        <span v-if="!row.image" class="relative text-3xl font-bold tracking-tight text-white drop-shadow-sm">{{ initials(row.name) }}</span>
                     </div>
                     <div class="flex flex-1 flex-col gap-3 p-4">
                         <div class="flex items-start justify-between gap-2">
@@ -467,10 +460,12 @@ function initials(value: string) {
                 :key="formKey"
                 :action="action"
                 :method="method"
+                :options="{ forceFormData: true }"
                 class="space-y-5 p-5"
                 @success="closeForm"
                 v-slot="{ errors, processing }"
             >
+                <input v-if="editing" type="hidden" name="_method" value="PUT" />
                 <input
                     type="hidden"
                     name="is_bookable_online"
@@ -489,6 +484,13 @@ function initials(value: string) {
                         <p v-if="errors.name" class="text-xs text-destructive">
                             {{ errors.name }}
                         </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="facility-image">Gambar olahraga</Label>
+                        <input id="facility-image" type="file" name="image" accept="image/*" class="block w-full cursor-pointer rounded-lg border bg-background px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-primary-foreground" />
+                        <p class="text-xs text-muted-foreground">Format JPG, PNG, WEBP. Maksimal 5 MB. Kosongkan jika tidak ingin mengganti gambar.</p>
+                        <img v-if="editing?.image" :src="editing.image" :alt="editing.name" class="h-32 w-full rounded-xl border object-cover" />
+                        <p v-if="errors.image" class="text-xs text-destructive">{{ errors.image }}</p>
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="grid gap-2">
