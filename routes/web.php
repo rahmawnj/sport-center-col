@@ -136,6 +136,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admins', [AdminController::class, 'index'])->name('admins.index');
         Route::post('admins', [AdminController::class, 'store'])->name('admins.store');
         Route::put('admins/{admin}', [AdminController::class, 'update'])->name('admins.update');
+        Route::post('admins/{admin}', [AdminController::class, 'update'])->name('admins.update.upload');
         Route::delete('admins/{admin}', [AdminController::class, 'destroy'])->name('admins.destroy');
 
         Route::get('members', [MemberController::class, 'index'])->name('members.index');
