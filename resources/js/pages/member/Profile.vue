@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
@@ -18,11 +18,19 @@ type Profile = {
     phone: string | null;
     member_code: string | null;
     face_photo_url: string | null;
+    image_profile_url: string | null;
 };
 
 const props = defineProps<{ profile: Profile }>();
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const imagePreview = ref<string | null>(null);
+
+function handleImageChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    imagePreview.value = file ? URL.createObjectURL(file) : null;
+}
 </script>
 
 <template>
@@ -37,7 +45,7 @@ const user = computed(() => page.props.auth.user);
 
         <section class="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-center gap-4 border-b border-slate-100 bg-slate-50/70 p-6 sm:px-8">
-                <img v-if="profile.face_photo_url" :src="profile.face_photo_url" :alt="'Foto wajah ' + profile.name" class="size-16 rounded-2xl object-cover" />
+                <img v-if="imagePreview || profile.image_profile_url" :src="imagePreview || profile.image_profile_url || undefined" :alt="'Foto profil ' + profile.name" class="size-16 rounded-2xl object-cover" />
                 <div v-else class="grid size-16 place-items-center rounded-2xl bg-lime-100 text-2xl font-black text-lime-800">{{ profile.name.slice(0, 1).toUpperCase() }}</div>
                 <div>
                     <h2 class="text-lg font-bold text-slate-900">{{ profile.name }}</h2>
@@ -62,7 +70,7 @@ const user = computed(() => page.props.auth.user);
                 <div>
                     <h2 class="text-lg font-bold text-slate-900">Ubah informasi akun</h2>
                     <p class="mt-1 text-sm text-slate-500">Perbarui nama atau alamat email yang digunakan untuk masuk.</p>
-                    <Form v-bind="ProfileController.update.form()" class="mt-5 space-y-5" v-slot="{ errors, processing }">
+                    <Form v-bind="ProfileController.update.form()" :options="{ forceFormData: true, preserveScroll: true }" class="mt-5 space-y-5" v-slot="{ errors, processing }">
                         <div class="grid gap-2">
                             <Label for="name">Nama lengkap</Label>
                             <Input id="name" name="name" :default-value="user.name" required autocomplete="name" />
@@ -72,6 +80,12 @@ const user = computed(() => page.props.auth.user);
                             <Label for="email">Alamat email</Label>
                             <Input id="email" name="email" type="email" :default-value="user.email" required autocomplete="username" />
                             <InputError :message="errors.email" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="image_profile">Foto profil</Label>
+                            <Input id="image_profile" name="image_profile" type="file" accept="image/png,image/jpeg,image/webp" @change="handleImageChange" />
+                            <p class="text-xs text-slate-500">Format JPG, PNG, atau WEBP. Maksimal 2 MB.</p>
+                            <InputError :message="errors.image_profile" />
                         </div>
                         <Button :disabled="processing">Simpan perubahan</Button>
                     </Form>
