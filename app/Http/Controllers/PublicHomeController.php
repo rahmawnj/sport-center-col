@@ -8,6 +8,7 @@ use App\Models\SportClass;
 use App\Models\Trainer;
 use App\Models\TrainerPackage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -68,6 +69,7 @@ class PublicHomeController extends Controller
             ->map(fn (Facility $facility) => [
                 'id' => $facility->id,
                 'name' => $facility->name,
+                'image' => $facility->image ? Storage::disk('public')->url($facility->image) : null,
                 'slug' => $facility->slug,
                 'can_book' => (bool) ($facility->has_booking && $facility->is_bookable_online),
                 'available_courts' => $facility->courts_count,
