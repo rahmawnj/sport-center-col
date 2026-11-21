@@ -10,7 +10,6 @@ use App\Models\TrainerPackage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,10 +31,8 @@ class FacilityController extends Controller
             ->through(fn (Facility $facility) => [
                 'id' => $facility->id,
                 'name' => $facility->name,
-                'image' => $facility->image ? Storage::disk('public')->url($facility->image) : null,
                 'slug' => $facility->slug,
                 'is_bookable_online' => (bool) $facility->is_bookable_online,
-                'has_membership' => (bool) $facility->has_membership,
                 'has_membership' => (bool) $facility->has_membership,
                 'has_booking' => (bool) $facility->has_booking,
                 'has_session' => (bool) $facility->has_session,
@@ -187,10 +184,6 @@ class FacilityController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate($this->rules());
-        unset($data['image']);
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('facilities', 'public');
-        }
         $data['slug'] = $this->uniqueSlug($data['name']);
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
         $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
@@ -205,11 +198,6 @@ class FacilityController extends Controller
     public function update(Request $request, Facility $facility): RedirectResponse
     {
         $data = $request->validate($this->rules());
-        unset($data['image']);
-        $oldImage = $facility->image;
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('facilities', 'public');
-        }
         $data['slug'] = $this->uniqueSlug($data['name'], $facility->id);
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
         $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
@@ -217,9 +205,6 @@ class FacilityController extends Controller
         $data['has_session'] = (bool) ($data['has_session'] ?? false);
 
         $facility->update($data);
-        if ($request->hasFile('image') && $oldImage) {
-            Storage::disk('public')->delete($oldImage);
-        }
 
         return back()->with('success', 'Olahraga berhasil diperbarui.');
     }
@@ -251,9 +236,6 @@ class FacilityController extends Controller
             'Olahraga tidak dapat dihapus karena masih memiliki lapangan atau paket.',
         );
 
-        if ($facility->image) {
-            Storage::disk('public')->delete($facility->image);
-        }
         $facility->delete();
 
         return back()->with('success', 'Olahraga berhasil dihapus.');
@@ -266,7 +248,6 @@ class FacilityController extends Controller
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'status' => ['required', Rule::in(['active', 'maintenance', 'inactive'])],
             'is_bookable_online' => ['boolean'],
             'has_membership' => ['boolean'],
