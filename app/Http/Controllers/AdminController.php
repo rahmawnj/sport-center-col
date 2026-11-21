@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,6 +31,7 @@ class AdminController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'image_profile_url' => $user->image_profile ? '/storage/'.ltrim($user->image_profile, '/') : null,
                 'created_at' => $user->created_at?->toISOString(),
             ]);
 
@@ -47,6 +49,7 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8'],
+            'image_profile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $admin = new User();
@@ -55,6 +58,9 @@ class AdminController extends Controller
         $admin->password = $data['password'];
         $admin->role_id = Role::where('name', 'Superadmin')->firstOrFail()->id;
         $admin->email_verified_at = now();
+        if ($request->hasFile('image_profile')) {
+            $admin->image_profile = $request->file('image_profile')->store('profiles', 'public');
+        }
         $admin->save();
 
         return back()->with('success', 'Admin berhasil ditambahkan.');
@@ -69,12 +75,19 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($admin->id)],
             'password' => ['nullable', 'string', 'min:8'],
+            'image_profile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $admin->name = $data['name'];
         $admin->email = $data['email'];
         if (! empty($data['password'])) {
             $admin->password = $data['password'];
+        }
+        if ($request->hasFile('image_profile')) {
+            if ($admin->image_profile) {
+                Storage::disk('public')->delete($admin->image_profile);
+            }
+            $admin->image_profile = $request->file('image_profile')->store('profiles', 'public');
         }
         $admin->save();
 
