@@ -2,7 +2,6 @@
 import { Form, Head, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -70,7 +69,7 @@ function handleImageChange(event: Event) {
                 <div>
                     <h2 class="text-lg font-bold text-slate-900">Ubah informasi akun</h2>
                     <p class="mt-1 text-sm text-slate-500">Perbarui nama atau alamat email yang digunakan untuk masuk.</p>
-                    <Form v-bind="ProfileController.update.form()" :options="{ forceFormData: true, preserveScroll: true }" class="mt-5 space-y-5" v-slot="{ errors, processing }">
+                    <Form action="/member/profile" method="post" :options="{ forceFormData: true, preserveScroll: true }" class="mt-5 space-y-5" v-slot="{ errors, processing }">
                         <div class="grid gap-2">
                             <Label for="name">Nama lengkap</Label>
                             <Input id="name" name="name" :default-value="user.name" required autocomplete="name" />
