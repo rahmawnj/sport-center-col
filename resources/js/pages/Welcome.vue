@@ -463,7 +463,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                     <article v-for="(facility, index) in featuredFacilities" :key="facility.id" class="sport-card group overflow-hidden rounded-2xl border border-slate-100 bg-white">
                         <div class="sport-card-image relative">
                             <img :src="facilityImage(facility)" :alt="facility.name" loading="lazy" class="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                            <span class="absolute left-4 top-4 rounded-full bg-[#a4da01] px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-[#001428]">0{{ index + 1 }} · Pilihan olahraga</span>
+                            <span class="absolute left-4 top-4 rounded-full bg-[#a4da01] px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-[#001428]">0{{ index + 1 }}</span>
                             <span class="absolute bottom-4 right-4 rounded-full bg-[#001428]/90 px-3 py-2 text-xs font-bold text-white"><i class="fa-solid fa-location-dot mr-1.5 text-[#a4da01]"></i>{{ facility.available_courts }} tersedia</span>
                         </div>
                         <div class="p-6">
