@@ -140,8 +140,7 @@ class PublicHomeController extends Controller
         $trainerPackages = TrainerPackage::query()
             ->where('is_active', true)
             ->whereHas('facility', fn ($query) => $query
-                ->where('status', 'active')
-                ->where('is_bookable_online', true))
+                ->where('status', 'active'))
             ->with(['facility:id,name', 'facility.trainers:id,name,specialty'])
             ->orderBy('price')
             ->get(['id', 'facility_id', 'name', 'total_sessions', 'duration_days', 'price', 'description'])
