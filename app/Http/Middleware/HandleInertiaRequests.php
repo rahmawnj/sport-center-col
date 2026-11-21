@@ -37,6 +37,17 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $memberCode = null;
+        $authUser = null;
+
+        if ($user) {
+            $user->loadMissing('role');
+            $authUser = $user->toArray();
+            $authUser['role'] = $user->role?->only('name');
+            $authUser['image_profile_url'] = $user->image_profile
+                ? '/storage/'.ltrim($user->image_profile, '/')
+                : null;
+            unset($authUser['image_profile']);
+        }
 
         if ($user && $user->role?->name === 'Member') {
             $memberCode = $user->loadMissing('memberProfile')->memberProfile?->member_code;
@@ -47,7 +58,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'memberCode' => $memberCode,
             'auth' => [
-                'user' => $request->user(),
+                'user' => $authUser,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [
