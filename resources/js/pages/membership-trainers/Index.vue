@@ -160,12 +160,13 @@ const membershipMeta: Record<MembershipStatus, { label: string; className: strin
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1050px] text-sm">
+                <table class="w-full min-w-[1120px] text-sm">
                     <thead class="border-b bg-muted/40 text-left">
                         <tr>
                             <th class="px-4 py-3 font-medium">Member</th>
                             <th class="px-4 py-3 font-medium">Olahraga</th>
-                            <th class="px-4 py-3 font-medium">Trainer & Paket</th>
+                            <th class="px-4 py-3 font-medium">Nama Trainer</th>
+                            <th class="px-4 py-3 font-medium">Paket Trainer</th>
                             <th class="px-4 py-3 font-medium">Periode Trainer</th>
                             <th class="px-4 py-3 font-medium">Sisa Sesi</th>
                             <th class="px-4 py-3 font-medium">Membership</th>
@@ -178,9 +179,9 @@ const membershipMeta: Record<MembershipStatus, { label: string; className: strin
                             <td class="px-4 py-3 font-medium">{{ row.member_name || '—' }}</td>
                             <td class="px-4 py-3">{{ row.facility_name || '—' }}</td>
                             <td class="px-4 py-3">
-                                <p class="font-medium">{{ row.trainer_name || '—' }}</p>
-                                <p class="text-xs text-muted-foreground">{{ row.trainer_package || '—' }}</p>
+                                <span class="font-semibold text-foreground">{{ row.trainer_name || 'Nama trainer belum tersedia' }}</span>
                             </td>
+                            <td class="px-4 py-3 text-muted-foreground">{{ row.trainer_package || '—' }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-muted-foreground">
                                 {{ formatDate(row.trainer_start) }} – {{ formatDate(row.trainer_end) }}
                             </td>
@@ -205,7 +206,7 @@ const membershipMeta: Record<MembershipStatus, { label: string; className: strin
                             <td class="px-4 py-3 text-right"><Button size="sm" variant="outline" as-child><Link :href="'/membership-trainers/' + row.id"><Eye class="mr-2 size-4"/>Detail</Link></Button></td>
                         </tr>
                         <tr v-if="!rows.data.length">
-                            <td colspan="8" class="px-4 py-12 text-center text-muted-foreground">
+                            <td colspan="9" class="px-4 py-12 text-center text-muted-foreground">
                                 <Users class="mx-auto size-9 opacity-40" />
                                 <p class="mt-3 font-medium">Tidak ada paket trainer aktif</p>
                                 <p class="mt-1 text-xs">Data akan muncul ketika member memiliki paket trainer yang sedang berjalan.</p>
