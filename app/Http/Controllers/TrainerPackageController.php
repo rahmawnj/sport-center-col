@@ -260,6 +260,7 @@ class TrainerPackageController extends Controller
             'total_sessions' => ['required', 'integer', 'min:1'],
             'duration_days' => ['required', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
+            'trainer_share_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'description' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
         ]);
