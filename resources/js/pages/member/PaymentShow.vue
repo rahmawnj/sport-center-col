@@ -113,10 +113,6 @@ const typeLabel = (value: string | null) =>
                 <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Detail Pembayaran</h1>
                 <p class="mt-1 text-sm text-slate-500">Periksa informasi dan status transaksi kamu.</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Nomor invoice</p>
-                <p class="mt-1 font-mono text-sm font-bold text-slate-800">{{ payment.invoice_number || 'TRX-' + payment.id }}</p>
-            </div>
         </header>
 
         <section class="grid items-start gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,.75fr)]">
