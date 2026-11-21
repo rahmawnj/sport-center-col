@@ -34,7 +34,6 @@ type FacilityStatus = 'active' | 'maintenance' | 'inactive';
 type Facility = {
     id: number;
     name: string;
-    image: string | null;
     slug: string;
     is_bookable_online: boolean;
     has_membership: boolean;
@@ -213,13 +212,30 @@ function formatDate(value: string | null) {
     }).format(new Date(value));
 }
 
-function initials(value: string) {
-    return value
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((word) => word[0]?.toUpperCase())
-        .join('');
+function facilityImage(facility: Facility) {
+    const name = `${facility.name} ${facility.slug}`.toLowerCase();
+
+    if (/(badminton|bulu tangkis)/.test(name)) {
+        return 'https://job.gdlhz.ac.cn/img/home/home5.jpg';
+    }
+
+    if (/(basket|futsal|voli|volleyball)/.test(name)) {
+        return 'https://www.colegiobis.com.br/BR%20-%20Brazilian%20International%20School/Facilities/20781/image-thumb__20781__w1920/FD%20Fotografia%20%20AW_BIS_040.357d6c1c.webp';
+    }
+
+    if (/(gym|fitness|fitnes|kebugaran)/.test(name)) {
+        return 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1000&q=85';
+    }
+
+    if (/(renang|swimming|pool)/.test(name)) {
+        return 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1000&q=85';
+    }
+
+    if (/(tenis|tennis)/.test(name)) {
+        return 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1000&q=85';
+    }
+
+    return 'https://asset.ayo.co.id/image/venue/166899341249655.image_cropper_1668993393870.jpg';
 }
 </script>
 
@@ -265,9 +281,8 @@ function initials(value: string) {
                         class="relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br"
                         :class="headerGradient[row.status]"
                     >
-                        <img v-if="row.image" :src="row.image" :alt="row.name" class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                        <div v-else class="absolute -top-8 -right-8 size-28 rounded-full bg-white/20 blur-2xl"></div>
-                        <span v-if="!row.image" class="relative text-3xl font-bold tracking-tight text-white drop-shadow-sm">{{ initials(row.name) }}</span>
+                        <img :src="facilityImage(row)" :alt="`Fasilitas ${row.name}`" class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
                     <div class="flex flex-1 flex-col gap-3 p-4">
                         <div class="flex items-start justify-between gap-2">
@@ -460,7 +475,6 @@ function initials(value: string) {
                 :key="formKey"
                 :action="action"
                 :method="method"
-                :options="{ forceFormData: true }"
                 class="space-y-5 p-5"
                 @success="closeForm"
                 v-slot="{ errors, processing }"
@@ -484,13 +498,6 @@ function initials(value: string) {
                         <p v-if="errors.name" class="text-xs text-destructive">
                             {{ errors.name }}
                         </p>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="facility-image">Gambar olahraga</Label>
-                        <input id="facility-image" type="file" name="image" accept="image/*" class="block w-full cursor-pointer rounded-lg border bg-background px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-primary-foreground" />
-                        <p class="text-xs text-muted-foreground">Format JPG, PNG, WEBP. Maksimal 5 MB. Kosongkan jika tidak ingin mengganti gambar.</p>
-                        <img v-if="editing?.image" :src="editing.image" :alt="editing.name" class="h-32 w-full rounded-xl border object-cover" />
-                        <p v-if="errors.image" class="text-xs text-destructive">{{ errors.image }}</p>
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="grid gap-2">
