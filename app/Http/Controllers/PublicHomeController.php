@@ -18,7 +18,6 @@ class PublicHomeController extends Controller
     {
         $trainer->load(['facilities' => fn ($query) => $query
             ->where('facilities.status', 'active')
-            ->where('facilities.is_bookable_online', true)
             ->select('facilities.id', 'facilities.name')]);
 
         $facilityIds = $trainer->facilities->pluck('id');
@@ -28,7 +27,6 @@ class PublicHomeController extends Controller
             ->whereIn('facility_id', $facilityIds)
             ->whereHas('facility', fn ($query) => $query
                 ->where('status', 'active')
-                ->where('is_bookable_online', true)
                 ->where('has_membership', true))
             ->with('facility:id,name')
             ->orderBy('price')
