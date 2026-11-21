@@ -399,6 +399,7 @@ class MemberDashboardController extends Controller
             'profile' => [
                 'name' => $user->name,
                 'email' => $user->email,
+                'image_profile_url' => $user->image_profile ? Storage::disk('public')->url($user->image_profile) : null,
                 'phone' => $user->phone ?? $user->memberProfile?->phone,
                 'member_code' => $user->memberProfile?->member_code,
                 'face_photo_url' => $user->memberProfile?->face_photo_path ? Storage::disk('public')->url($user->memberProfile->face_photo_path) : null,
