@@ -329,7 +329,8 @@ const heroImages: Record<string, string> = {
 };
 
 const facilityImage = (facility: FacilityItem) =>
-    facility.image || heroImages[facility.slug.toLowerCase()] ??
+    facility.image ||
+    heroImages[facility.slug.toLowerCase()] ||
     'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80';
 
 const facilityDescription = (slug: string) => {
