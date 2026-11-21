@@ -215,29 +215,60 @@ function formatDate(value: string | null) {
 function facilityImage(facility: Facility) {
     const name = `${facility.name} ${facility.slug}`.toLowerCase();
 
-    if (/(badminton|bulu tangkis)/.test(name)) {
-        return 'https://job.gdlhz.ac.cn/img/home/home5.jpg';
-    }
+    const photos: Array<{ pattern: RegExp; image: string }> = [
+        {
+            pattern: /(badminton|bulu tangkis)/,
+            image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(basket|bola basket)/,
+            image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(futsal)/,
+            image: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(sepak bola|football|soccer)/,
+            image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(voli|volleyball)/,
+            image: 'https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(tenis|tennis)/,
+            image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(renang|swimming|pool)/,
+            image: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(gym|fitness|fitnes|kebugaran|angkat beban)/,
+            image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(tenis meja|ping.?pong|table tennis)/,
+            image: 'https://images.unsplash.com/photo-1611251135345-18c56206b863?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(tinju|boxing)/,
+            image: 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(yoga|pilates)/,
+            image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1000&q=85',
+        },
+        {
+            pattern: /(lari|running|atletik)/,
+            image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1000&q=85',
+        },
+    ];
 
-    if (/(basket|futsal|voli|volleyball)/.test(name)) {
-        return 'https://www.colegiobis.com.br/BR%20-%20Brazilian%20International%20School/Facilities/20781/image-thumb__20781__w1920/FD%20Fotografia%20%20AW_BIS_040.357d6c1c.webp';
-    }
-
-    if (/(gym|fitness|fitnes|kebugaran)/.test(name)) {
-        return 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1000&q=85';
-    }
-
-    if (/(renang|swimming|pool)/.test(name)) {
-        return 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1000&q=85';
-    }
-
-    if (/(tenis|tennis)/.test(name)) {
-        return 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1000&q=85';
-    }
-
-    return 'https://asset.ayo.co.id/image/venue/166899341249655.image_cropper_1668993393870.jpg';
-}
-</script>
+    return photos.find((photo) => photo.pattern.test(name))?.image
+        ?? 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1000&q=85';
+}</script>
 
 <template>
     <Head title="Olahraga" />
