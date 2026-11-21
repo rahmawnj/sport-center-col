@@ -30,6 +30,32 @@ class MemberDashboardController extends Controller
             ->get()
             ->map(fn (Booking $booking) => $this->bookingRow($booking));
 
+        $classBookings = SessionParticipant::query()
+            ->with([
+                'schedule.sportClass.facility:id,name',
+                'schedule.trainer:id,name',
+                'transaction:id,payment_status,invoice_number',
+            ])
+            ->where('user_id', $user->id)
+            ->where('status', '!=', 'cancelled')
+            ->latest('session_date')
+            ->latest('created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn (SessionParticipant $participant) => [
+                'id' => $participant->id,
+                'transaction_id' => $participant->transaction_id,
+                'class_name' => $participant->schedule?->sportClass?->name ?? 'Kelas',
+                'facility' => $participant->schedule?->sportClass?->facility?->name,
+                'trainer' => $participant->schedule?->trainer?->name,
+                'date' => $participant->session_date?->toDateString(),
+                'start_time' => substr((string) $participant->schedule?->start_time, 0, 5),
+                'end_time' => substr((string) $participant->schedule?->end_time, 0, 5),
+                'status' => $participant->status,
+                'payment_status' => $participant->transaction?->payment_status,
+                'invoice_number' => $participant->transaction?->invoice_number,
+            ]);
+
         $memberships = UserMembership::query()
             ->with('package:id,name,duration_days,facility_id', 'package.facility:id,name')
             ->where('user_id', $user->id)
@@ -125,6 +151,7 @@ class MemberDashboardController extends Controller
                 'payments_total' => (float) $transactions->where('payment_status', 'fully_paid')->sum('total_amount'),
             ],
             'bookings' => $bookings,
+            'classBookings' => $classBookings,
             'memberships' => $memberships,
             'currentMembership' => $currentMembership ? [
                 'id' => $currentMembership->id,
