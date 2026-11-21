@@ -268,12 +268,51 @@ class MemberDashboardController extends Controller
         abort_unless($transaction->user_id === $request->user()->id, 404);
 
         $transaction->load(['sessionParticipants.schedule.sportClass.facility', 'sessionParticipants.schedule.trainer']);
+
+        $purchasedItems = collect();
+
+        if ($transaction->transactionable_type === 'membership') {
+            $membership = UserMembership::query()
+                ->with('package.facility:id,name')
+                ->where('transaction_id', $transaction->id)
+                ->first();
+
+            if ($membership) {
+                $purchasedItems->push([
+                    'type' => 'Membership',
+                    'name' => $membership->package?->name ?? 'Paket membership',
+                    'facility' => $membership->package?->facility?->name,
+                    'detail' => $membership->package?->duration_days
+                        ? $membership->package->duration_days.' hari'
+                        : null,
+                ]);
+            }
+        }
+
+        $trainerPurchases = MemberTrainerPackage::query()
+            ->with(['trainerPackage:id,name,total_sessions,duration_days', 'facility:id,name', 'trainer:id,name'])
+            ->where('transaction_id', $transaction->id)
+            ->get();
+
+        foreach ($trainerPurchases as $trainerPurchase) {
+            $purchasedItems->push([
+                'type' => 'Personal Trainer',
+                'name' => $trainerPurchase->trainerPackage?->name ?? 'Paket personal trainer',
+                'facility' => $trainerPurchase->facility?->name,
+                'detail' => $trainerPurchase->trainerPackage?->total_sessions
+                    ? $trainerPurchase->trainerPackage->total_sessions.' sesi'
+                    : null,
+                'trainer' => $trainerPurchase->trainer?->name,
+            ]);
+        }
+
         $classParticipant = $transaction->sessionParticipants->first();
         $classSchedule = $classParticipant?->schedule;
 
         return Inertia::render('member/PaymentShow', [
             'payment' => [
                 'id' => $transaction->id,
+                'purchased_items' => $purchasedItems->values(),
                 'invoice_number' => $transaction->invoice_number,
                 'customer_name' => $transaction->guest_name,
                 'transaction_type' => $transaction->transactionable_type,
