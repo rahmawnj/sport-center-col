@@ -32,6 +32,7 @@ class MemberController extends Controller
                 'user_id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'image_profile_url' => $user->image_profile ? '/storage/'.ltrim($user->image_profile, '/') : null,
                 'member_code' => $user->memberProfile->member_code,
                 'qr_code' => $user->memberProfile->qr_code,
                 'phone' => $user->memberProfile->phone,
