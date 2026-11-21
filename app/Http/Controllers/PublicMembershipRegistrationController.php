@@ -42,7 +42,6 @@ class PublicMembershipRegistrationController extends Controller
                 ->where('is_active', true)
                 ->whereHas('facility', fn ($query) => $query
                     ->where('status', 'active')
-                    ->where('is_bookable_online', true)
                     ->where('has_membership', true))
                 ->findOrFail($request->integer('trainer_package_id'));
             if ($package) {
@@ -156,7 +155,6 @@ class PublicMembershipRegistrationController extends Controller
                 ->where('is_active', true)
                 ->whereHas('facility', fn ($query) => $query
                     ->where('status', 'active')
-                    ->where('is_bookable_online', true)
                     ->where('has_membership', true))
                 ->findOrFail($data['trainer_package_id']);
             $facilityId ??= $trainerPackage->facility_id;
