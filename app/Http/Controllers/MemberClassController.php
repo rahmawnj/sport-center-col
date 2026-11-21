@@ -37,6 +37,7 @@ class MemberClassController extends Controller
 
                 return [
                     'id' => $participant->id,
+                    'transaction_id' => $participant->transaction_id,
                     'session_date' => $participant->session_date?->toDateString(),
                     'class_name' => $sportClass?->name ?? 'Kelas',
                     'description' => $sportClass?->description,
