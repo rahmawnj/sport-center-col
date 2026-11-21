@@ -23,7 +23,7 @@ const formKey = ref(0);
 const imagePreview = ref<string | null>(null);
 const title = computed(() => editing.value ? 'Edit admin' : 'Tambah admin');
 const action = computed(() => editing.value ? `/admins/${editing.value.id}` : '/admins');
-const method = computed(() => editing.value ? 'put' : 'post');
+const method = computed(() => 'post');
 
 function openCreate() {
     editing.value = null;
