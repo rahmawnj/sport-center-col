@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import MemberDashboardLayout from '@/layouts/member/MemberDashboardLayout.vue';
 
 defineOptions({ layout: MemberDashboardLayout });
 
 type PurchasedClass = {
     id: number;
+    transaction_id: number;
     session_date: string;
     class_name: string;
     description: string | null;
@@ -60,10 +61,11 @@ const paymentMethodLabel = (method: string | null) => ({
         </header>
 
         <div v-if="schedules.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <article
+            <Link
                 v-for="item in schedules"
                 :key="item.id"
-                class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                :href="'/member/payments/' + item.transaction_id"
+                class="group flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-lime-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-lime-500"
             >
                 <div class="flex items-start justify-between gap-3">
                     <div>
@@ -88,7 +90,7 @@ const paymentMethodLabel = (method: string | null) => ({
                     <p class="text-lg font-extrabold text-slate-900">{{ money(item.price) }}</p>
                     <p v-if="item.invoice_number" class="mt-1 text-xs text-slate-400">Invoice {{ item.invoice_number }}</p>
                 </div>
-            </article>
+            </Link>
         </div>
 
         <div v-else class="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center">
