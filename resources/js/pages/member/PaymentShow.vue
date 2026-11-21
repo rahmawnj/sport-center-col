@@ -10,6 +10,13 @@ type Payment = {
     invoice_number: string | null;
     customer_name: string | null;
     transaction_type: string | null;
+    purchased_items: {
+        type: string;
+        name: string;
+        facility: string | null;
+        detail: string | null;
+        trainer?: string | null;
+    }[];
     class_details: {
         name: string | null;
         facility: string | null;
@@ -147,6 +154,28 @@ const typeLabel = (value: string | null) =>
                         <div class="px-6 py-5">
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Nama pelanggan</p>
                             <p class="mt-2 font-bold text-slate-900">{{ payment.customer_name || '—' }}</p>
+                        </div>
+                    </div>
+                </article>
+
+                <article v-if="payment.purchased_items?.length" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div class="border-b border-slate-100 px-6 py-5 sm:px-8">
+                        <p class="text-xs font-bold uppercase tracking-[.16em] text-orange-700">Paket yang dibeli</p>
+                        <h2 class="mt-1 text-lg font-bold text-slate-900">Detail paket</h2>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        <div v-for="(item, index) in payment.purchased_items" :key="index" class="px-6 py-5 sm:px-8">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ item.type }}</p>
+                                    <h3 class="mt-1 text-lg font-bold text-slate-900">{{ item.name }}</h3>
+                                </div>
+                                <span v-if="item.detail" class="rounded-full bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700">{{ item.detail }}</span>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+                                <span v-if="item.facility" class="inline-flex items-center gap-1.5"><MapPin class="size-4" />{{ item.facility }}</span>
+                                <span v-if="item.trainer" class="inline-flex items-center gap-1.5"><UserRound class="size-4" />{{ item.trainer }}</span>
+                            </div>
                         </div>
                     </div>
                 </article>
