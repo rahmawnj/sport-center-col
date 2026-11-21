@@ -140,6 +140,36 @@ class MemberDashboardController extends Controller
         ]);
     }
 
+    public function qrCode(Request $request): Response
+    {
+        $user = $request->user()->loadMissing('memberProfile');
+        $profile = $user->memberProfile;
+
+        $membership = UserMembership::query()
+            ->with(['package:id,name,facility_id', 'package.facility:id,name'])
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', today())
+            ->whereDate('end_date', '>=', today())
+            ->latest('end_date')
+            ->first();
+
+        return Inertia::render('member/QrCode', [
+            'member' => [
+                'name' => $user->name,
+                'member_code' => $profile?->member_code,
+                // The tripod member-access endpoint expects member_code.
+                'qr_value' => $profile?->member_code,
+            ],
+            'membership' => $membership ? [
+                'package' => $membership->package?->name ?? 'Membership',
+                'facility' => $membership->package?->facility?->name,
+                'start_date' => $membership->start_date?->toDateString(),
+                'end_date' => $membership->end_date?->toDateString(),
+            ] : null,
+        ]);
+    }
+
     public function bookings(Request $request): Response
     {
         $bookings = Booking::query()
