@@ -53,7 +53,7 @@ function downloadQr() {
 
 <template>
     <Head title="QR Access Member" />
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div class="w-full space-y-6">
         <header class="flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="text-xs font-bold uppercase tracking-[.18em] text-lime-700">Akses masuk</p>
