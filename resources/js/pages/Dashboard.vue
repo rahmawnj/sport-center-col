@@ -66,14 +66,14 @@ const cards = computed(() => [
 </script>
 
 <template>
-    <Head title="Dashboard Statistik" />
+    <Head title="Dashboard" />
     <div class="space-y-6 p-4 md:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
                     <span class="size-2 rounded-full bg-primary"></span> Laporan penjualan
                 </div>
-                <h1 class="mt-2 text-2xl font-semibold tracking-tight">Dashboard Statistik</h1>
+                <h1 class="mt-2 text-2xl font-semibold tracking-tight">Dashboard</h1>
                 <p class="mt-1 text-sm text-muted-foreground">Rekap transaksi berhasil dan pendapatan berdasarkan periode yang dipilih.</p>
             </div>
             <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600">
