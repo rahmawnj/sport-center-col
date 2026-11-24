@@ -646,7 +646,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                             <button type="button" @click="closeMembershipCheckout" class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Tutup modal"><i class="fa-solid fa-xmark"></i></button>
                         </div>
 
-                        <div v-if="trainerPackages.some((item) => item.facility_id === selectedMembershipPackage?.facility_id)" class="mt-7">
+                        <div class="mt-7">
                             <div class="flex items-center justify-between gap-3">
                                 <h3 class="font-extrabold text-[#001428]">1. Tambahkan paket trainer (opsional)</h3>
                                 <span class="text-xs font-semibold text-slate-400">Boleh dilewati</span>
@@ -661,6 +661,7 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                                     <span class="mt-1 block text-sm text-slate-500">{{ trainerPackage.total_sessions }} sesi · {{ trainerPackage.duration_days }} hari</span>
                                     <span class="mt-2 block text-sm font-black text-[#668500]">{{ formatCurrency(trainerPackage.price) }}</span>
                                 </button>
+                                <p v-if="!trainerPackages.some((item) => item.facility_id === selectedMembershipPackage?.facility_id)" class="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 sm:col-span-2">Belum ada paket trainer untuk fasilitas ini. Kamu tetap bisa checkout membership saja.</p>
                             </div>
                         </div>
 
