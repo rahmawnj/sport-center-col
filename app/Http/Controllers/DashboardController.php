@@ -6,7 +6,6 @@ use App\Models\Booking;
 use App\Models\Court;
 use App\Models\Transaction;
 use App\Models\SessionParticipant;
-use App\Models\UserMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
