@@ -123,8 +123,20 @@ class TrainerDashboardController extends Controller
     public function schedules(Request $request): Response
     {
         $trainer = $this->trainerFor($request);
-        $status = $request->string('status')->toString();
-        abort_unless($status === '' || in_array($status, ['scheduled', 'completed', 'failed'], true), 422);
+        $validated = $request->validate([
+            'status' => ['nullable', 'in:scheduled,completed,failed'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
+        $status = $validated['status'] ?? '';
+        $from = $validated['from'] ?? null;
+        $to = $validated['to'] ?? null;
+
+        $baseQuery = TrainerSessionSchedule::query()
+            ->whereHas('memberTrainerPackage', fn ($query) => $query->where('trainer_id', $trainer->id))
+            ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($from, fn ($query) => $query->whereDate('session_date', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('session_date', '<=', $to));
 
         $schedules = TrainerSessionSchedule::query()
             ->with([
@@ -134,6 +146,8 @@ class TrainerDashboardController extends Controller
             ])
             ->whereHas('memberTrainerPackage', fn ($query) => $query->where('trainer_id', $trainer->id))
             ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($from, fn ($query) => $query->whereDate('session_date', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('session_date', '<=', $to))
             ->orderByRaw('CASE WHEN session_date >= ? THEN 0 ELSE 1 END', [today()->toDateString()])
             ->orderBy('session_date')
             ->orderBy('start_time')
@@ -157,11 +171,11 @@ class TrainerDashboardController extends Controller
 
         return Inertia::render('trainer/Schedules', [
             'schedules' => $schedules,
-            'filters' => ['status' => $status],
+            'filters' => ['status' => $status, 'from' => $from, 'to' => $to],
             'summary' => [
-                'today' => TrainerSessionSchedule::query()->whereHas('memberTrainerPackage', fn ($query) => $query->where('trainer_id', $trainer->id))->whereDate('session_date', today())->where('status', 'scheduled')->count(),
-                'upcoming' => TrainerSessionSchedule::query()->whereHas('memberTrainerPackage', fn ($query) => $query->where('trainer_id', $trainer->id))->whereDate('session_date', '>=', today())->where('status', 'scheduled')->count(),
-                'completed' => TrainerSessionSchedule::query()->whereHas('memberTrainerPackage', fn ($query) => $query->where('trainer_id', $trainer->id))->where('status', 'completed')->count(),
+                'today' => (clone $baseQuery)->whereDate('session_date', today())->where('status', 'scheduled')->count(),
+                'upcoming' => (clone $baseQuery)->whereDate('session_date', '>=', today())->where('status', 'scheduled')->count(),
+                'completed' => (clone $baseQuery)->where('status', 'completed')->count(),
             ],
         ]);
     }
