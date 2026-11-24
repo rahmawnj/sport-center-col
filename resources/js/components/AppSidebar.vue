@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import {
+    Activity,
     BadgeCheck,
     Building2,
     Dumbbell,
@@ -28,7 +29,8 @@ import { dashboard } from '@/routes';
 import type { NavGroup, NavItem } from '@/types';
 
 const items: (NavItem | NavGroup)[] = [
-    { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+    { title: 'Dashboard Statistik', href: dashboard(), icon: LayoutGrid },
+    { title: 'Dashboard Monitoring', href: '/monitoring', icon: Activity },
     { title: 'Olahraga', href: '/facilities', icon: Building2 },
     {
         title: 'Users',
