@@ -39,7 +39,7 @@ class DashboardController extends Controller
         $categories = [
             'booking' => 'Booking Lapangan',
             'membership' => 'Membership',
-            'trainer' => 'Paket Trainer',
+            'trainer_package' => 'Paket Trainer',
             'class' => 'Kelas',
         ];
 
@@ -63,8 +63,10 @@ class DashboardController extends Controller
         $dailyRows = (clone $successfulTransactions)
             ->selectRaw('DATE(created_at) as date, COUNT(*) as transaction_count, SUM(total_amount) as revenue')
             ->groupByRaw('DATE(created_at)')
-            ->orderBy('date')
+            ->orderByDesc('date')
+            ->limit(31)
             ->get()
+            ->sortBy('date')
             ->map(fn ($row) => [
                 'date' => (string) $row->date,
                 'transaction_count' => (int) $row->transaction_count,
