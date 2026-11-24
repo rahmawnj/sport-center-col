@@ -258,8 +258,9 @@ class TransactionController extends Controller
                 'invoice_number' => $transaction->invoice_number,
                 'customer_name' => $transaction->customer_name,
                 'amount' => (float) $transaction->amount,
+                'paid_amount' => (float) ($transaction->paid_amount ?? 0),
                 'payment_method' => $transaction->payment_method,
-                'payment_status' => $this->normalizeStatus($transaction->payment_status),
+                'payment_review_status' => $transaction->payment_review_status ?? 'pending',
                 'reference' => $this->reference($transaction),
             ],
         ]);
@@ -270,8 +271,9 @@ class TransactionController extends Controller
         $data = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
-            'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
-            'payment_status' => ['required', Rule::in(['pending', 'paid', 'partial', 'failed', 'refunded'])],
+            'paid_amount' => ['required', 'numeric', 'min:0', 'lte:amount'],
+            'payment_method' => ['required', Rule::in(['cash', 'bank_transfer'])],
+            'payment_review_status' => ['required', Rule::in(['pending', 'accepted', 'rejected'])],
         ]);
 
         DB::transaction(function () use ($transaction, $data) {
@@ -279,22 +281,29 @@ class TransactionController extends Controller
 
             $locked->customer_name = $data['customer_name'] ?? null;
             $locked->amount = $data['amount'];
+            $locked->paid_amount = $data['paid_amount'];
             $locked->payment_method = $data['payment_method'];
-            $locked->payment_status = match ($data['payment_status']) {
-                'paid' => 'fully_paid',
-                'pending' => 'unpaid',
-                'partial' => 'dp_paid',
-                default => $data['payment_status'],
-            };
+            $locked->payment_review_status = $data['payment_review_status'];
+
+            // Only verified money counts as received. A rejected or unverified
+            // payment never advances the financial status.
+            $locked->payment_status = $data['payment_review_status'] === 'accepted'
+                ? ((float) $data['paid_amount'] >= (float) $data['amount'] && (float) $data['amount'] > 0
+                    ? 'fully_paid'
+                    : ((float) $data['paid_amount'] > 0 ? 'dp_paid' : 'unpaid'))
+                : 'unpaid';
             $locked->save();
 
-            // Activate/cancel only purchase records belonging to this exact
-            // invoice. Never update another pending purchase from the same member.
-            $childStatus = match ($locked->payment_status) {
-                'fully_paid' => 'active',
-                'failed', 'refunded' => 'cancelled',
-                default => 'pending',
-            };
+            // A verified DP can secure a booking. Membership and trainer
+            // purchases require full settlement before activation.
+            $isVerified = $locked->payment_review_status === 'accepted';
+            $hasVerifiedPayment = $isVerified && (float) $locked->paid_amount > 0;
+            $childStatus = in_array($locked->payment_status, ['failed', 'refunded'], true)
+                ? 'cancelled'
+                : (($hasVerifiedPayment && (
+                    $locked->transactionable_type === 'booking'
+                    || $locked->payment_status === 'fully_paid'
+                )) ? 'active' : 'pending');
 
             if ($locked->transactionable_type === 'membership') {
                 $membership = UserMembership::query()
