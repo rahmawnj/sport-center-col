@@ -252,6 +252,111 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction): Response
     {
+        $item = [
+            'type' => $transaction->transactionable_type,
+            'title' => $this->transactionTypeLabel($transaction->transactionable_type),
+            'fields' => [],
+            'options' => [],
+        ];
+
+        if ($transaction->transactionable_type === 'membership') {
+            $membership = UserMembership::query()->with('package.facility')->where('transaction_id', $transaction->id)->first();
+            $trainerPurchase = MemberTrainerPackage::query()->with(['trainerPackage', 'facility', 'trainer'])->where('transaction_id', $transaction->id)->first();
+
+            if ($membership) {
+                $facilityId = (int) ($membership->package?->facility_id ?? 0);
+                $item['fields'] = [
+                    'package_id' => $membership->package_id,
+                    'package_name' => $membership->package?->name,
+                    'facility_name' => $membership->package?->facility?->name,
+                    'start_date' => $membership->start_date?->toDateString(),
+                    'end_date' => $membership->end_date?->toDateString(),
+                    'trainer_package_id' => $trainerPurchase?->trainer_package_id,
+                    'trainer_name' => $trainerPurchase?->trainer?->name,
+                    'trainer_package_name' => $trainerPurchase?->trainerPackage?->name,
+                ];
+                $item['options']['packages'] = Package::query()
+                    ->where('type', 'membership')
+                    ->where('facility_id', $facilityId)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'price', 'duration_days'])
+                    ->map(fn (Package $package) => [
+                        'id' => $package->id, 'name' => $package->name,
+                        'price' => (float) $package->price, 'duration_days' => (int) $package->duration_days,
+                    ])->values();
+                $item['options']['trainer_packages'] = TrainerPackage::query()
+                    ->where('facility_id', $facilityId)->where('is_active', true)
+                    ->orderBy('name')->get(['id', 'name', 'price', 'total_sessions', 'duration_days'])
+                    ->map(fn (TrainerPackage $package) => [
+                        'id' => $package->id, 'name' => $package->name,
+                        'price' => (float) $package->price, 'total_sessions' => (int) $package->total_sessions,
+                    ])->values();
+            }
+        } elseif ($transaction->transactionable_type === 'trainer_package') {
+            $purchase = MemberTrainerPackage::query()->with(['trainerPackage.facility', 'facility', 'trainer'])->where('transaction_id', $transaction->id)->first();
+            if ($purchase) {
+                $facilityId = (int) ($purchase->facility_id ?: $purchase->trainerPackage?->facility_id);
+                $item['fields'] = [
+                    'trainer_package_id' => $purchase->trainer_package_id,
+                    'package_name' => $purchase->trainerPackage?->name,
+                    'facility_name' => $purchase->facility?->name ?? $purchase->trainerPackage?->facility?->name,
+                    'trainer_name' => $purchase->trainer?->name,
+                    'total_sessions' => (int) $purchase->total_sessions,
+                    'used_sessions' => (int) $purchase->used_sessions,
+                    'start_date' => $purchase->start_date?->toDateString(),
+                    'end_date' => $purchase->expires_at?->toDateString(),
+                ];
+                $item['options']['trainer_packages'] = TrainerPackage::query()
+                    ->where('facility_id', $facilityId)->where('is_active', true)
+                    ->orderBy('name')->get(['id', 'name', 'price', 'total_sessions'])
+                    ->map(fn (TrainerPackage $package) => [
+                        'id' => $package->id, 'name' => $package->name,
+                        'price' => (float) $package->price, 'total_sessions' => (int) $package->total_sessions,
+                    ])->values();
+            }
+        } elseif ($transaction->transactionable_type === 'booking') {
+            $bookingId = preg_match('/^BK-(\d+)$/', (string) $transaction->invoice_number, $matches) ? (int) $matches[1] : null;
+            $booking = $bookingId ? Booking::query()->with(['court.facility', 'trainerAddon.trainer'])->find($bookingId) : null;
+            if ($booking) {
+                $facility = $booking->court?->facility;
+                $item['fields'] = [
+                    'facility_name' => $facility?->name,
+                    'court_id' => $booking->court_id,
+                    'court_name' => $booking->court?->name,
+                    'date' => $booking->date?->toDateString(),
+                    'start_time' => substr((string) $booking->start_time, 0, 5),
+                    'end_time' => substr((string) $booking->end_time, 0, 5),
+                    'trainer_name' => $booking->trainerAddon?->trainer?->name,
+                ];
+                $item['options']['courts'] = $facility
+                    ? $facility->courts()->where('status', 'available')->orderBy('name')->get(['id', 'name'])
+                    : collect();
+            }
+        } elseif ($transaction->transactionable_type === 'class') {
+            $participants = SessionParticipant::query()->with(['schedule.sportClass.facility', 'schedule.trainer'])
+                ->where('transaction_id', $transaction->id)->get();
+            $participant = $participants->first();
+            $schedule = $participant?->schedule;
+            if ($schedule) {
+                $item['fields'] = [
+                    'class_name' => $schedule->sportClass?->name,
+                    'facility_name' => $schedule->sportClass?->facility?->name,
+                    'class_schedule_id' => $schedule->id,
+                    'schedule_label' => substr((string) $schedule->start_time, 0, 5).' - '.substr((string) $schedule->end_time, 0, 5),
+                    'session_date' => $participant->session_date?->toDateString(),
+                    'participants' => $participants->map(fn (SessionParticipant $p) => $p->guest_name ?: 'Umum')->values(),
+                ];
+                $item['options']['schedules'] = ClassSchedule::query()
+                    ->with('sportClass.facility')->where('class_id', $schedule->class_id)->where('is_active', true)
+                    ->orderBy('day')->orderBy('start_time')->get()
+                    ->map(fn (ClassSchedule $option) => [
+                        'id' => $option->id,
+                        'label' => ($option->sportClass?->name ?? 'Kelas').' · '.ucfirst($option->day).' · '.substr((string) $option->start_time, 0, 5).'-'.substr((string) $option->end_time, 0, 5),
+                        'price' => (float) $option->price,
+                    ])->values();
+            }
+        }
+
         return Inertia::render('transactions/Edit', [
             'transaction' => [
                 'id' => $transaction->id,
@@ -263,6 +368,7 @@ class TransactionController extends Controller
                 'payment_review_status' => $transaction->payment_review_status ?? 'pending',
                 'reference' => $this->reference($transaction),
             ],
+            'item' => $item,
         ]);
     }
 
@@ -274,10 +380,130 @@ class TransactionController extends Controller
             'paid_amount' => ['required', 'numeric', 'min:0', 'lte:amount'],
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer'])],
             'payment_review_status' => ['required', Rule::in(['pending', 'accepted', 'rejected'])],
+            'item_package_id' => ['nullable', 'integer'],
+            'item_trainer_package_id' => ['nullable', 'integer'],
+            'item_court_id' => ['nullable', 'integer', 'exists:courts,id'],
+            'item_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'item_start_time' => ['nullable', 'date_format:H:i'],
+            'item_end_time' => ['nullable', 'date_format:H:i', 'after:item_start_time'],
+            'item_class_schedule_id' => ['nullable', 'integer', 'exists:class_schedules,id'],
+            'item_session_date' => ['nullable', 'date', 'after_or_equal:today'],
         ]);
 
         DB::transaction(function () use ($transaction, $data) {
             $locked = Transaction::query()->lockForUpdate()->findOrFail($transaction->id);
+
+            // Update the purchased item and recalculate its authoritative price.
+            if ($locked->transactionable_type === 'membership' && ! empty($data['item_package_id'])) {
+                $membership = UserMembership::query()->where('transaction_id', $locked->id)->lockForUpdate()->firstOrFail();
+                $package = Package::query()->where('type', 'membership')->where('facility_id', $membership->package?->facility_id)
+                    ->findOrFail($data['item_package_id']);
+                $membership->package_id = $package->id;
+                if ($membership->start_date) {
+                    $membership->end_date = Carbon::parse($membership->start_date)->addDays(max(1, (int) $package->duration_days) - 1)->toDateString();
+                }
+                $membership->save();
+                $data['amount'] = (float) $package->price;
+
+                $trainerPurchase = MemberTrainerPackage::query()->where('transaction_id', $locked->id)->lockForUpdate()->first();
+                if ($trainerPurchase && ! empty($data['item_trainer_package_id'])) {
+                    $trainerPackage = TrainerPackage::query()->where('facility_id', $package->facility_id)->findOrFail($data['item_trainer_package_id']);
+                    if ((int) $trainerPurchase->used_sessions > 0 && (int) $trainerPurchase->trainer_package_id !== (int) $trainerPackage->id) {
+                        throw ValidationException::withMessages(['item_trainer_package_id' => 'Paket trainer tidak dapat diganti karena sesi sudah pernah digunakan.']);
+                    }
+                    $trainerPurchase->update([
+                        'trainer_package_id' => $trainerPackage->id,
+                        'total_sessions' => $trainerPackage->total_sessions,
+                        'facility_id' => $package->facility_id,
+                    ]);
+                    $data['amount'] += (float) $trainerPackage->price;
+                }
+            } elseif ($locked->transactionable_type === 'trainer_package' && ! empty($data['item_trainer_package_id'])) {
+                $purchase = MemberTrainerPackage::query()->where('transaction_id', $locked->id)->lockForUpdate()->firstOrFail();
+                $trainerPackage = TrainerPackage::query()->where('facility_id', $purchase->facility_id)->findOrFail($data['item_trainer_package_id']);
+                if ((int) $purchase->used_sessions > 0 && (int) $purchase->trainer_package_id !== (int) $trainerPackage->id) {
+                    throw ValidationException::withMessages(['item_trainer_package_id' => 'Paket tidak dapat diganti karena sesi sudah digunakan.']);
+                }
+                $purchase->update([
+                    'trainer_package_id' => $trainerPackage->id,
+                    'total_sessions' => $trainerPackage->total_sessions,
+                ]);
+                $data['amount'] = (float) $trainerPackage->price;
+            } elseif ($locked->transactionable_type === 'booking' && ! empty($data['item_court_id'])) {
+                $bookingId = preg_match('/^BK-(\d+)$/', (string) $locked->invoice_number, $matches) ? (int) $matches[1] : null;
+                $booking = $bookingId ? Booking::query()->with('court.facility')->lockForUpdate()->findOrFail($bookingId) : null;
+                if ($booking) {
+                    $court = \App\Models\Court::query()->where('facility_id', $booking->court?->facility_id)
+                        ->where('status', 'available')->findOrFail($data['item_court_id']);
+                    $date = Carbon::parse($data['item_date'] ?? $booking->date)->startOfDay();
+                    $start = $this->toMinutes($data['item_start_time'] ?? substr((string) $booking->start_time, 0, 5));
+                    $end = $this->toMinutes($data['item_end_time'] ?? substr((string) $booking->end_time, 0, 5));
+                    $facility = $booking->court->facility;
+                    $turnaround = max(0, (int) $facility->turnaround_minutes);
+                    $step = 60 + $turnaround;
+                    if ($end <= $start || (($end - $start + $turnaround) % $step) !== 0) {
+                        throw ValidationException::withMessages(['item_end_time' => 'Rentang booking harus terdiri dari slot 1 jam sesuai jeda fasilitas.']);
+                    }
+                    if ($date->isToday() && $start < (now()->hour * 60 + now()->minute)) {
+                        throw ValidationException::withMessages(['item_start_time' => 'Jam booking sudah lewat.']);
+                    }
+                    $windows = BookingTimeSlot::query()->where('facility_id', $facility->id)
+                        ->where('day', strtolower($date->englishDayOfWeek))->where('is_active', true)->get();
+                    $slotCount = intdiv(($end - $start + $turnaround), $step);
+                    $slotPrices = [];
+                    for ($i = 0; $i < $slotCount; $i++) {
+                        $slotStart = $start + ($i * $step);
+                        $slotEnd = $slotStart + 60;
+                        $window = $windows->first(fn (BookingTimeSlot $w) =>
+                            $slotStart >= $this->toMinutes((string) $w->start_time)
+                            && $slotEnd <= $this->toMinutes((string) $w->end_time)
+                            && (($slotStart - $this->toMinutes((string) $w->start_time)) % $step) === 0
+                        );
+                        if (! $window) {
+                            throw ValidationException::withMessages(['item_start_time' => 'Jam tidak sesuai master slot booking pada tanggal tersebut.']);
+                        }
+                        $slotPrices[] = (float) $window->price;
+                    }
+                    $conflict = Booking::query()->where('court_id', $court->id)->whereDate('date', $date->toDateString())
+                        ->where('id', '!=', $booking->id)->whereNotIn('status', ['cancelled'])->lockForUpdate()->get()
+                        ->contains(fn (Booking $other) => $this->windowsOverlap(
+                            $start, $end, $this->toMinutes((string) $other->start_time),
+                            $this->toMinutes((string) $other->end_time), $turnaround
+                        ));
+                    if ($conflict) {
+                        throw ValidationException::withMessages(['item_court_id' => 'Lapangan sudah terisi pada rentang waktu tersebut.']);
+                    }
+                    $booking->update([
+                        'court_id' => $court->id, 'date' => $date->toDateString(),
+                        'start_time' => $this->toTime($start), 'end_time' => $this->toTime($end),
+                    ]);
+                    $data['amount'] = array_sum($slotPrices) + (float) $court->price_adjustment;
+                }
+            } elseif ($locked->transactionable_type === 'class' && ! empty($data['item_class_schedule_id'])) {
+                $participants = SessionParticipant::query()->where('transaction_id', $locked->id)->lockForUpdate()->get();
+                $first = $participants->first();
+                if ($first) {
+                    $schedule = ClassSchedule::query()->with('sportClass')->where('class_id', $first->schedule?->class_id)
+                        ->findOrFail($data['item_class_schedule_id']);
+                    $date = Carbon::parse($data['item_session_date'] ?? $first->session_date)->startOfDay();
+                    if (strtolower($date->englishDayOfWeek) !== strtolower((string) $schedule->day)
+                        || ($date->isToday() && $schedule->start_time <= now()->format('H:i:s'))) {
+                        throw ValidationException::withMessages(['item_session_date' => 'Tanggal tidak sesuai hari jadwal atau jadwal sudah dimulai.']);
+                    }
+                    $capacity = (int) ($schedule->capacity ?? $schedule->sportClass?->default_capacity ?? 1);
+                    $otherCount = SessionParticipant::query()->where('class_schedule_id', $schedule->id)
+                        ->whereDate('session_date', $date->toDateString())->whereIn('status', ['pending', 'confirmed'])
+                        ->whereNotIn('id', $participants->pluck('id'))->count();
+                    if ($otherCount + $participants->count() > $capacity) {
+                        throw ValidationException::withMessages(['item_class_schedule_id' => 'Kuota jadwal kelas tidak mencukupi.']);
+                    }
+                    SessionParticipant::query()->whereIn('id', $participants->pluck('id'))->update([
+                        'class_schedule_id' => $schedule->id, 'session_date' => $date->toDateString(),
+                        'price' => $schedule->price,
+                    ]);
+                    $data['amount'] = (float) $schedule->price * $participants->count();
+                }
+            }
 
             $locked->customer_name = $data['customer_name'] ?? null;
             $locked->amount = $data['amount'];
