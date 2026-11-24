@@ -12,7 +12,7 @@ class Trainer extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['user_id', 'name', 'specialty'];
+    protected $fillable = ['user_id', 'name', 'specialty', 'photo_path'];
 
     public function user(): BelongsTo
     {
