@@ -58,6 +58,7 @@ const date = (value: string) => new Date(value + 'T00:00:00').toLocaleDateString
             <article v-for="item in [
                 { label: 'Jadwal hari ini', value: props.stats.today_schedules, icon: CalendarDays, note: 'Sesi yang berlangsung hari ini' },
                 { label: 'Jadwal mendatang', value: props.stats.upcoming_schedules, icon: Clock3, note: 'Sesi yang masih terjadwal' },
+                { label: 'Total member binaan', value: props.stats.total_members, icon: Users, note: 'Member yang pernah ditugaskan kepadamu' },
                 { label: 'Member aktif', value: props.stats.active_members, icon: Users, note: 'Member dengan paket aktif' },
                 { label: 'Sesi berhasil', value: props.stats.completed_sessions, icon: CheckCircle2, note: 'Sesi yang sudah ditutup admin' },
                 { label: 'Sisa kuota sesi', value: props.stats.remaining_sessions, icon: Dumbbell, note: 'Kuota dari paket yang masih aktif' },
