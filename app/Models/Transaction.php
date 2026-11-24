@@ -53,7 +53,7 @@ class Transaction extends Model
             }
 
             if ($transaction->payment_review_status === null) {
-                $transaction->payment_review_status = in_array($transaction->payment_status, ['fully_paid', 'dp_paid', 'paid'], true)
+                $transaction->payment_review_status = in_array($transaction->payment_status, ['fully_paid', 'paid'], true)
                     ? 'accepted'
                     : 'pending';
             }
