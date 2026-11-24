@@ -272,7 +272,7 @@ class TrainerDashboardController extends Controller
                 'name' => $trainer->name,
                 'email' => $trainer->user?->email,
                 'specialty' => $trainer->specialty,
-                'photo_url' => $trainer->photo_path ? Storage::disk('public')->url($trainer->photo_path) : null,
+                'photo_url' => $trainer->user?->image_profile ? Storage::disk('public')->url($trainer->user->image_profile) : null,
                 'facilities' => $trainer->facilities->pluck('name')->all(),
             ],
         ]);
@@ -287,14 +287,14 @@ class TrainerDashboardController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'specialty' => ['nullable', 'string', 'max:255'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'image_profile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        if ($request->hasFile('photo')) {
-            if ($trainer->photo_path) {
-                Storage::disk('public')->delete($trainer->photo_path);
+        if ($request->hasFile('image_profile')) {
+            if ($user->image_profile) {
+                Storage::disk('public')->delete($user->image_profile);
             }
-            $trainer->photo_path = $request->file('photo')->store('trainer-profiles', 'public');
+            $user->image_profile = $request->file('image_profile')->store('profile-photos', 'public');
         }
 
         $trainer->name = $data['name'];
