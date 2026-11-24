@@ -96,6 +96,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::prefix('trainer')->name('trainer.')->middleware(EnsureUserRole::class.':Trainer')->group(function () {
+        Route::get('schedules', [TrainerDashboardController::class, 'schedules'])->name('schedules.index');
         Route::get('schedules/{schedule}', [TrainerSessionController::class, 'showTrainer'])->name('schedules.show');
         Route::post('schedules/{schedule}/confirm', [TrainerSessionController::class, 'confirmTrainer'])->name('schedules.confirm');
         Route::get('dashboard', [TrainerDashboardController::class, 'index'])->name('dashboard');
