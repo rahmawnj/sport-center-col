@@ -103,7 +103,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('members', [TrainerDashboardController::class, 'members'])->name('members');
         Route::get('members/{memberTrainerPackage}', [TrainerDashboardController::class, 'memberShow'])->name('members.show');
         Route::get('profile', [TrainerDashboardController::class, 'profile'])->name('profile');
-        Route::post('profile', [TrainerDashboardController::class, 'updateProfile'])->name('profile.update');
+        Route::put('profile', [TrainerDashboardController::class, 'updateProfile'])->name('profile.update');
     });
 
     Route::middleware([EnsureUserRole::class.':Superadmin'])->group(function () {
