@@ -173,10 +173,10 @@ class TrainerSessionController extends Controller
                 ->findOrFail($locked->member_trainer_package_id);
 
             if ($data['result'] === 'completed') {
-                if (! $locked->member_confirmed_at || ! $locked->trainer_confirmed_at
-                    || ! $locked->member_attended || ! $locked->trainer_attended) {
+                if (($locked->member_confirmed_at && ! $locked->member_attended)
+                    || ($locked->trainer_confirmed_at && ! $locked->trainer_attended)) {
                     throw ValidationException::withMessages([
-                        'result' => 'Sesi hanya bisa ditandai berhasil setelah member dan trainer sama-sama mengonfirmasi hadir.',
+                        'result' => 'Sesi tidak bisa ditandai berhasil karena member atau trainer sudah mengonfirmasi tidak hadir.',
                     ]);
                 }
 
