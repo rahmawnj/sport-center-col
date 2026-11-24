@@ -142,6 +142,22 @@ const maxCount = computed(() => Math.max(1, ...props.dailyRows.map(row => row.tr
 const maxCategoryRevenue = computed(() => Math.max(1, ...props.categoryRows.map(row => row.revenue)));
 const totalCategoryCount = computed(() => props.categoryRows.reduce((sum, row) => sum + row.transaction_count, 0));
 const totalMethodRevenue = computed(() => props.paymentMethods.reduce((sum, row) => sum + row.revenue, 0));
+const methodColors = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'];
+const paymentDonutStyle = computed(() => {
+    if (!totalMethodRevenue.value) return { background: 'conic-gradient(#e5e7eb 0deg 360deg)' };
+    let cursor = 0;
+    const stops = props.paymentMethods.map((method, index) => {
+        const start = cursor;
+        cursor += method.revenue / totalMethodRevenue.value * 360;
+        return methodColors[index % methodColors.length] + ' ' + start + 'deg ' + cursor + 'deg';
+    });
+    return { background: 'conic-gradient(' + stops.join(', ') + ')' };
+});
+const paymentMethodDetails = computed(() => props.paymentMethods.map((method, index) => ({
+    ...method,
+    color: methodColors[index % methodColors.length],
+    percentage: totalMethodRevenue.value ? method.revenue / totalMethodRevenue.value * 100 : 0,
+})));
 const periodLabel = computed(() => from.value || to.value ? `${formatDate(from.value)} – ${formatDate(to.value)}` : 'Seluruh periode');
 </script>
 
@@ -265,11 +281,21 @@ const periodLabel = computed(() => from.value || to.value ? `${formatDate(from.v
         <section class="grid gap-4 xl:grid-cols-2">
             <div class="rounded-2xl border bg-card p-5 shadow-sm">
                 <div class="flex items-center gap-2"><CreditCard class="size-4 text-primary" /><div><h2 class="font-semibold">Pemasukan berdasarkan metode</h2><p class="text-xs text-muted-foreground">Kontribusi metode pembayaran yang sudah lunas.</p></div></div>
-                <div v-if="paymentMethods.length" class="mt-5 space-y-4">
-                    <div v-for="method in paymentMethods" :key="method.method">
-                        <div class="flex items-center justify-between gap-3 text-sm"><span class="font-medium">{{ method.label }}</span><span class="font-semibold tabular-nums">{{ formatIDR(method.revenue) }}</span></div>
-                        <div class="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-primary" :style="{ width: (totalMethodRevenue ? method.revenue / totalMethodRevenue * 100 : 0) + '%' }"></div></div>
-                        <p class="mt-1 text-xs text-muted-foreground">{{ method.transaction_count }} transaksi · {{ totalMethodRevenue ? (method.revenue / totalMethodRevenue * 100).toFixed(1) : '0.0' }}%</p>
+                <div v-if="paymentMethods.length" class="mt-5 grid items-center gap-6 sm:grid-cols-[minmax(180px,220px)_1fr]">
+                    <div class="relative mx-auto aspect-square w-full max-w-[220px] rounded-full" :style="paymentDonutStyle">
+                        <div class="absolute inset-[22%] flex flex-col items-center justify-center rounded-full bg-card text-center">
+                            <span class="text-xs text-muted-foreground">Total pemasukan</span>
+                            <strong class="mt-1 text-sm font-bold tabular-nums">{{ formatIDR(totalMethodRevenue) }}</strong>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div v-for="method in paymentMethodDetails" :key="method.method" class="flex items-start justify-between gap-3 text-sm">
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <span class="mt-1.5 size-3 shrink-0 rounded-sm" :style="{ backgroundColor: method.color }"></span>
+                                <div class="min-w-0"><p class="font-medium">{{ method.label }}</p><p class="mt-0.5 text-xs text-muted-foreground">{{ method.transaction_count }} transaksi · {{ method.percentage.toFixed(1) }}%</p></div>
+                            </div>
+                            <strong class="shrink-0 text-right tabular-nums">{{ formatIDR(method.revenue) }}</strong>
+                        </div>
                     </div>
                 </div>
                 <p v-else class="py-8 text-center text-sm text-muted-foreground">Belum ada data metode pembayaran.</p>
