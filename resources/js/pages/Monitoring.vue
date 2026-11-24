@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { Activity, CalendarClock, Clock3, MapPin, Receipt, RefreshCw } from '@lucide/vue';
+import { CalendarClock, Clock3, MapPin, RefreshCw } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 type Court = {
@@ -13,11 +13,6 @@ type ClassItem = {
     customer: string; start_time: string; end_time: string; status: string;
     payment_status: string | null; invoice_number: string | null;
 };
-type TransactionItem = {
-    id: number; invoice_number: string | null; customer: string; amount: number;
-    payment_status: string; created_at: string | null;
-};
-
 const props = defineProps<{
     generatedAt: string;
     selectedDate: string;
@@ -25,7 +20,6 @@ const props = defineProps<{
     courtMonitor: Court[];
     bookings: Booking[];
     todaysClasses: ClassItem[];
-    recentTransactions: TransactionItem[];
 }>();
 
 const refreshing = ref(false);
@@ -53,7 +47,7 @@ function refresh() {
     if (refreshing.value) return;
     refreshing.value = true;
     router.reload({
-        only: ['generatedAt', 'selectedDate', 'isToday', 'courtMonitor', 'bookings', 'todaysClasses', 'recentTransactions'],
+        only: ['generatedAt', 'selectedDate', 'isToday', 'courtMonitor', 'bookings', 'todaysClasses'],
         onFinish: () => { refreshing.value = false; },
     });
 }
@@ -116,11 +110,6 @@ onUnmounted(() => { if (poller) clearInterval(poller); });
                 <p class="mt-3 text-3xl font-semibold tabular-nums">{{ todaysClasses.length }}</p>
                 <p class="mt-1 text-xs text-muted-foreground">Peserta pada jadwal hari ini</p>
             </div>
-            <div class="rounded-2xl border bg-card p-4">
-                <div class="flex items-center justify-between text-sm text-muted-foreground"><span>Transaksi terbaru</span><Receipt class="size-4" /></div>
-                <p class="mt-3 text-3xl font-semibold tabular-nums">{{ recentTransactions.length }}</p>
-                <p class="mt-1 text-xs text-muted-foreground">Aktivitas transaksi terakhir</p>
-            </div>
         </div>
 
         <section class="rounded-2xl border bg-card p-5 shadow-sm">
@@ -171,18 +160,6 @@ onUnmounted(() => { if (poller) clearInterval(poller); });
             </section>
         </div>
 
-        <section class="rounded-2xl border bg-card p-5 shadow-sm">
-            <div class="mb-4 flex items-center gap-2"><Activity class="size-4 text-primary" /><div><h2 class="font-semibold">Aktivitas transaksi terbaru</h2><p class="text-xs text-muted-foreground">Transaksi terbaru dari seluruh kanal.</p></div></div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="border-b text-left text-muted-foreground"><tr><th class="pb-3 pr-3 font-medium">Waktu</th><th class="pb-3 pr-3 font-medium">Invoice</th><th class="pb-3 pr-3 font-medium">Pelanggan</th><th class="pb-3 pr-3 text-right font-medium">Total</th><th class="pb-3 font-medium">Pembayaran</th></tr></thead>
-                    <tbody class="divide-y">
-                        <tr v-for="item in recentTransactions" :key="item.id"><td class="py-3 pr-3 font-mono text-xs">{{ item.created_at || '—' }}</td><td class="py-3 pr-3 font-medium">{{ item.invoice_number || '—' }}</td><td class="py-3 pr-3">{{ item.customer }}</td><td class="py-3 pr-3 text-right tabular-nums">Rp{{ new Intl.NumberFormat('id-ID').format(item.amount) }}</td><td class="py-3"><span class="rounded-full px-2 py-1 text-xs" :class="statusClass(item.payment_status)">{{ paymentLabel(item.payment_status) }}</span></td></tr>
-                        <tr v-if="!recentTransactions.length"><td colspan="5" class="py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
         <p class="text-center text-xs text-muted-foreground">Data diperbarui otomatis setiap 10 detik untuk tanggal yang dipilih. {{ isToday ? 'Status lapangan menunjukkan kondisi real-time.' : 'Untuk tanggal selain hari ini, status lapangan real-time tidak ditampilkan.' }}</p>
     </div>
 </template>
