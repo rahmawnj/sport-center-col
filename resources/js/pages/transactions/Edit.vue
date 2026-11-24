@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Save, ShoppingBag, CreditCard } from 'lucide-vue-next';
+import { ArrowLeft, Save, ShoppingBag, CreditCard } from '@lucide/vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 
