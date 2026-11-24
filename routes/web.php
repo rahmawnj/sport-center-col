@@ -69,6 +69,10 @@ Route::middleware(['auth'])->group(function () {
         return app(DashboardController::class)->index($request);
     })->name('dashboard');
 
+    Route::get('monitoring', [DashboardController::class, 'monitoring'])
+        ->middleware(EnsureUserRole::class.':Superadmin')
+        ->name('monitoring');
+
     Route::get('member/trainer-schedules/{schedule}', [TrainerSessionController::class, 'showMember'])->middleware(EnsureUserRole::class.':Member')->name('member.trainer-schedules.show');
     Route::post('member/trainer-schedules/{schedule}/confirm', [TrainerSessionController::class, 'confirmMember'])->middleware(EnsureUserRole::class.':Member')->name('member.trainer-schedules.confirm');
 
