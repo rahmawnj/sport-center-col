@@ -6,6 +6,8 @@ use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
 use App\Models\TrainerSessionSchedule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -269,8 +271,39 @@ class TrainerDashboardController extends Controller
                 'name' => $trainer->name,
                 'email' => $trainer->user?->email,
                 'specialty' => $trainer->specialty,
+                'photo_url' => $trainer->photo_path ? Storage::disk('public')->url($trainer->photo_path) : null,
                 'facilities' => $trainer->facilities->pluck('name')->all(),
             ],
         ]);
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        $trainer = $this->trainerFor($request);
+        $user = $request->user();
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'specialty' => ['nullable', 'string', 'max:255'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        if ($request->hasFile('photo')) {
+            if ($trainer->photo_path) {
+                Storage::disk('public')->delete($trainer->photo_path);
+            }
+            $trainer->photo_path = $request->file('photo')->store('trainer-profiles', 'public');
+        }
+
+        $trainer->name = $data['name'];
+        $trainer->specialty = $data['specialty'] ?? null;
+        $trainer->save();
+
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $user->save();
+
+        return back()->with('success', 'Profil berhasil diperbarui.');
     }
 }
