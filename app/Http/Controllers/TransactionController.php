@@ -417,6 +417,9 @@ class TransactionController extends Controller
                         'trainer_package_id' => $trainerPackage->id,
                         'total_sessions' => $trainerPackage->total_sessions,
                         'facility_id' => $package->facility_id,
+                        'expires_at' => $trainerPurchase->start_date
+                            ? Carbon::parse($trainerPurchase->start_date)->addDays(max(1, (int) $trainerPackage->duration_days) - 1)->toDateString()
+                            : $trainerPurchase->expires_at,
                     ]);
                     $data['amount'] += (float) $trainerPackage->price;
                 }
