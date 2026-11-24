@@ -29,8 +29,8 @@ import { dashboard } from '@/routes';
 import type { NavGroup, NavItem } from '@/types';
 
 const items: (NavItem | NavGroup)[] = [
-    { title: 'Dashboard Statistik', href: dashboard(), icon: LayoutGrid },
-    { title: 'Dashboard Monitoring', href: '/monitoring', icon: Activity },
+    { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+    { title: 'Monitoring', href: '/monitoring', icon: Activity },
     { title: 'Olahraga', href: '/facilities', icon: Building2 },
     {
         title: 'Users',
