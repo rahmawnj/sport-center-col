@@ -23,7 +23,7 @@ class DashboardController extends Controller
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        // A successful sale must be fully paid and accepted by the payment reviewer.
+        // Revenue reports include only fully paid transactions accepted by the reviewer.
         $successfulTransactions = Transaction::query()
             ->where('payment_status', 'fully_paid')
             ->where('payment_review_status', 'accepted')
@@ -36,21 +36,55 @@ class DashboardController extends Controller
             'average_transaction' => (float) ((clone $successfulTransactions)->avg('total_amount') ?? 0),
         ];
 
-        $typeLabels = [
+        $categories = [
+            'booking' => 'Booking Lapangan',
             'membership' => 'Membership',
             'trainer' => 'Paket Trainer',
-            'booking' => 'Booking Lapangan',
             'class' => 'Kelas',
         ];
 
-        $typeRows = (clone $successfulTransactions)
+        $categoryAggregates = (clone $successfulTransactions)
             ->selectRaw("COALESCE(NULLIF(transactionable_type, ''), 'other') as type, COUNT(*) as transaction_count, SUM(total_amount) as revenue")
             ->groupBy('type')
+            ->get()
+            ->keyBy('type');
+
+        $categoryRows = collect($categories)->map(function (string $label, string $type) use ($categoryAggregates) {
+            $row = $categoryAggregates->get($type);
+
+            return [
+                'type' => $type,
+                'label' => $label,
+                'transaction_count' => (int) ($row?->transaction_count ?? 0),
+                'revenue' => (float) ($row?->revenue ?? 0),
+            ];
+        })->values();
+
+        $dailyRows = (clone $successfulTransactions)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as transaction_count, SUM(total_amount) as revenue')
+            ->groupByRaw('DATE(created_at)')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row) => [
+                'date' => (string) $row->date,
+                'transaction_count' => (int) $row->transaction_count,
+                'revenue' => (float) $row->revenue,
+            ])
+            ->values();
+
+        $paymentMethods = (clone $successfulTransactions)
+            ->selectRaw("COALESCE(NULLIF(payment_method, ''), 'other') as method, COUNT(*) as transaction_count, SUM(total_amount) as revenue")
+            ->groupBy('method')
             ->orderByDesc('revenue')
             ->get()
             ->map(fn ($row) => [
-                'type' => $row->type,
-                'label' => $typeLabels[$row->type] ?? ($row->type === 'other' ? 'Lainnya' : ucfirst(str_replace('_', ' ', $row->type))),
+                'method' => $row->method,
+                'label' => match ($row->method) {
+                    'cash' => 'Tunai',
+                    'bank_transfer' => 'Transfer bank',
+                    'qris' => 'QRIS',
+                    default => 'Lainnya',
+                },
                 'transaction_count' => (int) $row->transaction_count,
                 'revenue' => (float) $row->revenue,
             ])
@@ -66,7 +100,7 @@ class DashboardController extends Controller
                 'invoice_number' => $transaction->invoice_number,
                 'customer' => $transaction->user?->name ?? $transaction->guest_name ?? 'Pelanggan umum',
                 'type' => $transaction->transactionable_type,
-                'type_label' => $typeLabels[$transaction->transactionable_type] ?? ($transaction->transactionable_type ? ucfirst(str_replace('_', ' ', $transaction->transactionable_type)) : 'Lainnya'),
+                'type_label' => $categories[$transaction->transactionable_type] ?? 'Lainnya',
                 'payment_method' => $transaction->payment_method,
                 'amount' => (float) $transaction->total_amount,
                 'created_at' => $transaction->created_at?->format('Y-m-d H:i:s'),
@@ -74,7 +108,9 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'summary' => $summary,
-            'typeRows' => $typeRows,
+            'categoryRows' => $categoryRows,
+            'dailyRows' => $dailyRows,
+            'paymentMethods' => $paymentMethods,
             'transactions' => $transactions,
             'filters' => ['from' => $from, 'to' => $to],
         ]);
