@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { CalendarClock, Clock3, MapPin, RefreshCw } from '@lucide/vue';
+import { CalendarClock, Clock3, MapPin, Receipt, RefreshCw } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 type Court = {
@@ -8,6 +8,10 @@ type Court = {
     in_use: boolean; current: { customer: string; start_time: string; end_time: string } | null;
 };
 type Booking = { id: number; court: string | null; customer: string; start_time: string; end_time: string; status: string };
+type TransactionItem = {
+    id: number; invoice_number: string | null; customer: string; amount: number;
+    payment_status: string; created_at: string | null;
+};
 type ClassItem = {
     id: number; class_name: string; facility: string | null; trainer: string | null;
     customer: string; start_time: string; end_time: string; status: string;
@@ -20,6 +24,7 @@ const props = defineProps<{
     courtMonitor: Court[];
     bookings: Booking[];
     todaysClasses: ClassItem[];
+    recentTransactions: TransactionItem[];
 }>();
 
 const refreshing = ref(false);
@@ -47,7 +52,7 @@ function refresh() {
     if (refreshing.value) return;
     refreshing.value = true;
     router.reload({
-        only: ['generatedAt', 'selectedDate', 'isToday', 'courtMonitor', 'bookings', 'todaysClasses'],
+        only: ['generatedAt', 'selectedDate', 'isToday', 'courtMonitor', 'bookings', 'todaysClasses', 'recentTransactions'],
         onFinish: () => { refreshing.value = false; },
     });
 }
@@ -109,6 +114,11 @@ onUnmounted(() => { if (poller) clearInterval(poller); });
                 <div class="flex items-center justify-between text-sm text-muted-foreground"><span>Peserta kelas tanggal terpilih</span><CalendarClock class="size-4" /></div>
                 <p class="mt-3 text-3xl font-semibold tabular-nums">{{ todaysClasses.length }}</p>
                 <p class="mt-1 text-xs text-muted-foreground">Peserta pada jadwal hari ini</p>
+            </div>
+            <div class="rounded-2xl border bg-card p-4">
+                <div class="flex items-center justify-between text-sm text-muted-foreground"><span>Transaksi terbaru</span><Receipt class="size-4" /></div>
+                <p class="mt-3 text-3xl font-semibold tabular-nums">{{ recentTransactions.length }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">Aktivitas transaksi terakhir</p>
             </div>
         </div>
 
