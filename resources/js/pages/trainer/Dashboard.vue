@@ -77,6 +77,5 @@ const date = (value: string) => new Date(value + 'T00:00:00').toLocaleDateString
             <div v-else class="p-10 text-center"><CalendarDays class="mx-auto size-9 text-slate-300" /><p class="mt-3 font-semibold text-slate-800">Belum ada jadwal mendatang</p><p class="mt-1 text-sm text-slate-500">Jadwal yang dibuat admin akan muncul di bagian ini.</p></div>
         </section>
 
-section>
     </div>
 </template>
