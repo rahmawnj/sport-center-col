@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { watch } from 'vue';
 import { ArrowLeft, Save, ShoppingBag, CreditCard } from '@lucide/vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,29 @@ const form = useForm({
     item_class_schedule_id: fields.class_schedule_id ? String(fields.class_schedule_id) : '',
     item_session_date: fields.session_date ?? '',
 });
+
+watch(
+    () => [form.item_package_id, form.item_trainer_package_id],
+    () => {
+        if (props.item.type === 'membership') {
+            const membership = (props.item.options.packages || []).find((option) => String(option.id) === form.item_package_id);
+            const trainer = (props.item.options.trainer_packages || []).find((option) => String(option.id) === form.item_trainer_package_id);
+            if (membership) form.amount = String((membership.price || 0) + (fields.trainer_package_id && trainer ? trainer.price || 0 : 0));
+        }
+        if (props.item.type === 'trainer_package') {
+            const trainer = (props.item.options.trainer_packages || []).find((option) => String(option.id) === form.item_trainer_package_id);
+            if (trainer) form.amount = String(trainer.price || 0);
+        }
+    },
+);
+watch(
+    () => form.item_class_schedule_id,
+    (id) => {
+        if (props.item.type !== 'class') return;
+        const schedule = (props.item.options.schedules || []).find((option) => String(option.id) === id);
+        if (schedule) form.amount = String((schedule.price || 0) * (fields.participants || []).length);
+    },
+);
 
 const remainingAmount = () => Math.max(0, Number(form.amount || 0) - Number(form.paid_amount || 0));
 const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', {
@@ -233,8 +257,9 @@ function submit() {
                     </div>
                     <div class="space-y-2">
                         <label for="amount" class="text-sm font-medium">Total tagihan (Rp)</label>
-                        <input id="amount" v-model="form.amount" type="number" min="0" step="1" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                        <input id="amount" v-model="form.amount" type="number" min="0" step="1" :readonly="['membership', 'trainer_package', 'class', 'booking'].includes(item.type)" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
                         <p v-if="form.errors.amount" class="text-sm text-destructive">{{ form.errors.amount }}</p>
+                        <p v-else-if="['membership', 'trainer_package', 'class', 'booking'].includes(item.type)" class="text-xs text-muted-foreground">Harga mengikuti item yang dipilih dan akan divalidasi ulang saat disimpan.</p>
                     </div>
                     <div class="space-y-2">
                         <label for="payment_method" class="text-sm font-medium">Metode pembayaran</label>
