@@ -14,7 +14,7 @@ type Schedule = {
 const props = defineProps<{
     trainer: { name: string; specialty: string | null; facilities: string[] };
     stats: {
-        total_members: number; active_members: number; remaining_sessions: number;
+        total_members: number; remaining_sessions: number;
         earned_income: number; potential_income: number;
     };
     upcoming_schedules: Schedule[];
@@ -52,7 +52,6 @@ const date = (value: string) => new Date(value + 'T00:00:00').toLocaleDateString
             </article>
             <article v-for="item in [
                 { label: 'Total member binaan', value: props.stats.total_members, icon: Users, note: 'Member yang pernah ditugaskan kepadamu' },
-                { label: 'Member aktif', value: props.stats.active_members, icon: Users, note: 'Member dengan paket aktif' },
                 { label: 'Sisa kuota sesi', value: props.stats.remaining_sessions, icon: Dumbbell, note: 'Kuota dari paket yang masih aktif' },
             ]" :key="item.label" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">{{ item.label }}</p><component :is="item.icon" class="size-5 text-lime-700" /></div>
