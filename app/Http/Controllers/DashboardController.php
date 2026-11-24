@@ -20,8 +20,9 @@ class DashboardController extends Controller
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
 
-        $from = $filters['from'] ?? null;
-        $to = $filters['to'] ?? null;
+        // Default report period: the last 7 calendar days, including today.
+        $from = $filters['from'] ?? Carbon::today()->subDays(6)->toDateString();
+        $to = $filters['to'] ?? Carbon::today()->toDateString();
 
         // Revenue reports include only fully paid transactions accepted by the reviewer.
         $successfulTransactions = Transaction::query()
