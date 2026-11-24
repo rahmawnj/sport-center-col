@@ -19,7 +19,7 @@ return new class extends Migration
         // Preserve existing completed/DP records as already verified. New
         // unpaid transactions must pass an explicit admin verification.
         DB::table('transactions')
-            ->where('payment_status', 'unpaid')
+            ->whereIn('payment_status', ['unpaid', 'dp_paid'])
             ->update(['payment_review_status' => 'pending']);
 
         DB::table('transactions')
