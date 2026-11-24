@@ -30,6 +30,7 @@ type Facility = {
     id: number;
     name: string;
     has_booking: boolean;
+    turnaround_minutes: number;
     has_session: boolean;
     has_membership: boolean;
     packages: SellPackage[];
@@ -432,53 +433,61 @@ function isSlotSelected(slot: Slot) {
 
 function chooseSlot(slot: Slot) {
     slotSelectionError.value = '';
-    const selected = new Set(selectedSlots.value.map((item) => item.start_time));
-    const clickedIndex = slots.value.findIndex((item) => item.start_time === slot.start_time);
 
-    if (selected.has(slot.start_time)) {
-        const indexes = [...selected]
-            .map((time) => slots.value.findIndex((item) => item.start_time === time))
-            .filter((index) => index >= 0)
-            .sort((a, b) => a - b);
-        const first = indexes[0];
-        const last = indexes[indexes.length - 1];
+    const current = [...selectedSlots.value].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    const alreadySelected = current.some((item) => item.start_time === slot.start_time);
+    let chosen: Slot[];
 
-        if (clickedIndex === first || clickedIndex === last) {
-            selected.delete(slot.start_time);
-        } else {
-            indexes.filter((index) => index >= clickedIndex)
-                .forEach((index) => selected.delete(slots.value[index].start_time));
-        }
+    if (alreadySelected) {
+        chosen = current.filter((item) => item.start_time !== slot.start_time);
+    } else if (current.length === 0) {
+        chosen = [slot];
     } else {
-        const indexes = [...selected]
-            .map((time) => slots.value.findIndex((item) => item.start_time === time))
-            .filter((index) => index >= 0);
-        const first = indexes.length ? Math.min(...indexes, clickedIndex) : clickedIndex;
-        const last = indexes.length ? Math.max(...indexes, clickedIndex) : clickedIndex;
+        const all = [...current, slot].sort((a, b) => a.start_time.localeCompare(b.start_time));
+        const firstIndex = slots.value.findIndex((item) => item.start_time === all[0].start_time);
+        const lastIndex = slots.value.findIndex((item) => item.start_time === all[all.length - 1].start_time);
+        const range = slots.value.slice(firstIndex, lastIndex + 1);
+        const turnaround = Math.max(0, Number(activeFacility.value?.turnaround_minutes ?? 0));
+        const step = 60 + turnaround;
 
-        for (let index = first; index <= last; index++) {
-            selected.add(slots.value[index].start_time);
+        const isContinuous = range.length === lastIndex - firstIndex + 1
+            && range.every((item, index) => {
+                const start = item.start_time.split(':').map(Number);
+                const end = item.end_time.split(':').map(Number);
+                const duration = (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]);
+                if (duration !== 60) return false;
+                if (index === 0) return true;
+                const previous = range[index - 1];
+                const previousEnd = previous.end_time.split(':').map(Number);
+                const currentStart = item.start_time.split(':').map(Number);
+                return currentStart[0] * 60 + currentStart[1]
+                    === previousEnd[0] * 60 + previousEnd[1] + turnaround;
+            });
+
+        if (!isContinuous || range.some((item) => item.courts.every((court) => court.is_available === false))) {
+            slotSelectionError.value = `Pilih jam yang berurutan. Setiap slot harus tersambung dengan jeda ${turnaround} menit.`;
+            return;
         }
+
+        chosen = range;
     }
 
-    const chosen = [...selected]
-        .map((time) => slots.value.find((item) => item.start_time === time))
-        .filter((item): item is Slot => !!item)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-    const commonCourtIds = chosen.length
-        ? chosen[0].courts
+    if (chosen.length) {
+        const commonCourtIds = chosen[0].courts
             .filter((court) => court.is_available !== false)
             .filter((court) => chosen.every((item) =>
                 item.courts.some((option) => option.id === court.id && option.is_available !== false)
             ))
-            .map((court) => court.id)
-        : [];
+            .map((court) => court.id);
 
-    selectedSlots.value = chosen.filter((item) =>
-        item.courts.some((court) => commonCourtIds.includes(court.id) && court.is_available !== false)
-    );
-    selectedSlot.value = selectedSlots.value[0] ?? null;
+        if (!commonCourtIds.length) {
+            slotSelectionError.value = 'Tidak ada lapangan yang tersedia untuk seluruh rentang jam tersebut.';
+            return;
+        }
+    }
+
+    selectedSlots.value = chosen;
+    selectedSlot.value = chosen[0] ?? null;
     courtId.value = null;
 }
 
