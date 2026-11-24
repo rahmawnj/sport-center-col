@@ -160,11 +160,10 @@ class TrainerPackageController extends Controller
             && $membership->start_date?->lte(today())
             && $membership->end_date?->gte(today());
 
+        // A session is valid for trainer-share calculation once admin marks it completed.
         $completedSessions = TrainerSessionSchedule::query()
             ->where('member_trainer_package_id', $memberTrainerPackage->id)
             ->where('status', 'completed')
-            ->where('member_attended', true)
-            ->where('trainer_attended', true)
             ->count();
 
         $packagePrice = (float) ($memberTrainerPackage->trainerPackage?->price ?? 0);
