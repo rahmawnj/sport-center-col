@@ -19,6 +19,8 @@ class Transaction extends Model
         'booking_code',
         'payment_method',
         'payment_status',
+        'payment_review_status',
+        'paid_amount',
         'booking_status',
         'transactionable_type',
         'handled_by',
@@ -30,6 +32,7 @@ class Transaction extends Model
         return [
             'amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
             'cancelled_at' => 'datetime',
         ];
     }
@@ -47,6 +50,18 @@ class Transaction extends Model
 
             if ($transaction->payment_method === 'qris') {
                 $transaction->payment_method = 'bank_transfer';
+            }
+
+            if ($transaction->payment_review_status === null) {
+                $transaction->payment_review_status = in_array($transaction->payment_status, ['fully_paid', 'dp_paid', 'paid'], true)
+                    ? 'accepted'
+                    : 'pending';
+            }
+
+            if ($transaction->paid_amount === null) {
+                $transaction->paid_amount = in_array($transaction->payment_status, ['fully_paid', 'paid'], true)
+                    ? ($transaction->total_amount ?? $transaction->amount ?? 0)
+                    : 0;
             }
         });
     }
