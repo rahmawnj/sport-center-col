@@ -24,7 +24,8 @@ class TrainerController extends Controller
             ->with(['facilities' => fn ($query) => $query->where('has_membership', true)->select('facilities.id', 'facilities.name'), 'user:id,name,email'])
             ->when($search !== '', fn ($query) => $query
                 ->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('specialty', 'like', "%{$search}%")))
+                    ->orWhere('specialty', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('email', 'like', "%{$search}%"))))
             ->latest()
             ->paginate(10)
             ->withQueryString()
