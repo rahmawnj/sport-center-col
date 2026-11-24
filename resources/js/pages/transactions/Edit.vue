@@ -97,8 +97,82 @@ function submit() {
             description="Periksa item yang dibeli, ubah detail pesanan, lalu kelola tagihan dan verifikasi pembayarannya."
         />
 
-        <div class="grid items-start gap-6 xl:grid-cols-2">
-            <section class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
+        <div class="grid items-start gap-4 xl:grid-cols-6">
+            <div class="xl:col-span-4">
+            <form @submit.prevent="submit" class="min-w-0 space-y-6 rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                <div class="flex items-center gap-3">
+                    <div class="rounded-xl bg-primary/10 p-2.5 text-primary"><CreditCard class="size-5" /></div>
+                    <div>
+                        <h2 class="font-semibold">Tagihan & pembayaran</h2>
+                        <p class="text-sm text-muted-foreground">Metode pembayaran terpisah dari keputusan verifikasi.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-xs text-muted-foreground">Nomor invoice</p>
+                    <p class="font-mono font-semibold">{{ transaction.invoice_number || transaction.reference }}</p>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div class="space-y-2 sm:col-span-2">
+                        <label for="customer_name" class="text-sm font-medium">Nama pelanggan</label>
+                        <input id="customer_name" v-model="form.customer_name" type="text" maxlength="255" placeholder="Nama pelanggan" class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                        <p v-if="form.errors.customer_name" class="text-sm text-destructive">{{ form.errors.customer_name }}</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="amount" class="text-sm font-medium">Total tagihan (Rp)</label>
+                        <input id="amount" v-model="form.amount" type="number" min="0" step="1" :readonly="['membership', 'trainer_package', 'class', 'booking'].includes(item.type)" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                        <p v-if="form.errors.amount" class="text-sm text-destructive">{{ form.errors.amount }}</p>
+                        <p v-else-if="['membership', 'trainer_package', 'class', 'booking'].includes(item.type)" class="text-xs text-muted-foreground">Harga mengikuti item yang dipilih dan akan divalidasi ulang saat disimpan.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="payment_method" class="text-sm font-medium">Metode pembayaran</label>
+                        <select id="payment_method" v-model="form.payment_method" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
+                            <option value="cash">Tunai</option>
+                            <option value="bank_transfer">Transfer bank</option>
+                        </select>
+                        <p v-if="form.errors.payment_method" class="text-sm text-destructive">{{ form.errors.payment_method }}</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="paid_amount" class="text-sm font-medium">Nominal yang dibayarkan (Rp)</label>
+                        <input id="paid_amount" v-model="form.paid_amount" type="number" min="0" :max="form.amount || undefined" step="1" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                        <p v-if="form.errors.paid_amount" class="text-sm text-destructive">{{ form.errors.paid_amount }}</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Sisa tagihan</label>
+                        <div class="rounded-lg border bg-muted/30 px-3 py-2.5 text-sm font-semibold tabular-nums">{{ formatCurrency(remainingAmount()) }}</div>
+                        <p class="text-xs text-muted-foreground">Total dikurangi nominal yang dibayarkan.</p>
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <label for="payment_review_status" class="text-sm font-medium">Verifikasi pembayaran</label>
+                        <select id="payment_review_status" v-model="form.payment_review_status" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
+                            <option value="pending">Menunggu pemeriksaan</option>
+                            <option value="accepted">Pembayaran diterima</option>
+                            <option value="rejected">Pembayaran ditolak</option>
+                        </select>
+                        <p v-if="form.errors.payment_review_status" class="text-sm text-destructive">{{ form.errors.payment_review_status }}</p>
+                        <p class="text-xs text-muted-foreground">Status ini adalah keputusan admin setelah uang atau bukti pembayaran diperiksa. Metode transfer/tunai tidak otomatis berarti pembayaran diterima.</p>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-sky-200 bg-sky-50/60 p-4 text-sm text-sky-900">
+                    <p class="font-semibold">Dampak verifikasi</p>
+                    <p class="mt-1">DP yang diterima dapat mengonfirmasi booking. Membership dan paket trainer baru aktif setelah pembayaran diterima dan lunas.</p>
+                </div>
+
+                <div class="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-end">
+                    <Button type="button" variant="outline" as-child>
+                        <Link href="/transactions">Batal</Link>
+                    </Button>
+                    <Button type="submit" :disabled="form.processing" class="gap-2">
+                        <Save class="size-4" />
+                        {{ form.processing ? 'Menyimpan...' : 'Simpan perubahan' }}
+                    </Button>
+                </div>
+            </form>
+            </div>
+            <div class="xl:col-span-2">
+            <section class="min-w-0 space-y-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
                 <div class="flex items-center gap-3">
                     <div class="rounded-xl bg-primary/10 p-2.5 text-primary"><ShoppingBag class="size-5" /></div>
                     <div>
@@ -234,78 +308,7 @@ function submit() {
                     Detail item untuk jenis transaksi ini belum memiliki data produk terpisah. Nominal transaksi tetap dapat diedit pada bagian pembayaran.
                 </div>
             </section>
-
-            <form @submit.prevent="submit" class="min-w-0 space-y-6 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
-                <div class="flex items-center gap-3">
-                    <div class="rounded-xl bg-primary/10 p-2.5 text-primary"><CreditCard class="size-5" /></div>
-                    <div>
-                        <h2 class="font-semibold">Tagihan & pembayaran</h2>
-                        <p class="text-sm text-muted-foreground">Metode pembayaran terpisah dari keputusan verifikasi.</p>
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <p class="text-xs text-muted-foreground">Nomor invoice</p>
-                    <p class="font-mono font-semibold">{{ transaction.invoice_number || transaction.reference }}</p>
-                </div>
-
-                <div class="grid gap-5 sm:grid-cols-2">
-                    <div class="space-y-2 sm:col-span-2">
-                        <label for="customer_name" class="text-sm font-medium">Nama pelanggan</label>
-                        <input id="customer_name" v-model="form.customer_name" type="text" maxlength="255" placeholder="Nama pelanggan" class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
-                        <p v-if="form.errors.customer_name" class="text-sm text-destructive">{{ form.errors.customer_name }}</p>
-                    </div>
-                    <div class="space-y-2">
-                        <label for="amount" class="text-sm font-medium">Total tagihan (Rp)</label>
-                        <input id="amount" v-model="form.amount" type="number" min="0" step="1" :readonly="['membership', 'trainer_package', 'class', 'booking'].includes(item.type)" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
-                        <p v-if="form.errors.amount" class="text-sm text-destructive">{{ form.errors.amount }}</p>
-                        <p v-else-if="['membership', 'trainer_package', 'class', 'booking'].includes(item.type)" class="text-xs text-muted-foreground">Harga mengikuti item yang dipilih dan akan divalidasi ulang saat disimpan.</p>
-                    </div>
-                    <div class="space-y-2">
-                        <label for="payment_method" class="text-sm font-medium">Metode pembayaran</label>
-                        <select id="payment_method" v-model="form.payment_method" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
-                            <option value="cash">Tunai</option>
-                            <option value="bank_transfer">Transfer bank</option>
-                        </select>
-                        <p v-if="form.errors.payment_method" class="text-sm text-destructive">{{ form.errors.payment_method }}</p>
-                    </div>
-                    <div class="space-y-2">
-                        <label for="paid_amount" class="text-sm font-medium">Nominal yang dibayarkan (Rp)</label>
-                        <input id="paid_amount" v-model="form.paid_amount" type="number" min="0" :max="form.amount || undefined" step="1" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
-                        <p v-if="form.errors.paid_amount" class="text-sm text-destructive">{{ form.errors.paid_amount }}</p>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium">Sisa tagihan</label>
-                        <div class="rounded-lg border bg-muted/30 px-3 py-2.5 text-sm font-semibold tabular-nums">{{ formatCurrency(remainingAmount()) }}</div>
-                        <p class="text-xs text-muted-foreground">Total dikurangi nominal yang dibayarkan.</p>
-                    </div>
-                    <div class="space-y-2 sm:col-span-2">
-                        <label for="payment_review_status" class="text-sm font-medium">Verifikasi pembayaran</label>
-                        <select id="payment_review_status" v-model="form.payment_review_status" required class="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
-                            <option value="pending">Menunggu pemeriksaan</option>
-                            <option value="accepted">Pembayaran diterima</option>
-                            <option value="rejected">Pembayaran ditolak</option>
-                        </select>
-                        <p v-if="form.errors.payment_review_status" class="text-sm text-destructive">{{ form.errors.payment_review_status }}</p>
-                        <p class="text-xs text-muted-foreground">Status ini adalah keputusan admin setelah uang atau bukti pembayaran diperiksa. Metode transfer/tunai tidak otomatis berarti pembayaran diterima.</p>
-                    </div>
-                </div>
-
-                <div class="rounded-xl border border-sky-200 bg-sky-50/60 p-4 text-sm text-sky-900">
-                    <p class="font-semibold">Dampak verifikasi</p>
-                    <p class="mt-1">DP yang diterima dapat mengonfirmasi booking. Membership dan paket trainer baru aktif setelah pembayaran diterima dan lunas.</p>
-                </div>
-
-                <div class="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-end">
-                    <Button type="button" variant="outline" as-child>
-                        <Link href="/transactions">Batal</Link>
-                    </Button>
-                    <Button type="submit" :disabled="form.processing" class="gap-2">
-                        <Save class="size-4" />
-                        {{ form.processing ? 'Menyimpan...' : 'Simpan perubahan' }}
-                    </Button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </template>
