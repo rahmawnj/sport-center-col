@@ -70,6 +70,7 @@ function statusClass(value: string) {
                         <div class="pb-1">
                             <div class="flex flex-wrap items-center gap-2"><h2 class="text-2xl font-semibold">{{ props.trainer.name }}</h2><span v-if="props.trainer.specialty" class="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{{ props.trainer.specialty }}</span></div>
                             <p class="mt-1 text-sm text-muted-foreground">Trainer #{{ props.trainer.id }} · Dibuat {{ date(props.trainer.created_at) }}</p>
+                            <p class="mt-1 text-sm font-medium text-primary">{{ props.trainer.user_email || "Akun login belum terhubung" }}</p>
                         </div>
                     </div>
                     <div class="flex gap-2"><Button variant="outline" as-child><Link href="/trainers">Kembali</Link></Button><Button as-child><Link :href="`/trainers?edit=${props.trainer.id}`"><Pencil class="mr-2 size-4" /> Edit trainer</Link></Button></div>
