@@ -62,10 +62,10 @@ function formatDate(value:string|null){ return value ? new Intl.DateTimeFormat('
 </div>
 <div v-if="schedule.status==='scheduled'" class="flex flex-wrap gap-2">
 <Button size="sm" variant="outline" @click="beginEdit(schedule)"><Pencil class="mr-1 size-3.5"/>Edit jadwal</Button>
-<Button size="sm" :disabled="!schedule.member_confirmed_at || !schedule.trainer_confirmed_at || !schedule.member_attended || !schedule.trainer_attended" @click="setResult(schedule.id,'completed')"><Check class="mr-1 size-3.5"/>Berhasil</Button>
+<Button size="sm" :disabled="(!!schedule.member_confirmed_at && !schedule.member_attended) || (!!schedule.trainer_confirmed_at && !schedule.trainer_attended)" @click="setResult(schedule.id,'completed')"><Check class="mr-1 size-3.5"/>Berhasil</Button>
 <Button size="sm" variant="destructive"  @click="setResult(schedule.id,'failed')"><Ban class="mr-1 size-3.5"/>Tidak berhasil</Button>
-<p v-if="!schedule.member_confirmed_at || !schedule.trainer_confirmed_at" class="w-full text-xs text-amber-700">Menunggu konfirmasi dari {{!schedule.member_confirmed_at && !schedule.trainer_confirmed_at ? 'member dan trainer' : (!schedule.member_confirmed_at ? 'member' : 'trainer')}}.</p>
-<p v-else-if="!schedule.member_attended || !schedule.trainer_attended" class="w-full text-xs text-rose-700">Sesi tidak dapat ditandai berhasil karena salah satu pihak mengonfirmasi tidak hadir.</p>
+<p v-if="!schedule.member_confirmed_at || !schedule.trainer_confirmed_at" class="w-full text-xs text-amber-700">Konfirmasi belum lengkap. Admin tetap dapat menetapkan sesi berhasil jika tidak ada konfirmasi tidak hadir.</p>
+<p v-if="(schedule.member_confirmed_at && !schedule.member_attended) || (schedule.trainer_confirmed_at && !schedule.trainer_attended)" class="w-full text-xs text-rose-700">Sesi tidak dapat ditandai berhasil karena member atau trainer sudah mengonfirmasi tidak hadir.</p>
 <p class="w-full text-xs text-muted-foreground">Admin dapat menetapkan hasil sesi kapan saja, tanpa menunggu jadwal berakhir.</p>
 </div>
 <p v-else class="text-xs text-muted-foreground">{{schedule.status==='completed'?'Kuota sudah dikurangi satu sesi.':'Sesi ditutup tanpa mengurangi kuota.'}}</p>
