@@ -14,6 +14,7 @@ use App\Models\Package;
 use App\Models\PackagePricingRule;
 use App\Models\SessionParticipant;
 use App\Models\Transaction;
+use App\Models\TrainerPackage;
 use App\Models\User;
 use App\Models\UserMembership;
 use Illuminate\Http\RedirectResponse;
