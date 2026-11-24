@@ -286,7 +286,7 @@ class TransactionController extends Controller
                         'price' => (float) $package->price, 'duration_days' => (int) $package->duration_days,
                     ])->values();
                 $item['options']['trainer_packages'] = TrainerPackage::query()
-                    ->where('facility_id', $facilityId)->where('is_active', true)
+                    ->where('facility_id', $facilityId)->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $trainerPurchase?->trainer_package_id))
                     ->orderBy('name')->get(['id', 'name', 'price', 'total_sessions', 'duration_days'])
                     ->map(fn (TrainerPackage $package) => [
                         'id' => $package->id, 'name' => $package->name,
@@ -308,7 +308,7 @@ class TransactionController extends Controller
                     'end_date' => $purchase->expires_at?->toDateString(),
                 ];
                 $item['options']['trainer_packages'] = TrainerPackage::query()
-                    ->where('facility_id', $facilityId)->where('is_active', true)
+                    ->where('facility_id', $facilityId)->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $purchase->trainer_package_id))
                     ->orderBy('name')->get(['id', 'name', 'price', 'total_sessions'])
                     ->map(fn (TrainerPackage $package) => [
                         'id' => $package->id, 'name' => $package->name,
@@ -330,7 +330,7 @@ class TransactionController extends Controller
                     'trainer_name' => $booking->trainerAddon?->trainer?->name,
                 ];
                 $item['options']['courts'] = $facility
-                    ? $facility->courts()->where('status', 'available')->orderBy('name')->get(['id', 'name'])
+                    ? $facility->courts()->where(fn ($query) => $query->where('status', 'available')->orWhere('id', $booking->court_id))->orderBy('name')->get(['id', 'name'])
                     : collect();
             }
         } elseif ($transaction->transactionable_type === 'class') {
@@ -348,7 +348,8 @@ class TransactionController extends Controller
                     'participants' => $participants->map(fn (SessionParticipant $p) => $p->guest_name ?: 'Umum')->values(),
                 ];
                 $item['options']['schedules'] = ClassSchedule::query()
-                    ->with('sportClass.facility')->where('class_id', $schedule->class_id)->where('is_active', true)
+                    ->with('sportClass.facility')->where('class_id', $schedule->class_id)
+                    ->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $schedule->id))
                     ->orderBy('day')->orderBy('start_time')->get()
                     ->map(fn (ClassSchedule $option) => [
                         'id' => $option->id,
@@ -421,13 +422,17 @@ class TransactionController extends Controller
                 }
             } elseif ($locked->transactionable_type === 'trainer_package' && ! empty($data['item_trainer_package_id'])) {
                 $purchase = MemberTrainerPackage::query()->where('transaction_id', $locked->id)->lockForUpdate()->firstOrFail();
-                $trainerPackage = TrainerPackage::query()->where('facility_id', $purchase->facility_id)->findOrFail($data['item_trainer_package_id']);
+                $facilityId = $purchase->facility_id ?: $purchase->trainerPackage?->facility_id;
+                $trainerPackage = TrainerPackage::query()->where('facility_id', $facilityId)->findOrFail($data['item_trainer_package_id']);
                 if ((int) $purchase->used_sessions > 0 && (int) $purchase->trainer_package_id !== (int) $trainerPackage->id) {
                     throw ValidationException::withMessages(['item_trainer_package_id' => 'Paket tidak dapat diganti karena sesi sudah digunakan.']);
                 }
                 $purchase->update([
                     'trainer_package_id' => $trainerPackage->id,
                     'total_sessions' => $trainerPackage->total_sessions,
+                    'expires_at' => $purchase->start_date
+                        ? Carbon::parse($purchase->start_date)->addDays(max(1, (int) $trainerPackage->duration_days) - 1)->toDateString()
+                        : $purchase->expires_at,
                 ]);
                 $data['amount'] = (float) $trainerPackage->price;
             } elseif ($locked->transactionable_type === 'booking' && ! empty($data['item_court_id'])) {
