@@ -1,9 +1,99 @@
 <script setup lang="ts">
-import {Head,Link} from '@inertiajs/vue3';import {CalendarDays,Dumbbell,Users,CheckCircle2} from '@lucide/vue';import TrainerDashboardLayout from '@/layouts/trainer/TrainerDashboardLayout.vue';
-defineOptions({layout:TrainerDashboardLayout});defineProps<{trainer:{name:string;specialty:string|null;facilities:string[]};stats:{total_members:number;active_packages:number;completed_sessions:number;remaining_sessions:number};recent_members:{id:number;member:string;package:string;facility:string|null;used_sessions:number;total_sessions:number;status:string}[];trainerSchedules:{id:number;member:string|null;package:string|null;date:string;start_time:string;end_time:string;member_attended:boolean;trainer_attended:boolean;member_confirmed_at:string|null;trainer_confirmed_at:string|null;status:string;can_confirm:boolean}[]}>();
+import { Head, Link } from '@inertiajs/vue3';
+import { CalendarDays, CheckCircle2, Clock3, Dumbbell, Users, Wallet, ArrowRight } from '@lucide/vue';
+import TrainerDashboardLayout from '@/layouts/trainer/TrainerDashboardLayout.vue';
+
+defineOptions({ layout: TrainerDashboardLayout });
+
+type Schedule = {
+    id: number; member: string; package: string; date: string;
+    start_time: string; end_time: string;
+    member_confirmed_at: string | null; trainer_confirmed_at: string | null;
+};
+
+const props = defineProps<{
+    trainer: { name: string; specialty: string | null; facilities: string[] };
+    stats: {
+        total_members: number; active_members: number; today_schedules: number;
+        upcoming_schedules: number; completed_sessions: number; remaining_sessions: number;
+        earned_income: number; potential_income: number;
+    };
+    upcoming_schedules: Schedule[];
+    recent_members: {
+        id: number; member: string; package: string; facility: string | null;
+        used_sessions: number; total_sessions: number; status: string;
+    }[];
+}>();
+
+const money = (value: number) => new Intl.NumberFormat('id-ID', {
+    style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
+}).format(value || 0);
+
+const date = (value: string) => new Date(value + 'T00:00:00').toLocaleDateString('id-ID', {
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+});
 </script>
-<template><Head title="Dashboard Trainer"/><div class="space-y-7">
-<section class="relative isolate overflow-hidden rounded-3xl bg-[#001428] p-6 text-white sm:p-8 lg:p-10"><div class="absolute -right-10 -top-20 -z-10 size-72 rounded-full bg-[#a4da01]/20 blur-3xl"/><p class="text-xs font-bold uppercase tracking-[.2em] text-[#b9ec35]">Trainer dashboard</p><h1 class="mt-3 text-2xl font-bold sm:text-3xl">Halo, {{trainer.name}}! 👋</h1><p class="mt-3 max-w-xl text-sm leading-6 text-slate-300">Pantau member binaan, paket latihan, dan progres sesi personal training kamu.</p><p v-if="trainer.specialty" class="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">{{trainer.specialty}}</p></section>
-<section v-if="trainerSchedules.some(item => item.status === 'scheduled' && (!item.member_confirmed_at || !item.trainer_confirmed_at))" class="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 shadow-sm"><div class="flex items-start gap-3"><div class="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700"><CalendarDays class="size-5"/></div><div><h2 class="font-bold text-slate-900">Notifikasi jadwal sesi</h2><p class="mt-1 text-sm text-slate-600">Ada jadwal latihan yang masih menunggu konfirmasi. Buka detail jadwal untuk melihat status dan mengonfirmasi kehadiran.</p></div></div><div class="mt-4 space-y-2"><article v-for="item in trainerSchedules.filter(item => item.status === 'scheduled' && (!item.member_confirmed_at || !item.trainer_confirmed_at))" :key="item.id" class="flex flex-col gap-3 rounded-xl border border-amber-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p class="font-semibold text-slate-900">{{item.member || 'Member'}}</p><p class="mt-1 text-xs text-slate-500">{{item.package || 'Paket trainer'}} · {{new Date(item.date+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}} · {{item.start_time}}–{{item.end_time}}</p><p class="mt-2 text-xs font-medium text-amber-700">{{!item.trainer_confirmed_at?'Menunggu konfirmasi kamu':'Konfirmasi kamu tersimpan'}} · {{!item.member_confirmed_at?'Menunggu konfirmasi member':'Member sudah konfirmasi'}}</p></div><Link :href="'/trainer/schedules/'+item.id" class="inline-flex items-center justify-center rounded-lg bg-[#001428] px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Lihat detail</Link></article></div></section>
-<section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><article v-for="item in [{label:'Member Binaan',value:stats.total_members,icon:Users},{label:'Paket Aktif',value:stats.active_packages,icon:Dumbbell},{label:'Sesi Terpakai',value:stats.completed_sessions,icon:CheckCircle2},{label:'Sisa Sesi',value:stats.remaining_sessions,icon:CalendarDays}]" :key="item.label" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><p class="text-sm text-slate-500">{{item.label}}</p><component :is="item.icon" class="size-5 text-lime-700"/></div><p class="mt-3 text-3xl font-bold text-slate-900">{{item.value}}</p></article></section>
-<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div class="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 class="font-bold">Member terbaru</h2><p class="mt-1 text-sm text-slate-500">Member yang mengambil paket latihan denganmu.</p></div><Link href="/trainer/members" class="rounded-xl border px-4 py-2.5 text-sm font-semibold">Lihat semua</Link></div><div v-if="recent_members.length" class="divide-y divide-slate-100"><div v-for="item in recent_members" :key="item.id" class="flex items-center justify-between gap-3 p-5"><div><p class="font-semibold">{{item.member}}</p><p class="mt-1 text-sm text-slate-500">{{item.package}}<span v-if="item.facility"> · {{item.facility}}</span></p></div><div class="text-right text-sm"><p class="font-semibold">{{item.used_sessions}} / {{item.total_sessions}} sesi</p><p class="mt-1 text-xs capitalize text-slate-500">{{item.status === 'scheduled' ? 'Menunggu giliran' : item.status}}</p></div></div></div><div v-else class="p-10 text-center"><p class="font-semibold">Belum ada member binaan</p><p class="mt-1 text-sm text-slate-500">Member yang memilihmu sebagai trainer akan muncul di sini.</p></div></section></div></template>
+
+<template>
+    <Head title="Dashboard Trainer" />
+    <div class="space-y-7">
+        <section class="relative isolate overflow-hidden rounded-3xl bg-[#001428] p-6 text-white sm:p-8 lg:p-10">
+            <div class="absolute -right-10 -top-20 -z-10 size-72 rounded-full bg-[#a4da01]/20 blur-3xl" />
+            <p class="text-xs font-bold uppercase tracking-[.2em] text-[#b9ec35]">Ringkasan pekerjaan</p>
+            <h1 class="mt-3 text-2xl font-bold sm:text-3xl">Halo, {{ props.trainer.name }}!</h1>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Pantau jadwal latihan yang dibuat admin, konfirmasi kehadiran, lihat member binaan, dan cek pendapatan dari sesi yang sudah berhasil.</p>
+            <div class="mt-5 flex flex-wrap gap-2">
+                <span v-if="props.trainer.specialty" class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">{{ props.trainer.specialty }}</span>
+                <span v-for="facility in props.trainer.facilities" :key="facility" class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs">{{ facility }}</span>
+            </div>
+        </section>
+
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <article class="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm sm:col-span-2 xl:col-span-1">
+                <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Pendapatan terkumpul</p><Wallet class="size-5 text-emerald-700" /></div>
+                <p class="mt-3 text-2xl font-bold text-emerald-700">{{ money(props.stats.earned_income) }}</p>
+                <p class="mt-2 text-xs text-slate-500">Bagian trainer dari sesi yang sudah ditandai berhasil oleh admin.</p>
+                <p class="mt-1 text-xs text-slate-400">Potensi total seluruh paket: {{ money(props.stats.potential_income) }}</p>
+            </article>
+            <article v-for="item in [
+                { label: 'Jadwal hari ini', value: props.stats.today_schedules, icon: CalendarDays, note: 'Sesi yang berlangsung hari ini' },
+                { label: 'Jadwal mendatang', value: props.stats.upcoming_schedules, icon: Clock3, note: 'Sesi yang masih terjadwal' },
+                { label: 'Member aktif', value: props.stats.active_members, icon: Users, note: 'Member dengan paket aktif' },
+                { label: 'Sesi berhasil', value: props.stats.completed_sessions, icon: CheckCircle2, note: 'Sesi yang sudah ditutup admin' },
+                { label: 'Sisa kuota sesi', value: props.stats.remaining_sessions, icon: Dumbbell, note: 'Kuota dari paket yang masih aktif' },
+            ]" :key="item.label" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">{{ item.label }}</p><component :is="item.icon" class="size-5 text-lime-700" /></div>
+                <p class="mt-3 text-3xl font-bold text-slate-900">{{ item.value }}</p>
+                <p class="mt-1 text-xs text-slate-400">{{ item.note }}</p>
+            </article>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div><h2 class="font-bold text-slate-900">Jadwal latihan terdekat</h2><p class="mt-1 text-sm text-slate-500">Jadwal ditambahkan dan diatur oleh admin. Kamu bisa membuka detail untuk konfirmasi kehadiran.</p></div>
+                <Link href="/trainer/schedules" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Semua jadwal <ArrowRight class="size-4" /></Link>
+            </div>
+            <div v-if="props.upcoming_schedules.length" class="divide-y divide-slate-100">
+                <Link v-for="item in props.upcoming_schedules" :key="item.id" :href="'/trainer/schedules/' + item.id" class="flex flex-col gap-3 p-5 transition hover:bg-lime-50/40 sm:flex-row sm:items-center sm:justify-between">
+                    <div><p class="font-semibold text-slate-900">{{ item.member }}</p><p class="mt-1 text-sm text-slate-500">{{ item.package }} · {{ date(item.date) }}</p><p class="mt-1 text-sm font-medium text-slate-700">{{ item.start_time }}–{{ item.end_time }}</p></div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span class="rounded-full px-3 py-1.5 font-semibold" :class="item.trainer_confirmed_at ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">{{ item.trainer_confirmed_at ? 'Kehadiran dikonfirmasi' : 'Perlu konfirmasi kamu' }}</span>
+                        <span class="rounded-full bg-slate-100 px-3 py-1.5 font-semibold text-slate-600">{{ item.member_confirmed_at ? 'Member sudah konfirmasi' : 'Menunggu member' }}</span>
+                    </div>
+                </Link>
+            </div>
+            <div v-else class="p-10 text-center"><CalendarDays class="mx-auto size-9 text-slate-300" /><p class="mt-3 font-semibold text-slate-800">Belum ada jadwal mendatang</p><p class="mt-1 text-sm text-slate-500">Jadwal yang dibuat admin akan muncul di bagian ini.</p></div>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 class="font-bold text-slate-900">Member binaan terbaru</h2><p class="mt-1 text-sm text-slate-500">Paket latihan yang ditugaskan kepadamu.</p></div><Link href="/trainer/members" class="text-sm font-semibold text-lime-700 hover:underline">Lihat semua</Link></div>
+            <div v-if="props.recent_members.length" class="divide-y divide-slate-100">
+                <Link v-for="item in props.recent_members" :key="item.id" :href="'/trainer/members/' + item.id" class="flex items-center justify-between gap-3 p-5 hover:bg-slate-50">
+                    <div><p class="font-semibold text-slate-900">{{ item.member }}</p><p class="mt-1 text-sm text-slate-500">{{ item.package }}<span v-if="item.facility"> · {{ item.facility }}</span></p></div>
+                    <div class="text-right"><p class="text-sm font-semibold">{{ item.used_sessions }} / {{ item.total_sessions }} sesi</p><p class="mt-1 text-xs capitalize text-slate-500">{{ item.status === 'scheduled' ? 'Menunggu giliran' : item.status }}</p></div>
+                </Link>
+            </div>
+            <div v-else class="p-10 text-center text-sm text-slate-500">Belum ada member binaan.</div>
+        </section>
+    </div>
+</template>
