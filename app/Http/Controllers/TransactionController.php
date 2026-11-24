@@ -175,6 +175,7 @@ class TransactionController extends Controller
                 'id' => $facility->id,
                 'name' => $facility->name,
                 'has_booking' => (bool) $facility->has_booking,
+                'turnaround_minutes' => max(0, (int) $facility->turnaround_minutes),
                 'has_session' => (bool) $facility->has_session,
                 'has_membership' => (bool) $facility->has_membership,
                 'packages' => $facility->packages
