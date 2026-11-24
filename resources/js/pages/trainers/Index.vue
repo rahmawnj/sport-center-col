@@ -37,6 +37,7 @@ type Props = {
 const props = defineProps<Props>();
 const columns: TableColumn[] = [
     { key: 'name', label: 'Trainer', class: 'min-w-48' },
+    { key: 'user_email', label: 'Akun login', class: 'min-w-56' },
     { key: 'specialty', label: 'Spesialisasi' },
     { key: 'facilities', label: 'Olahraga' },
     {
@@ -164,10 +165,14 @@ function initials(value: string) {
                         >
                             {{ row.name }}
                         </Link>
-                        <div class="text-xs text-muted-foreground">
-                            <span class="block truncate text-xs text-muted-foreground">{{ row.user_email || 'Email belum tersedia' }}</span>
-                        </div>
                     </div>
+                </div>
+            </template>
+
+            <template #user_email="{ row }">
+                <div>
+                    <p class="text-sm font-medium">{{ row.user_email || 'Belum terhubung' }}</p>
+                    <p class="text-xs text-muted-foreground">{{ row.user_id ? 'Akun login trainer' : 'Tidak ada akun login' }}</p>
                 </div>
             </template>
 
