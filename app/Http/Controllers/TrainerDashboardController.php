@@ -6,6 +6,7 @@ use App\Models\MemberTrainerPackage;
 use App\Models\Trainer;
 use App\Models\TrainerSessionSchedule;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
