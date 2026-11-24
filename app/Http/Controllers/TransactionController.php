@@ -990,30 +990,63 @@ class TransactionController extends Controller
             ->get();
 
         $slotPrices = [];
-        $previousEnd = null;
-        foreach ($selectedSlots as $slot) {
-            $slotStart = $this->toMinutes($slot['start_time']);
-            $slotEnd = $this->toMinutes($slot['end_time']);
+        $validSlotStarts = [];
 
-            if ($slotEnd - $slotStart !== $slotDuration || ($previousEnd !== null && $slotStart !== $previousEnd + $turnaround)) {
-                throw ValidationException::withMessages(['selected_slots' => 'Pilih slot yang berurutan tanpa melewati jeda antar-slot.']);
+        // Build the real sequence of one-hour slots from the active master schedule.
+        foreach ($windows as $window) {
+            $windowStart = $this->toMinutes((string) $window->start_time);
+            $windowEnd = $this->toMinutes((string) $window->end_time);
+
+            for ($cursor = $windowStart; $cursor + $slotDuration <= $windowEnd; $cursor += $step) {
+                $validSlotStarts[] = $cursor;
+            }
+        }
+
+        $validSlotStarts = array_values(array_unique($validSlotStarts));
+        sort($validSlotStarts);
+
+        $selectedIndexes = [];
+        foreach ($selectedSlots as $slot) {
+            $slotStart = $this->toMinutes((string) $slot['start_time']);
+            $slotEnd = $this->toMinutes((string) $slot['end_time']);
+
+            if ($slotEnd - $slotStart !== $slotDuration) {
+                throw ValidationException::withMessages([
+                    'selected_slots' => 'Setiap slot booking harus berdurasi 1 jam.',
+                ]);
             }
 
-            $window = $windows->first(function (BookingTimeSlot $window) use ($slotStart, $slotEnd, $step, $slotDuration) {
+            $slotIndex = array_search($slotStart, $validSlotStarts, true);
+            if ($slotIndex === false) {
+                throw ValidationException::withMessages([
+                    'selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.',
+                ]);
+            }
+
+            $window = $windows->first(function (BookingTimeSlot $window) use ($slotStart, $slotEnd) {
                 $windowStart = $this->toMinutes((string) $window->start_time);
                 $windowEnd = $this->toMinutes((string) $window->end_time);
 
-                return $slotStart >= $windowStart
-                    && $slotEnd <= $windowEnd
-                    && ($slotStart - $windowStart) % $step === 0;
+                return $slotStart >= $windowStart && $slotEnd <= $windowEnd;
             });
 
             if (! $window) {
-                throw ValidationException::withMessages(['selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.']);
+                throw ValidationException::withMessages([
+                    'selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.',
+                ]);
             }
 
+            $selectedIndexes[] = $slotIndex;
             $slotPrices[] = (float) $window->price;
-            $previousEnd = $slotEnd;
+        }
+
+        // Slots must be adjacent in the actual master-slot sequence.
+        for ($index = 1; $index < count($selectedIndexes); $index++) {
+            if ($selectedIndexes[$index] !== $selectedIndexes[$index - 1] + 1) {
+                throw ValidationException::withMessages([
+                    'selected_slots' => 'Pilih slot yang berurutan tanpa melewati jeda antar-slot.',
+                ]);
+            }
         }
 
         DB::transaction(function () use ($facility, $data, $date, $startMinutes, $endMinutes, $turnaround, $slotPrices) {
