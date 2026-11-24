@@ -35,6 +35,15 @@ const elapsed = ref<number | null>(null);
 const errorMessage = ref('');
 const copied = ref(false);
 
+const decision = computed(() => {
+    try {
+        const result = JSON.parse(responseBody.value);
+        return result.allowed === true ? 'ALLOWED' : result.allowed === false ? 'DENIED' : '—';
+    } catch {
+        return '—';
+    }
+});
+
 const parsedPayload = computed(() => {
     try {
         return { valid: true, value: JSON.parse(payload.value) as Record<string, unknown>, message: '' };
@@ -215,8 +224,8 @@ async function copyCurl() {
                             </div>
                             <div class="rounded-xl bg-slate-950/80 p-3">
                                 <p class="text-xs text-slate-500">Decision</p>
-                                <p class="mt-1 text-xl font-bold" :class="responseBody.includes('&quot;allowed&quot;: true') ? 'text-emerald-300' : responseBody.includes('&quot;allowed&quot;: false') ? 'text-rose-300' : 'text-slate-300'">
-                                    {{ responseBody.includes('"allowed": true') ? 'ALLOWED' : responseBody.includes('"allowed": false') ? 'DENIED' : '—' }}
+                                <p class="mt-1 text-xl font-bold" :class="decision === 'ALLOWED' ? 'text-emerald-300' : decision === 'DENIED' ? 'text-rose-300' : 'text-slate-300'">
+                                    {{ decision }}
                                 </p>
                             </div>
                         </div>
