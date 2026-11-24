@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Save, ShoppingBag, CreditCard, CalendarDays } from 'lucide-vue-next';
+import { ArrowLeft, Save, ShoppingBag, CreditCard } from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 
@@ -55,9 +55,6 @@ const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', {
     maximumFractionDigits: 0,
 }).format(value);
 
-function selectedOption(options: Option[] = [], id: string) {
-    return options.find((option) => String(option.id) === String(id));
-}
 function submit() {
     form.put(`/transactions/${props.transaction.id}`);
 }
