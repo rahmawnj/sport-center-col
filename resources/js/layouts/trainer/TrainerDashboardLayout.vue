@@ -4,6 +4,7 @@ import {
     ChevronDown,
     CircleUserRound,
     LayoutDashboard,
+    CalendarDays,
     LogOut,
     House,
     Menu,
@@ -20,6 +21,7 @@ const currentPath = computed(() => page.url.split('?')[0]);
 
 const navigation = [
     { label: 'Dashboard', href: '/trainer/dashboard', icon: LayoutDashboard },
+    { label: 'Jadwal Saya', href: '/trainer/schedules', icon: CalendarDays },
     { label: 'Member Binaan', href: '/trainer/members', icon: Dumbbell },
     { label: 'Profil Trainer', href: '/trainer/profile', icon: CircleUserRound },
 ];
