@@ -12,6 +12,8 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
+            case name === 'api-docs/Index':
+                return null;
             case name === 'Welcome' || name === 'PublicTrainerShow':
                 return null;
             case name === 'classes/PublicIndex' || name === 'classes/Receipt':
