@@ -51,6 +51,7 @@ const show = ref(false);
 const editing = ref<Trainer | null>(null);
 const key = ref(0);
 const search = ref(props.filters.search ?? '');
+const email = ref('');
 const title = computed(() =>
     editing.value ? 'Edit trainer' : 'Tambah trainer',
 );
@@ -61,12 +62,14 @@ const method = computed(() => (editing.value ? 'put' : 'post'));
 
 function create() {
     editing.value = null;
+    email.value = '';
     key.value++;
     show.value = true;
 }
 
 function edit(trainer: Trainer) {
     editing.value = trainer;
+    email.value = trainer.user_email ?? '';
     key.value++;
     show.value = true;
 }
@@ -275,7 +278,7 @@ function initials(value: string) {
                             id="trainer-email"
                             name="email"
                             type="email"
-                            :default-value="editing?.user_email ?? ''"
+                            v-model="email"
                             required
                             placeholder="trainer@email.com"
                         />
