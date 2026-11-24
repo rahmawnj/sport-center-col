@@ -506,6 +506,12 @@ class TransactionController extends Controller
                 }
             }
 
+            if ((float) ($data['paid_amount'] ?? 0) > (float) ($data['amount'] ?? 0)) {
+                throw ValidationException::withMessages([
+                    'paid_amount' => 'Nominal pembayaran tidak boleh melebihi total harga item setelah perubahan.',
+                ]);
+            }
+
             $locked->customer_name = $data['customer_name'] ?? null;
             $locked->amount = $data['amount'];
             $locked->paid_amount = $data['paid_amount'];
