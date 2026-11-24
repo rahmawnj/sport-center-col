@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { CalendarDays, CheckCircle2, Clock3, Dumbbell, Users, Wallet, ArrowRight } from '@lucide/vue';
+import { CalendarDays, Dumbbell, Users, Wallet, ArrowRight } from '@lucide/vue';
 import TrainerDashboardLayout from '@/layouts/trainer/TrainerDashboardLayout.vue';
 
 defineOptions({ layout: TrainerDashboardLayout });
@@ -14,15 +14,10 @@ type Schedule = {
 const props = defineProps<{
     trainer: { name: string; specialty: string | null; facilities: string[] };
     stats: {
-        total_members: number; active_members: number; today_schedules: number;
-        upcoming_schedules: number; completed_sessions: number; remaining_sessions: number;
+        total_members: number; active_members: number; remaining_sessions: number;
         earned_income: number; potential_income: number;
     };
     upcoming_schedules: Schedule[];
-    recent_members: {
-        id: number; member: string; package: string; facility: string | null;
-        used_sessions: number; total_sessions: number; status: string;
-    }[];
 }>();
 
 const money = (value: number) => new Intl.NumberFormat('id-ID', {
@@ -56,11 +51,8 @@ const date = (value: string) => new Date(value + 'T00:00:00').toLocaleDateString
                 <p class="mt-1 text-xs text-slate-400">Potensi total seluruh paket: {{ money(props.stats.potential_income) }}</p>
             </article>
             <article v-for="item in [
-                { label: 'Jadwal hari ini', value: props.stats.today_schedules, icon: CalendarDays, note: 'Sesi yang berlangsung hari ini' },
-                { label: 'Jadwal mendatang', value: props.stats.upcoming_schedules, icon: Clock3, note: 'Sesi yang masih terjadwal' },
                 { label: 'Total member binaan', value: props.stats.total_members, icon: Users, note: 'Member yang pernah ditugaskan kepadamu' },
                 { label: 'Member aktif', value: props.stats.active_members, icon: Users, note: 'Member dengan paket aktif' },
-                { label: 'Sesi berhasil', value: props.stats.completed_sessions, icon: CheckCircle2, note: 'Sesi yang sudah ditutup admin' },
                 { label: 'Sisa kuota sesi', value: props.stats.remaining_sessions, icon: Dumbbell, note: 'Kuota dari paket yang masih aktif' },
             ]" :key="item.label" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">{{ item.label }}</p><component :is="item.icon" class="size-5 text-lime-700" /></div>
@@ -86,15 +78,6 @@ const date = (value: string) => new Date(value + 'T00:00:00').toLocaleDateString
             <div v-else class="p-10 text-center"><CalendarDays class="mx-auto size-9 text-slate-300" /><p class="mt-3 font-semibold text-slate-800">Belum ada jadwal mendatang</p><p class="mt-1 text-sm text-slate-500">Jadwal yang dibuat admin akan muncul di bagian ini.</p></div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 class="font-bold text-slate-900">Member binaan terbaru</h2><p class="mt-1 text-sm text-slate-500">Paket latihan yang ditugaskan kepadamu.</p></div><Link href="/trainer/members" class="text-sm font-semibold text-lime-700 hover:underline">Lihat semua</Link></div>
-            <div v-if="props.recent_members.length" class="divide-y divide-slate-100">
-                <Link v-for="item in props.recent_members" :key="item.id" :href="'/trainer/members/' + item.id" class="flex items-center justify-between gap-3 p-5 hover:bg-slate-50">
-                    <div><p class="font-semibold text-slate-900">{{ item.member }}</p><p class="mt-1 text-sm text-slate-500">{{ item.package }}<span v-if="item.facility"> · {{ item.facility }}</span></p></div>
-                    <div class="text-right"><p class="text-sm font-semibold">{{ item.used_sessions }} / {{ item.total_sessions }} sesi</p><p class="mt-1 text-xs capitalize text-slate-500">{{ item.status === 'scheduled' ? 'Menunggu giliran' : item.status }}</p></div>
-                </Link>
-            </div>
-            <div v-else class="p-10 text-center text-sm text-slate-500">Belum ada member binaan.</div>
-        </section>
+section>
     </div>
 </template>
