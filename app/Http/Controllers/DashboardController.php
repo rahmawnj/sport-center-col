@@ -16,36 +16,68 @@ class DashboardController extends Controller
 {
     public function index(Request $request): Response
     {
-        $today = Carbon::today();
+        $filters = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
 
-        $stats = [
-            'revenue_today' => (float) Transaction::whereDate('created_at', $today)->where('payment_status', 'fully_paid')->sum('total_amount'),
-            'transactions_today' => Transaction::whereDate('created_at', $today)->count(),
-            'bookings_today' => Booking::whereDate('date', $today)->whereNotIn('status', ['cancelled'])->count(),
-            'classes_today' => SessionParticipant::whereDate('session_date', $today)->where('status', '!=', 'cancelled')->count(),
-            'active_members' => UserMembership::where('status', '!=', 'cancelled')->whereDate('end_date', '>=', $today)->count(),
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
+
+        // A successful sale must be fully paid and accepted by the payment reviewer.
+        $successfulTransactions = Transaction::query()
+            ->where('payment_status', 'fully_paid')
+            ->where('payment_review_status', 'accepted')
+            ->when($from, fn ($query) => $query->whereDate('created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('created_at', '<=', $to));
+
+        $summary = [
+            'transaction_count' => (clone $successfulTransactions)->count(),
+            'revenue' => (float) (clone $successfulTransactions)->sum('total_amount'),
+            'average_transaction' => (float) ((clone $successfulTransactions)->avg('total_amount') ?? 0),
         ];
 
-        $revenue = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $day = $today->copy()->subDays($i);
-            $revenue[] = [
-                'label' => $day->translatedFormat('d M'),
-                'total' => (float) Transaction::whereDate('created_at', $day)->where('payment_status', 'fully_paid')->sum('total_amount'),
-            ];
-        }
-
-        $bookingStatus = [
-            'pending' => Booking::whereDate('date', $today)->where('status', 'pending')->count(),
-            'confirmed' => Booking::whereDate('date', $today)->where('status', 'confirmed')->count(),
-            'completed' => Booking::whereDate('date', $today)->where('status', 'completed')->count(),
-            'cancelled' => Booking::whereDate('date', $today)->where('status', 'cancelled')->count(),
+        $typeLabels = [
+            'membership' => 'Membership',
+            'trainer' => 'Paket Trainer',
+            'booking' => 'Booking Lapangan',
+            'class' => 'Kelas',
         ];
+
+        $typeRows = (clone $successfulTransactions)
+            ->selectRaw("COALESCE(NULLIF(transactionable_type, ''), 'other') as type, COUNT(*) as transaction_count, SUM(total_amount) as revenue")
+            ->groupBy('type')
+            ->orderByDesc('revenue')
+            ->get()
+            ->map(fn ($row) => [
+                'type' => $row->type,
+                'label' => $typeLabels[$row->type] ?? ($row->type === 'other' ? 'Lainnya' : ucfirst(str_replace('_', ' ', $row->type))),
+                'transaction_count' => (int) $row->transaction_count,
+                'revenue' => (float) $row->revenue,
+            ])
+            ->values();
+
+        $transactions = (clone $successfulTransactions)
+            ->with('user:id,name')
+            ->latest('created_at')
+            ->limit(15)
+            ->get()
+            ->map(fn (Transaction $transaction) => [
+                'id' => $transaction->id,
+                'invoice_number' => $transaction->invoice_number,
+                'customer' => $transaction->user?->name ?? $transaction->guest_name ?? 'Pelanggan umum',
+                'type' => $transaction->transactionable_type,
+                'type_label' => $typeLabels[$transaction->transactionable_type] ?? ($transaction->transactionable_type ? ucfirst(str_replace('_', ' ', $transaction->transactionable_type)) : 'Lainnya'),
+                'payment_method' => $transaction->payment_method,
+                'amount' => (float) $transaction->total_amount,
+                'created_at' => $transaction->created_at?->format('Y-m-d H:i:s'),
+            ]);
 
         return Inertia::render('Dashboard', [
-            'stats' => $stats,
-            'revenue' => $revenue,
-            'bookingStatus' => $bookingStatus,
+            'summary' => $summary,
+            'typeRows' => $typeRows,
+            'transactions' => $transactions,
+            'filters' => ['from' => $from, 'to' => $to],
         ]);
     }
 
