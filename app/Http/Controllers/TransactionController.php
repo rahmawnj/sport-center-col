@@ -486,7 +486,7 @@ class TransactionController extends Controller
                         'court_id' => $court->id, 'date' => $date->toDateString(),
                         'start_time' => $this->toTime($start), 'end_time' => $this->toTime($end),
                     ]);
-                    $data['amount'] = array_sum($slotPrices) + (float) $court->price_adjustment;
+                    $data['amount'] = array_sum($slotPrices) + (float) $court->price_adjustment + (float) ($booking->trainerAddon?->price ?? 0);
                 }
             } elseif ($locked->transactionable_type === 'class' && ! empty($data['item_class_schedule_id'])) {
                 $participants = SessionParticipant::query()->where('transaction_id', $locked->id)->lockForUpdate()->get();
