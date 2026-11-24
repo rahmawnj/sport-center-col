@@ -17,30 +17,21 @@ class DashboardController extends Controller
     public function index(Request $request): Response
     {
         $today = Carbon::today();
-        $nowTime = Carbon::now()->format('H:i');
 
         $stats = [
-            'revenue_today' => (float) Transaction::whereDate('created_at', $today)
-                ->where('payment_status', 'fully_paid')
-                ->sum('total_amount'),
+            'revenue_today' => (float) Transaction::whereDate('created_at', $today)->where('payment_status', 'fully_paid')->sum('total_amount'),
             'transactions_today' => Transaction::whereDate('created_at', $today)->count(),
-            'bookings_today' => Booking::whereDate('date', $today)
-                ->whereNotIn('status', ['cancelled'])->count(),
-            'classes_today' => SessionParticipant::whereDate('session_date', $today)
-                ->where('status', '!=', 'cancelled')->count(),
-            'active_members' => UserMembership::where('status', '!=', 'cancelled')
-                ->whereDate('end_date', '>=', $today)->count(),
+            'bookings_today' => Booking::whereDate('date', $today)->whereNotIn('status', ['cancelled'])->count(),
+            'classes_today' => SessionParticipant::whereDate('session_date', $today)->where('status', '!=', 'cancelled')->count(),
+            'active_members' => UserMembership::where('status', '!=', 'cancelled')->whereDate('end_date', '>=', $today)->count(),
         ];
 
         $revenue = [];
         for ($i = 6; $i >= 0; $i--) {
             $day = $today->copy()->subDays($i);
-
             $revenue[] = [
                 'label' => $day->translatedFormat('d M'),
-                'total' => (float) Transaction::whereDate('created_at', $day)
-                    ->where('payment_status', 'fully_paid')
-                    ->sum('total_amount'),
+                'total' => (float) Transaction::whereDate('created_at', $day)->where('payment_status', 'fully_paid')->sum('total_amount'),
             ];
         }
 
@@ -50,6 +41,18 @@ class DashboardController extends Controller
             'completed' => Booking::whereDate('date', $today)->where('status', 'completed')->count(),
             'cancelled' => Booking::whereDate('date', $today)->where('status', 'cancelled')->count(),
         ];
+
+        return Inertia::render('Dashboard', [
+            'stats' => $stats,
+            'revenue' => $revenue,
+            'bookingStatus' => $bookingStatus,
+        ]);
+    }
+
+    public function monitoring(Request $request): Response
+    {
+        $today = Carbon::today();
+        $nowTime = Carbon::now()->format('H:i');
 
         $todaysBookings = Booking::with(['court:id,name', 'user:id,name'])
             ->whereDate('date', $today)
@@ -72,7 +75,7 @@ class DashboardController extends Controller
                 'class_name' => $participant->schedule?->sportClass?->name ?? 'Kelas',
                 'facility' => $participant->schedule?->sportClass?->facility?->name,
                 'trainer' => $participant->schedule?->trainer?->name,
-                'customer' => $participant->user?->name ?? 'Member',
+                'customer' => $participant->user?->name ?? $participant->guest_name ?? 'Peserta',
                 'start_time' => substr((string) $participant->schedule?->start_time, 0, 5),
                 'end_time' => substr((string) $participant->schedule?->end_time, 0, 5),
                 'status' => $participant->status,
@@ -105,9 +108,6 @@ class DashboardController extends Controller
             })
             ->values();
 
-        $stats['courts_in_use'] = $courtMonitor->where('in_use', true)->count();
-        $stats['courts_total'] = $courtMonitor->count();
-
         $bookings = $todaysBookings->map(fn (Booking $booking) => [
             'id' => $booking->id,
             'court' => $booking->court?->name,
@@ -117,13 +117,25 @@ class DashboardController extends Controller
             'status' => $booking->status,
         ])->values();
 
-        return Inertia::render('Dashboard', [
-            'stats' => $stats,
-            'revenue' => $revenue,
-            'bookingStatus' => $bookingStatus,
+        $recentTransactions = Transaction::with('user:id,name')
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(fn (Transaction $transaction) => [
+                'id' => $transaction->id,
+                'invoice_number' => $transaction->invoice_number,
+                'customer' => $transaction->user?->name ?? $transaction->guest_name ?? 'Pelanggan umum',
+                'amount' => (float) $transaction->total_amount,
+                'payment_status' => $transaction->payment_status,
+                'created_at' => $transaction->created_at?->format('H:i:s'),
+            ]);
+
+        return Inertia::render('Monitoring', [
+            'generatedAt' => now()->format('H:i:s'),
             'courtMonitor' => $courtMonitor,
             'bookings' => $bookings,
             'todaysClasses' => $todaysClasses,
+            'recentTransactions' => $recentTransactions,
         ]);
     }
 }
