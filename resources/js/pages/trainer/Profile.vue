@@ -23,7 +23,7 @@ const form = useForm({
     name: props.profile.name,
     email: props.profile.email ?? '',
     specialty: props.profile.specialty ?? '',
-    photo: null as File | null,
+    image_profile: null as File | null,
 });
 
 const avatarUrl = computed(() => previewUrl.value || props.profile.photo_url);
@@ -31,7 +31,7 @@ const initials = computed(() => props.profile.name.trim().split(/\s+/).slice(0, 
 
 function selectPhoto(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0] ?? null;
-    form.photo = file;
+    form.image_profile = file;
     previewUrl.value = file ? URL.createObjectURL(file) : null;
 }
 
@@ -39,7 +39,7 @@ function startEditing() {
     form.name = props.profile.name;
     form.email = props.profile.email ?? '';
     form.specialty = props.profile.specialty ?? '';
-    form.photo = null;
+    form.image_profile = null;
     previewUrl.value = null;
     editing.value = true;
 }
@@ -48,7 +48,7 @@ function cancelEditing() {
     editing.value = false;
     form.clearErrors();
     form.reset();
-    form.photo = null;
+    form.image_profile = null;
     previewUrl.value = null;
     if (photoInput.value) photoInput.value.value = '';
 }
@@ -60,7 +60,7 @@ function save() {
         onSuccess: () => {
             editing.value = false;
             previewUrl.value = null;
-            form.photo = null;
+            form.image_profile = null;
         },
     });
 }
@@ -140,10 +140,10 @@ function save() {
                                 <Camera v-else class="size-7" />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <label for="trainer-profile-photo" class="text-sm font-bold text-slate-800">Foto profil</label>
+                                <label for="trainer-profile-image" class="text-sm font-bold text-slate-800">Foto profil</label>
                                 <p class="mt-1 text-xs text-slate-500">JPG, PNG, atau WEBP. Maksimal 2 MB.</p>
-                                <input id="trainer-profile-photo" ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" class="mt-3 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-lime-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-lime-800 hover:file:bg-lime-200" @change="selectPhoto" />
-                                <p v-if="form.errors.photo" class="mt-1 text-xs text-rose-600">{{ form.errors.photo }}</p>
+                                <input id="trainer-profile-image" ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" class="mt-3 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-lime-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-lime-800 hover:file:bg-lime-200" @change="selectPhoto" />
+                                <p v-if="form.errors.image_profile" class="mt-1 text-xs text-rose-600">{{ form.errors.image_profile }}</p>
                             </div>
                         </div>
                     </div>
