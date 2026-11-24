@@ -152,8 +152,8 @@ async function copyCurl() {
                 </article>
                 <article class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Rate limit</p>
-                    <p class="mt-2 text-2xl font-bold">60 <span class="text-base font-medium text-slate-400">requests/min</span></p>
-                    <p class="mt-1 text-sm text-slate-400">Sesuai throttle endpoint</p>
+                    <p class="mt-2 text-2xl font-bold text-emerald-300">Unlimited</p>
+                    <p class="mt-1 text-sm text-slate-400">Throttle Laravel dinonaktifkan untuk endpoint ini</p>
                 </article>
                 <article class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Response format</p>
@@ -246,7 +246,7 @@ async function copyCurl() {
                             <li><span class="font-mono text-cyan-200">HTTP 200</span> + <span class="font-mono">allowed: true</span> berarti akses diberikan.</li>
                             <li><span class="font-mono text-cyan-200">HTTP 200</span> + <span class="font-mono">allowed: false</span> berarti request diproses tetapi akses ditolak oleh aturan gate.</li>
                             <li><span class="font-mono text-amber-200">HTTP 422</span> berarti payload tidak lolos validasi.</li>
-                            <li><span class="font-mono text-amber-200">HTTP 429</span> berarti terkena rate limit.</li>
+                            <li><span class="font-mono text-amber-200">HTTP 429</span> tidak lagi berasal dari throttle Laravel endpoint ini; periksa proxy/server jika masih muncul.</li>
                             <li>Network error berarti browser tidak berhasil menjangkau endpoint.</li>
                         </ul>
                     </div>
