@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import TrainerDashboardLayout from '@/layouts/trainer/TrainerDashboardLayout.vue';
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, Dumbbell, UserRound } from '@lucide/vue';
+import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, Dumbbell, UserRound, Wallet } from '@lucide/vue';
 
 defineOptions({ layout: TrainerDashboardLayout });
 
@@ -27,7 +27,9 @@ type Schedule = {
     status: string;
 };
 
-defineProps<{ item: Item; schedules: Schedule[] }>();
+type Earnings = { package_price: number; share_percentage: number; completed_sessions: number; maximum_share: number; earned_amount: number };
+
+const props = defineProps<{ item: Item; schedules: Schedule[]; earnings: Earnings }>();
 
 const date = (value: string | null) =>
     value
@@ -37,6 +39,8 @@ const date = (value: string | null) =>
               year: 'numeric',
           })
         : '—';
+
+const money = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value || 0);
 
 const statusLabel = (status: string) =>
     ({
@@ -106,6 +110,23 @@ const statusClass = (status: string) => ({
                     <p class="text-xs text-slate-400">Paket berakhir</p>
                     <p class="mt-1 font-semibold text-slate-800">{{ date(item.expires_at) }}</p>
                 </div>
+            </div>
+        </section>
+
+        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 shadow-sm">
+                <div class="flex items-center gap-2 text-sm font-medium text-emerald-800"><Wallet class="size-4" /> Pendapatan dari member ini</div>
+                <p class="mt-3 text-2xl font-bold text-emerald-800">{{ money(props.earnings.earned_amount) }}</p>
+                <p class="mt-1 text-xs text-emerald-700">{{ props.earnings.completed_sessions }} sesi berhasil · bagian {{ props.earnings.share_percentage }}%</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-sm text-slate-500">Potensi bagian trainer</p><p class="mt-3 text-2xl font-bold text-slate-900">{{ money(props.earnings.maximum_share) }}</p><p class="mt-1 text-xs text-slate-400">Jika seluruh sesi paket berhasil.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-sm text-slate-500">Harga paket</p><p class="mt-3 text-2xl font-bold text-slate-900">{{ money(props.earnings.package_price) }}</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-sm text-slate-500">Persentase bagian</p><p class="mt-3 text-2xl font-bold text-slate-900">{{ props.earnings.share_percentage }}%</p>
             </div>
         </section>
 
