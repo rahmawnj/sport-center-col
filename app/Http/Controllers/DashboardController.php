@@ -82,23 +82,28 @@ class DashboardController extends Controller
 
     public function monitoring(Request $request): Response
     {
-        $today = Carbon::today();
+        $filters = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $selectedDate = $filters['date'] ?? Carbon::today()->toDateString();
+        $isToday = $selectedDate === Carbon::today()->toDateString();
         $nowTime = Carbon::now()->format('H:i');
 
-        $todaysBookings = Booking::with(['court:id,name', 'user:id,name'])
-            ->whereDate('date', $today)
+        $selectedBookings = Booking::with(['court:id,name', 'user:id,name'])
+            ->whereDate('date', $selectedDate)
             ->whereNotIn('status', ['cancelled'])
             ->orderBy('start_time')
             ->get();
 
-        $todaysClasses = SessionParticipant::query()
+        $selectedClasses = SessionParticipant::query()
             ->with([
                 'user:id,name',
                 'schedule.sportClass.facility:id,name',
                 'schedule.trainer:id,name',
                 'transaction:id,payment_status,invoice_number',
             ])
-            ->whereDate('session_date', $today)
+            ->whereDate('session_date', $selectedDate)
             ->where('status', '!=', 'cancelled')
             ->get()
             ->map(fn (SessionParticipant $participant) => [
@@ -119,10 +124,12 @@ class DashboardController extends Controller
         $courtMonitor = Court::with('facility:id,name')
             ->orderBy('name')
             ->get()
-            ->map(function (Court $court) use ($todaysBookings, $nowTime) {
-                $current = $todaysBookings->first(fn (Booking $booking) => $booking->court_id === $court->id
-                    && substr((string) $booking->start_time, 0, 5) <= $nowTime
-                    && substr((string) $booking->end_time, 0, 5) > $nowTime);
+            ->map(function (Court $court) use ($selectedBookings, $nowTime, $isToday) {
+                $current = $isToday
+                    ? $selectedBookings->first(fn (Booking $booking) => $booking->court_id === $court->id
+                        && substr((string) $booking->start_time, 0, 5) <= $nowTime
+                        && substr((string) $booking->end_time, 0, 5) > $nowTime)
+                    : null;
 
                 return [
                     'id' => $court->id,
@@ -139,7 +146,7 @@ class DashboardController extends Controller
             })
             ->values();
 
-        $bookings = $todaysBookings->map(fn (Booking $booking) => [
+        $bookings = $selectedBookings->map(fn (Booking $booking) => [
             'id' => $booking->id,
             'court' => $booking->court?->name,
             'customer' => $booking->user?->name ?? $booking->guest_name ?? 'Umum',
@@ -149,6 +156,7 @@ class DashboardController extends Controller
         ])->values();
 
         $recentTransactions = Transaction::with('user:id,name')
+            ->whereDate('created_at', $selectedDate)
             ->latest()
             ->limit(8)
             ->get()
@@ -163,9 +171,11 @@ class DashboardController extends Controller
 
         return Inertia::render('Monitoring', [
             'generatedAt' => now()->format('H:i:s'),
+            'selectedDate' => $selectedDate,
+            'isToday' => $isToday,
             'courtMonitor' => $courtMonitor,
             'bookings' => $bookings,
-            'todaysClasses' => $todaysClasses,
+            'todaysClasses' => $selectedClasses,
             'recentTransactions' => $recentTransactions,
         ]);
     }
