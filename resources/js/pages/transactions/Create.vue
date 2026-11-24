@@ -435,11 +435,16 @@ function chooseSlot(slot: Slot) {
     slotSelectionError.value = '';
 
     const current = [...selectedSlots.value].sort((a, b) => a.start_time.localeCompare(b.start_time));
-    const alreadySelected = current.some((item) => item.start_time === slot.start_time);
+    const selectedIndex = current.findIndex((item) => item.start_time === slot.start_time);
     let chosen: Slot[];
 
-    if (alreadySelected) {
-        chosen = current.filter((item) => item.start_time !== slot.start_time);
+    if (selectedIndex >= 0) {
+        // Keep the remaining selection continuous when removing a slot.
+        chosen = selectedIndex === 0
+            ? current.slice(1)
+            : selectedIndex === current.length - 1
+                ? current.slice(0, -1)
+                : current.slice(0, selectedIndex);
     } else if (current.length === 0) {
         chosen = [slot];
     } else {
@@ -448,19 +453,18 @@ function chooseSlot(slot: Slot) {
         const lastIndex = slots.value.findIndex((item) => item.start_time === all[all.length - 1].start_time);
         const range = slots.value.slice(firstIndex, lastIndex + 1);
         const turnaround = Math.max(0, Number(activeFacility.value?.turnaround_minutes ?? 0));
-        const step = 60 + turnaround;
 
-        const isContinuous = range.length === lastIndex - firstIndex + 1
+        const isContinuous = firstIndex >= 0
+            && lastIndex >= firstIndex
+            && range.length === lastIndex - firstIndex + 1
             && range.every((item, index) => {
                 const start = item.start_time.split(':').map(Number);
                 const end = item.end_time.split(':').map(Number);
-                const duration = (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]);
-                if (duration !== 60) return false;
+                if (end[0] * 60 + end[1] - (start[0] * 60 + start[1]) !== 60) return false;
                 if (index === 0) return true;
-                const previous = range[index - 1];
-                const previousEnd = previous.end_time.split(':').map(Number);
-                const currentStart = item.start_time.split(':').map(Number);
-                return currentStart[0] * 60 + currentStart[1]
+
+                const previousEnd = range[index - 1].end_time.split(':').map(Number);
+                return start[0] * 60 + start[1]
                     === previousEnd[0] * 60 + previousEnd[1] + turnaround;
             });
 
