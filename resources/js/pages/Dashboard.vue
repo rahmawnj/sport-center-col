@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { Activity, CalendarRange, CheckCircle2, CircleDollarSign, Clock3, CreditCard, Receipt, RotateCcw, Search, TrendingUp } from '@lucide/vue';
+import { Activity, CalendarRange, CheckCircle2, CircleDollarSign, Clock3, CreditCard, Receipt, RotateCcw, TrendingUp } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
 type Summary = { transaction_count: number; revenue: number; average_transaction: number };
@@ -126,9 +126,6 @@ function resetFilter() {
 
 const formatIDR = (value: number) => new Intl.NumberFormat('id-ID', {
     style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
-}).format(value);
-const formatCompactIDR = (value: number) => new Intl.NumberFormat('id-ID', {
-    notation: 'compact', maximumFractionDigits: 1,
 }).format(value);
 const formatDateTime = (value: string | null) => {
     if (!value) return '—';
