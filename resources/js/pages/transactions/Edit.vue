@@ -97,7 +97,7 @@ function submit() {
             description="Periksa item yang dibeli, ubah detail pesanan, lalu kelola tagihan dan verifikasi pembayarannya."
         />
 
-        <div class="max-w-4xl space-y-6">
+        <div class="grid items-start gap-6 xl:grid-cols-2">
             <section class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
                 <div class="flex items-center gap-3">
                     <div class="rounded-xl bg-primary/10 p-2.5 text-primary"><ShoppingBag class="size-5" /></div>
@@ -235,7 +235,7 @@ function submit() {
                 </div>
             </section>
 
-            <form @submit.prevent="submit" class="space-y-6 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
+            <form @submit.prevent="submit" class="min-w-0 space-y-6 rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
                 <div class="flex items-center gap-3">
                     <div class="rounded-xl bg-primary/10 p-2.5 text-primary"><CreditCard class="size-5" /></div>
                     <div>
