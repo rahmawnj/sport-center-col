@@ -54,7 +54,9 @@ class MemberTrainerPackage extends Model
 
     public function trainer(): BelongsTo
     {
-        return $this->belongsTo(Trainer::class);
+        // Keep the assigned trainer visible on historical member packages
+        // even if the trainer record has been soft-deleted.
+        return $this->belongsTo(Trainer::class)->withTrashed();
     }
 
     public function getRemainingSessionsAttribute(): int
