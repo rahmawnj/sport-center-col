@@ -12,12 +12,12 @@ return new class extends Migration
         Schema::table('transactions', function (Blueprint $table) {
             $table->decimal('paid_amount', 15, 2)->default(0)->after('total_amount');
             $table->enum('payment_review_status', ['pending', 'accepted', 'rejected'])
-                ->default('accepted')
+                ->default('pending')
                 ->after('payment_status');
         });
 
-        // Preserve existing completed/DP records as already verified. New
-        // unpaid transactions must pass an explicit admin verification.
+        // Existing unpaid and partial-payment transactions require verification.
+        // Only fully paid legacy transactions remain accepted.
         DB::table('transactions')
             ->whereIn('payment_status', ['unpaid', 'dp_paid'])
             ->update(['payment_review_status' => 'pending']);
