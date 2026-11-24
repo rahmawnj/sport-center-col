@@ -28,6 +28,7 @@ use App\Http\Controllers\VerifyController;
 use App\Http\Middleware\EnsureUserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', [PublicHomeController::class, 'index'])->name('home');
 Route::get('pelatih/{trainer}', [PublicHomeController::class, 'showTrainer'])->name('public.trainers.show');
@@ -175,6 +176,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('trainer-packages/{trainerPackage}', [TrainerPackageController::class, 'destroy'])->name('trainer-packages.destroy');
         Route::post('trainer-packages/purchase', [TrainerPackageController::class, 'purchase'])->name('trainer-packages.purchase');
         Route::post('trainer-packages/{memberTrainerPackage}/use-session', [TrainerPackageController::class, 'useSession'])->name('trainer-packages.use-session');
+
+        Route::get('api-docs', fn () => Inertia::render('api-docs/Index'))->name('api-docs');
 
         Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
         Route::get('transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
