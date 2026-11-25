@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Court;
 use App\Models\Transaction;
 use App\Models\SessionParticipant;
+use App\Models\MemberProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -109,7 +110,32 @@ class DashboardController extends Controller
                 'created_at' => $transaction->created_at?->format('Y-m-d H:i:s'),
             ]);
 
+        $membersMissingFacePhoto = MemberProfile::query()
+            ->with('user:id,name,email')
+            ->where(function ($query) {
+                $query->whereNull('face_photo_path')->orWhere('face_photo_path', '');
+            })
+            ->whereHas('user')
+            ->latest('updated_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (MemberProfile $profile) => [
+                'id' => $profile->id,
+                'name' => $profile->user?->name ?? 'Member',
+                'email' => $profile->user?->email,
+                'member_code' => $profile->member_code,
+                'registered_at' => $profile->user?->created_at?->format('Y-m-d'),
+            ])
+            ->values();
+
         return Inertia::render('Dashboard', [
+            'membersMissingFacePhoto' => $membersMissingFacePhoto,
+            'membersMissingFacePhotoCount' => MemberProfile::query()
+                ->where(function ($query) {
+                    $query->whereNull('face_photo_path')->orWhere('face_photo_path', '');
+                })
+                ->whereHas('user')
+                ->count(),
             'summary' => $summary,
             'categoryRows' => $categoryRows,
             'dailyRows' => $dailyRows,
