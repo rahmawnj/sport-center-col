@@ -47,7 +47,7 @@ class PublicHomeController extends Controller
                 'id' => $trainer->id,
                 'name' => $trainer->name,
                 'specialty' => $trainer->specialty,
-                'image' => $trainer->user?->image_profile ? Storage::disk('public')->url($trainer->user->image_profile) : null,
+                'image' => $trainer->user?->image_profile ? '/storage/'.ltrim($trainer->user->image_profile, '/') : null,
                 'sports' => $trainer->facilities->pluck('name')->values(),
             ],
             'packages' => $packages,
