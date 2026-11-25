@@ -165,8 +165,13 @@ const activeServices = computed(() => {
     ];
 });
 const visiblePackages = computed(() => {
-    if (activeService.value !== 'membership') return [];
-    return activeFacility.value?.packages.filter((item) => item.type === 'membership') ?? [];
+    if (activeService.value === 'membership') {
+        return activeFacility.value?.packages.filter((item) => item.type === 'membership') ?? [];
+    }
+    if (activeService.value === 'session') {
+        return activeFacility.value?.packages.filter((item) => item.type === 'entry') ?? [];
+    }
+    return [];
 });
 const participantNames = computed(() => [form.customer_name.trim() || 'Umum']);
 const classOptions = computed(() => {
@@ -266,10 +271,12 @@ const total = computed(() => activeService.value === 'session' && isClassFacilit
     ? unitPrice.value * participantNames.value.length
     : unitPrice.value,
 );
-const checkoutTotal = computed(() => isBooking.value && form.is_free ? 0 : total.value);
+const checkoutTotal = computed(() => form.is_free ? 0 : total.value);
+const isEntryPackage = computed(() => selected.value?.type === 'entry');
+const isClassRegistration = computed(() => activeService.value === 'session' && isClassFacility.value && !isEntryPackage.value);
 const canSubmit = computed(() => {
     if (isBooking.value) return !!date.value && selectedSlots.value.length > 0 && !!courtId.value;
-    if (activeService.value === 'session' && isClassFacility.value) return !!classScheduleId.value && !!classDate.value && classRemaining.value >= 1;
+    if (isClassRegistration.value) return !!classScheduleId.value && !!classDate.value && classRemaining.value >= 1;
     if (!selected.value) return false;
 
     if (isSession.value) {
@@ -318,6 +325,8 @@ watch(unitPrice, () => {
 });
 
 watch(activeService, () => {
+    form.is_free = false;
+    form.free_reason = '';
     selected.value = null;
     date.value = today
     slots.value = [];
@@ -351,6 +360,10 @@ function chooseClassDate(value: string) {
 }
 
 watch(selected, () => {
+    if (selected.value?.type !== 'entry') {
+        form.is_free = false;
+        form.free_reason = '';
+    }
     date.value = today
     slots.value = [];
     existingBookings.value = [];
@@ -531,14 +544,14 @@ function submit() {
         });
         return;
     }
-    if (activeService.value === 'session' && isClassFacility.value) {
+    if (isClassRegistration.value) {
         form.package_id = null;
         form.facility_id = null;
         form.class_schedule_id = classScheduleId.value;
         form.participants = [form.customer_name.trim() || 'Umum'];
         form.date = classDate.value;
         form.quantity = 1;
-        form.amount = total.value;
+        form.amount = checkoutTotal.value;
         form.pricing_rule_id = null;
         form.court_id = null;
         form.start_time = '';
@@ -568,6 +581,7 @@ function submit() {
         form.customer_name = form.new_member_name.trim();
     }
     form.membership_start_date = isMembership.value ? form.membership_start_date : '';
+    form.amount = checkoutTotal.value;
     form.post('/transactions');
 }
 
@@ -668,7 +682,7 @@ function formatDate(value: Date) {
                 </section>
 
                 <div
-                    v-if="visiblePackages.length && !(activeService === 'session' && isClassFacility)"
+                    v-if="visiblePackages.length"
                     class="grid gap-3 sm:grid-cols-2"
                 >
                     <button
@@ -712,11 +726,11 @@ function formatDate(value: Date) {
                         </div>
                     </button>
                 </div>
-                <p v-else-if="activeService !== 'booking' && !(activeService === 'session' && isClassFacility)" class="text-sm text-muted-foreground">
+                <p v-else-if="activeService === 'membership'" class="text-sm text-muted-foreground">
                     Belum ada paket untuk layanan ini.
                 </p>
 
-                <div v-if="activeService === 'session' && isClassFacility" class="space-y-4 rounded-2xl border bg-card p-4">
+                <div v-if="isClassRegistration" class="space-y-4 rounded-2xl border bg-card p-4">
                     <div class="space-y-2">
                         <Label>Pilih kelas</Label>
                         <p v-if="!classOptions.length" class="text-sm text-muted-foreground">Belum ada kelas terjadwal untuk olahraga ini.</p>
@@ -955,7 +969,7 @@ function formatDate(value: Date) {
                     <h2 class="font-semibold">Ringkasan</h2>
                 </div>
 
-                <div v-if="activeService === 'session' && isClassFacility" class="space-y-4 pt-4">
+                <div v-if="isClassRegistration" class="space-y-4 pt-4">
                     <div class="font-medium">{{ selectedClassSchedule?.class_name || 'Pendaftaran kelas' }}</div>
                     <div class="text-xs text-muted-foreground">{{ classDate || '—' }} · 1 peserta · {{ classRemaining }} slot tersisa</div>
                     <div class="grid gap-2">
@@ -963,15 +977,30 @@ function formatDate(value: Date) {
                         <Input id="class-participant-name" v-model="form.customer_name" placeholder="Nama peserta / Umum" />
                     </div>
                     <div class="flex justify-between text-sm"><span>Harga / peserta</span><span>{{ formatIDR(unitPrice) }}</span></div>
-                    <div class="flex justify-between border-t pt-2 font-semibold"><span>Total</span><span>{{ formatIDR(total) }}</span></div>
                     <div class="grid gap-2">
-                        <Label class="text-xs">Metode pembayaran</Label>
-                        <FormSelect v-model="form.payment_method" :options="methodOptions" />
+                        <Label class="text-xs">Jenis transaksi</Label>
+                        <div class="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
+                            <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="!form.is_free ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="form.is_free = false; form.free_reason = ''">Berbayar</button>
+                            <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="form.is_free ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="form.is_free = true; form.payment_status = 'paid'; form.payment_method = 'cash'">FREE</button>
+                        </div>
                     </div>
-                    <div class="grid gap-2">
-                        <Label class="text-xs">Status pembayaran</Label>
-                        <FormSelect v-model="form.payment_status" :options="statusOptions" />
+                    <div v-if="form.is_free" class="grid gap-2">
+                        <Label for="class-free-reason" class="text-xs">Alasan kelas FREE</Label>
+                        <textarea id="class-free-reason" v-model="form.free_reason" rows="3" maxlength="1000" required class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Contoh: kelas promosi, kompensasi, event, atau kebijakan manajemen." />
+                        <p v-if="form.errors.free_reason" class="text-xs text-destructive">{{ form.errors.free_reason }}</p>
+                        <p class="text-xs text-muted-foreground">Peserta langsung dikonfirmasi dan transaksi tercatat Rp0.</p>
                     </div>
+                    <template v-else>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">Metode pembayaran</Label>
+                            <FormSelect v-model="form.payment_method" :options="methodOptions" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">Status pembayaran</Label>
+                            <FormSelect v-model="form.payment_status" :options="statusOptions" />
+                        </div>
+                    </template>
+                    <div class="flex justify-between border-t pt-2 font-semibold"><span>Total</span><span :class="form.is_free ? 'text-emerald-600' : ''">{{ formatIDR(checkoutTotal) }}</span></div>
                     <Button class="w-full" :disabled="form.processing || !canSubmit" @click="submit">{{ form.processing ? 'Menyimpan...' : 'Simpan transaksi' }}</Button>
                 </div>
 
@@ -1159,21 +1188,31 @@ function formatDate(value: Date) {
                         />
                     </div>
 
-                    <div class="grid gap-2">
-                        <Label class="text-xs">Metode pembayaran</Label>
-                        <FormSelect
-                            v-model="form.payment_method"
-                            :options="methodOptions"
-                        />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label class="text-xs">Status pembayaran</Label>
-                        <FormSelect
-                            v-model="form.payment_status"
-                            :options="statusOptions"
-                        />
-                    </div>
+                    <template v-if="isEntryPackage">
+                        <div class="grid gap-2">
+                            <Label class="text-xs">Jenis transaksi</Label>
+                            <div class="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
+                                <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="!form.is_free ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="form.is_free = false; form.free_reason = ''">Berbayar</button>
+                                <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="form.is_free ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="form.is_free = true; form.payment_status = 'paid'; form.payment_method = 'cash'">FREE</button>
+                            </div>
+                        </div>
+                        <div v-if="form.is_free" class="grid gap-2">
+                            <Label for="entry-free-reason" class="text-xs">Alasan tiket masuk FREE</Label>
+                            <textarea id="entry-free-reason" v-model="form.free_reason" rows="3" maxlength="1000" required class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Contoh: undangan event, kompensasi, atau kebijakan manajemen." />
+                            <p v-if="form.errors.free_reason" class="text-xs text-destructive">{{ form.errors.free_reason }}</p>
+                            <p class="text-xs text-muted-foreground">Akses masuk langsung dikonfirmasi dan transaksi tercatat Rp0.</p>
+                        </div>
+                    </template>
+                    <template v-if="!form.is_free || !isEntryPackage">
+                        <div class="grid gap-2">
+                            <Label class="text-xs">Metode pembayaran</Label>
+                            <FormSelect v-model="form.payment_method" :options="methodOptions" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">Status pembayaran</Label>
+                            <FormSelect v-model="form.payment_status" :options="statusOptions" />
+                        </div>
+                    </template>
 
                     <div class="space-y-2 rounded-xl bg-muted/40 p-3">
                         <div class="flex justify-between text-sm">
@@ -1185,7 +1224,7 @@ function formatDate(value: Date) {
                         >
                             <span class="font-medium">Total</span>
                             <span class="text-lg font-semibold text-primary">
-                                {{ formatIDR(total) }}
+                                {{ formatIDR(checkoutTotal) }}
                             </span>
                         </div>
                     </div>
