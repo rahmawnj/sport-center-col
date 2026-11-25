@@ -118,6 +118,8 @@ const form = useForm({
     customer_name: '',
     payment_method: 'cash',
     payment_status: 'paid',
+    is_free: false,
+    free_reason: '',
     amount: 0,
     court_id: null as number | null,
     date: '',
@@ -264,6 +266,7 @@ const total = computed(() => activeService.value === 'session' && isClassFacilit
     ? unitPrice.value * participantNames.value.length
     : unitPrice.value,
 );
+const checkoutTotal = computed(() => isBooking.value && form.is_free ? 0 : total.value);
 const canSubmit = computed(() => {
     if (isBooking.value) return !!date.value && selectedSlots.value.length > 0 && !!courtId.value;
     if (activeService.value === 'session' && isClassFacility.value) return !!classScheduleId.value && !!classDate.value && classRemaining.value >= 1;
@@ -515,7 +518,7 @@ function submit() {
         form.date = date.value;
         form.start_time = bookingStartTime.value;
         form.user_id = null;
-        form.amount = total.value;
+        form.amount = checkoutTotal.value;
         console.group('[KASIR] Submit booking');
         console.log('Payload:', form.data());
         console.groupEnd();
@@ -986,16 +989,31 @@ function formatDate(value: Date) {
                         <Input id="pos-customer-booking" v-model="form.customer_name" placeholder="Umum / walk-in" />
                     </div>
                     <div class="grid gap-2">
-                        <Label class="text-xs">Metode pembayaran</Label>
-                        <FormSelect v-model="form.payment_method" :options="methodOptions" />
+                        <Label class="text-xs">Jenis transaksi</Label>
+                        <div class="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
+                            <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="!form.is_free ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="form.is_free = false; form.free_reason = ''">Berbayar</button>
+                            <button type="button" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors" :class="form.is_free ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'" @click="form.is_free = true; form.payment_status = 'paid'; form.payment_method = 'cash'">FREE</button>
+                        </div>
                     </div>
-                    <div class="grid gap-2">
-                        <Label class="text-xs">Status pembayaran</Label>
-                        <FormSelect v-model="form.payment_status" :options="statusOptions" />
+                    <div v-if="form.is_free" class="grid gap-2">
+                        <Label for="free-reason" class="text-xs">Alasan booking FREE</Label>
+                        <textarea id="free-reason" v-model="form.free_reason" rows="3" maxlength="1000" required class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Contoh: kompensasi pelanggan, event, sponsorship, atau kebijakan manajemen." />
+                        <p v-if="form.errors.free_reason" class="text-xs text-destructive">{{ form.errors.free_reason }}</p>
+                        <p class="text-xs text-muted-foreground">Booking langsung disetujui oleh Admin dan tercatat sebagai transaksi Rp0.</p>
                     </div>
+                    <template v-else>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">Metode pembayaran</Label>
+                            <FormSelect v-model="form.payment_method" :options="methodOptions" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">Status pembayaran</Label>
+                            <FormSelect v-model="form.payment_status" :options="statusOptions" />
+                        </div>
+                    </template>
                     <div class="flex items-center justify-between rounded-xl bg-muted/40 p-3">
                         <span class="font-medium">Total</span>
-                        <span class="text-lg font-semibold text-primary">{{ formatIDR(total) }}</span>
+                        <span class="text-lg font-semibold" :class="form.is_free ? 'text-emerald-600' : 'text-primary'">{{ formatIDR(checkoutTotal) }}</span>
                     </div>
                     <p v-if="form.errors.date" class="text-xs text-destructive">{{ form.errors.date }}</p>
                     <p v-if="form.errors.court_id" class="text-xs text-destructive">{{ form.errors.court_id }}</p>
