@@ -1036,7 +1036,7 @@ class TransactionController extends Controller
                     'session_date' => $date->toDateString(),
                     'guest_name' => $name === 'Umum' ? null : $name,
                     'transaction_id' => $transaction->id,
-                    'price' => $price,
+                    'price' => $isFree ? 0 : $price,
                     'status' => $paid ? 'confirmed' : 'pending',
                 ]);
             }
