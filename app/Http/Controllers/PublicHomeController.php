@@ -16,7 +16,7 @@ class PublicHomeController extends Controller
 {
     public function showTrainer(Trainer $trainer): Response
     {
-        $trainer->load(['facilities' => fn ($query) => $query
+        $trainer->load(['user:id,image_profile', 'facilities' => fn ($query) => $query
             ->where('facilities.status', 'active')
             ->select('facilities.id', 'facilities.name')]);
 
@@ -47,6 +47,7 @@ class PublicHomeController extends Controller
                 'id' => $trainer->id,
                 'name' => $trainer->name,
                 'specialty' => $trainer->specialty,
+                'image' => $trainer->user?->image_profile ? Storage::disk('public')->url($trainer->user->image_profile) : null,
                 'sports' => $trainer->facilities->pluck('name')->values(),
             ],
             'packages' => $packages,
@@ -123,15 +124,16 @@ class PublicHomeController extends Controller
 
         $trainers = Trainer::query()
             ->whereNull('deleted_at')
-            ->with(['facilities' => fn ($query) => $query
+            ->with(['user:id,image_profile', 'facilities' => fn ($query) => $query
                 ->where('facilities.status', 'active')
                 ->select('facilities.id', 'facilities.name')])
             ->orderBy('name')
-            ->get(['id', 'name', 'specialty'])
+            ->get(['id', 'user_id', 'name', 'specialty'])
             ->map(fn (Trainer $trainer) => [
                 'id' => $trainer->id,
                 'name' => $trainer->name,
                 'specialty' => $trainer->specialty,
+                'image' => $trainer->user?->image_profile ? Storage::disk('public')->url($trainer->user->image_profile) : null,
                 'sports' => $trainer->facilities->pluck('name')->values(),
             ]);
 
