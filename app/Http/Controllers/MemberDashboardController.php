@@ -18,8 +18,9 @@ class MemberDashboardController extends Controller
 {
     public function index(Request $request): Response
     {
-        $user = $request->user();
+        $user = $request->user()->loadMissing('memberProfile');
         $today = today();
+        $needsFaceRegistration = blank($user->memberProfile?->face_photo_path);
 
         $bookings = Booking::query()
             ->with(['court:id,name,facility_id', 'court.facility:id,name', 'trainerAddon.trainer'])
@@ -136,6 +137,7 @@ class MemberDashboardController extends Controller
             ->get(['id', 'invoice_number', 'guest_name', 'user_id', 'total_amount', 'payment_method', 'payment_status', 'created_at']);
 
         return Inertia::render('member/Dashboard', [
+            'needsFaceRegistration' => $needsFaceRegistration,
             'stats' => [
                 'upcoming_bookings' => Booking::where('user_id', $user->id)
                     ->whereDate('date', '>=', $today)
