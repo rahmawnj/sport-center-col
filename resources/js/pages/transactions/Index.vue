@@ -13,6 +13,8 @@ type Transaction = {
     invoice_number: string | null;
     customer_name: string | null;
     booking_source_label: string;
+    is_free: boolean;
+    free_reason: string | null;
     input_by_label: string;
     handled_by_label: string;
     reference: string;
