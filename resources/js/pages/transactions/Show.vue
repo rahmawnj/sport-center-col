@@ -18,6 +18,9 @@ type Props = {
         payment_status: PaymentStatus;
         reference: string;
         created_at: string | null;
+        booking_source_label: string;
+        input_by_label: string;
+        handled_by_label: string;
         item_name: string;
         details: Detail[];
     };
@@ -139,6 +142,24 @@ function formatDateTime(value: string | null) {
                 <div class="p-5">
                     <p class="text-xs text-muted-foreground">Status pembayaran</p>
                     <p class="mt-1 text-sm font-semibold">{{ status.label }}</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-2xl border bg-card p-5 shadow-sm">
+            <h3 class="font-semibold">Sumber dan petugas transaksi</h3>
+            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                <div>
+                    <p class="text-xs text-muted-foreground">Booking Source</p>
+                    <p class="mt-1 text-sm font-semibold">{{ meta.booking_source_label }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-muted-foreground">Input By</p>
+                    <p class="mt-1 text-sm font-semibold">{{ meta.input_by_label }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-muted-foreground">Handled By</p>
+                    <p class="mt-1 text-sm font-semibold">{{ meta.handled_by_label }}</p>
                 </div>
             </div>
         </section>
