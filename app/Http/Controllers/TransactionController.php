@@ -900,12 +900,6 @@ class TransactionController extends Controller
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
-        if (! empty($data['is_free']) && ! $isCashierBooking) {
-            throw ValidationException::withMessages([
-                'is_free' => 'Pilihan FREE hanya tersedia untuk booking lapangan dari kasir.',
-            ]);
-        }
-
         if (! empty($data['class_schedule_id'])) {
             $this->storeClassSession($data);
             return redirect()->route('transactions.index')->with('success', 'Pendaftaran kelas berhasil disimpan.');
@@ -947,6 +941,11 @@ class TransactionController extends Controller
         }
 
         $package = Package::with('facility')->findOrFail($data['package_id']);
+        if (! empty($data['is_free']) && $package->type !== 'entry') {
+            throw ValidationException::withMessages([
+                'is_free' => 'Pilihan FREE hanya tersedia untuk booking, kelas, dan tiket masuk harian.',
+            ]);
+        }
         if ($package->type === 'session') {
             abort_unless($package->facility?->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
             $this->storeBooking($package, $data);
@@ -966,18 +965,24 @@ class TransactionController extends Controller
                 throw ValidationException::withMessages(['pricing_rule_id' => 'Pilih aturan harga yang sesuai dengan paket.']);
             }
             // Satu transaksi kasir untuk tiket masuk selalu satu item.
-            $amount = (float) $rule->price;
+            $isFree = (bool) ($data['is_free'] ?? false);
+            $amount = $isFree ? 0 : (float) $rule->price;
             Transaction::create([
                 'booking_source' => 'cashier',
                 'input_by' => auth()->id(),
                 'input_by_automatic' => false,
-                'handled_by_automatic' => true,
+                'handled_by' => $isFree ? auth()->id() : null,
+                'handled_by_automatic' => ! $isFree,
                 'user_id' => null,
                 'transactionable_type' => 'entry',
                 'customer_name' => $data['customer_name'] ?: 'Umum',
                 'amount' => $amount,
-                'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_status'] === 'paid' ? 'fully_paid' : 'unpaid',
+                'is_free' => $isFree,
+                'free_reason' => $isFree ? trim((string) $data['free_reason']) : null,
+                'payment_method' => $isFree ? 'cash' : $data['payment_method'],
+                'payment_status' => $isFree || $data['payment_status'] === 'paid' ? 'fully_paid' : 'unpaid',
+                'payment_review_status' => $isFree ? 'accepted' : null,
+                'paid_amount' => $isFree ? 0 : null,
             ]);
         }
 
@@ -1007,17 +1012,23 @@ class TransactionController extends Controller
                 throw ValidationException::withMessages(['participants' => 'Jumlah peserta melebihi sisa kuota kelas.']);
             }
             $price = (float) $schedule->price;
-            $paid = ($data['payment_status'] ?? 'paid') === 'paid';
+            $isFree = (bool) ($data['is_free'] ?? false);
+            $paid = $isFree || ($data['payment_status'] ?? 'paid') === 'paid';
             $transaction = Transaction::create([
                 'booking_source' => 'cashier',
                 'input_by' => auth()->id(),
                 'input_by_automatic' => false,
-                'handled_by_automatic' => true,
+                'handled_by' => $isFree ? auth()->id() : null,
+                'handled_by_automatic' => ! $isFree,
                 'transactionable_type' => 'class',
                 'customer_name' => $data['customer_name'] ?? $names->first(),
-                'amount' => $price * $names->count(),
-                'payment_method' => $data['payment_method'],
+                'amount' => $isFree ? 0 : $price * $names->count(),
+                'is_free' => $isFree,
+                'free_reason' => $isFree ? trim((string) $data['free_reason']) : null,
+                'payment_method' => $isFree ? 'cash' : $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
+                'payment_review_status' => $isFree ? 'accepted' : null,
+                'paid_amount' => $isFree ? 0 : null,
             ]);
             foreach ($names as $name) {
                 SessionParticipant::create([
