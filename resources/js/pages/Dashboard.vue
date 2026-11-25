@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { Activity, CalendarRange, CheckCircle2, CircleDollarSign, Clock3, CreditCard, Receipt, RotateCcw, TrendingUp } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
