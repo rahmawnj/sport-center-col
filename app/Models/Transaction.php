@@ -23,7 +23,11 @@ class Transaction extends Model
         'paid_amount',
         'booking_status',
         'transactionable_type',
+        'booking_source',
+        'input_by',
+        'input_by_automatic',
         'handled_by',
+        'handled_by_automatic',
         'cancelled_at',
     ];
 
@@ -34,6 +38,8 @@ class Transaction extends Model
             'total_amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'cancelled_at' => 'datetime',
+            'input_by_automatic' => 'boolean',
+            'handled_by_automatic' => 'boolean',
         ];
     }
 
@@ -99,6 +105,16 @@ class Transaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function inputBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'input_by');
+    }
+
+    public function handledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'handled_by');
     }
 
     public function sessionParticipants(): HasMany
