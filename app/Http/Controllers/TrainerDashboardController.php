@@ -61,7 +61,7 @@ class TrainerDashboardController extends Controller
 
     public function index(Request $request): Response
     {
-        $trainer = $this->trainerFor($request);
+        $trainer = $this->trainerFor($request)->load('user:id,image_profile');
         $packages = MemberTrainerPackage::query()
             ->with(['user:id,name,email', 'trainerPackage:id,name,price,trainer_share_percentage', 'facility:id,name'])
             ->where('trainer_id', $trainer->id)
@@ -98,6 +98,7 @@ class TrainerDashboardController extends Controller
             'trainer' => [
                 'name' => $trainer->name,
                 'specialty' => $trainer->specialty,
+                'photo_url' => $trainer->user?->image_profile ? Storage::disk('public')->url($trainer->user->image_profile) : null,
                 'facilities' => $trainer->facilities()->pluck('name')->all(),
             ],
             'stats' => [
