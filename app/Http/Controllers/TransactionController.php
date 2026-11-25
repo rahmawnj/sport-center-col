@@ -1399,7 +1399,7 @@ class TransactionController extends Controller
                 'payment_method' => $isFree ? 'cash' : $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
                 'payment_review_status' => $isFree ? 'accepted' : null,
-                'paid_amount' => 0,
+                'paid_amount' => $isFree ? 0 : null,
             ]);
         });
     }
