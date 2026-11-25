@@ -62,6 +62,8 @@ class TransactionController extends Controller
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
                 'booking_source' => $transaction->booking_source,
                 'booking_source_label' => $transaction->booking_source === 'cashier' ? 'Cashier' : 'Website',
+                'is_free' => (bool) $transaction->is_free,
+                'free_reason' => $transaction->free_reason,
                 'input_by_label' => $transaction->inputBy?->name ?? ($transaction->input_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
                 'handled_by_label' => $transaction->handledBy?->name ?? ($transaction->handled_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
                 'type' => $transaction->transactionable_type,
@@ -848,6 +850,8 @@ class TransactionController extends Controller
                 'created_at' => $transaction->created_at?->toISOString(),
                 'booking_source' => $transaction->booking_source,
                 'booking_source_label' => $transaction->booking_source === 'cashier' ? 'Cashier' : 'Website',
+                'is_free' => (bool) $transaction->is_free,
+                'free_reason' => $transaction->free_reason,
                 'input_by_label' => $transaction->inputBy?->name ?? ($transaction->input_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
                 'handled_by_label' => $transaction->handledBy?->name ?? ($transaction->handled_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
                 'item_name' => $itemName,
@@ -882,6 +886,8 @@ class TransactionController extends Controller
             'payment_method' => ['required', Rule::in(['cash', 'bank_transfer', 'qris'])],
             'payment_status' => ['required', Rule::in(['paid', 'pending'])],
             'amount' => ['required', 'numeric', 'min:0'],
+            'is_free' => ['nullable', 'boolean'],
+            'free_reason' => ['required_if:is_free,1', 'nullable', 'string', 'max:1000'],
             'court_id' => ['nullable', 'integer', 'exists:courts,id'],
             'date' => ['nullable', 'date', 'after_or_equal:today'],
             'membership_start_date' => ['nullable', 'date'],
@@ -893,6 +899,12 @@ class TransactionController extends Controller
             'start_time' => ['nullable', 'date_format:H:i'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
+
+        if (! empty($data['is_free']) && ! $isCashierBooking) {
+            throw ValidationException::withMessages([
+                'is_free' => 'Pilihan FREE hanya tersedia untuk booking lapangan dari kasir.',
+            ]);
+        }
 
         if (! empty($data['class_schedule_id'])) {
             $this->storeClassSession($data);
@@ -1358,7 +1370,8 @@ class TransactionController extends Controller
                 throw ValidationException::withMessages(['start_time' => 'Lapangan sudah terisi pada rentang jam tersebut. Pilih slot atau lapangan lain.']);
             }
 
-            $paid = ($data['payment_status'] ?? 'paid') === 'paid';
+            $isFree = (bool) ($data['is_free'] ?? false);
+            $paid = $isFree || ($data['payment_status'] ?? 'paid') === 'paid';
             $booking = Booking::create([
                 'guest_name' => $data['customer_name'] ?: 'Umum',
                 'court_id' => $court->id,
@@ -1369,23 +1382,24 @@ class TransactionController extends Controller
                 'status' => $paid ? 'confirmed' : 'pending',
             ]);
 
-            $amount = array_sum($slotPrices) + (float) $court->price_adjustment;
+            $amount = $isFree ? 0 : array_sum($slotPrices) + (float) $court->price_adjustment;
             Transaction::create([
-                'booking_source' => 'cashier',
-                'input_by' => auth()->id(),
-                'input_by_automatic' => false,
-                'handled_by_automatic' => true,
                 'transactionable_type' => 'booking',
                 'booking_source' => 'cashier',
                 'input_by' => auth()->id(),
                 'input_by_automatic' => false,
-                'handled_by_automatic' => true,
+                'handled_by' => $isFree ? auth()->id() : null,
+                'handled_by_automatic' => ! $isFree,
                 'guest_name' => $data['customer_name'] ?: 'Umum',
                 'amount' => $amount,
+                'is_free' => $isFree,
+                'free_reason' => $isFree ? trim((string) $data['free_reason']) : null,
                 'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
                 'booking_status' => $paid ? 'approved' : 'pending',
-                'payment_method' => $data['payment_method'],
+                'payment_method' => $isFree ? 'cash' : $data['payment_method'],
                 'payment_status' => $paid ? 'fully_paid' : 'unpaid',
+                'payment_review_status' => $isFree ? 'accepted' : null,
+                'paid_amount' => 0,
             ]);
         });
     }
