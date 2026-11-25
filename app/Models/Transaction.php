@@ -28,6 +28,8 @@ class Transaction extends Model
         'input_by_automatic',
         'handled_by',
         'handled_by_automatic',
+        'is_free',
+        'free_reason',
         'cancelled_at',
     ];
 
@@ -40,6 +42,7 @@ class Transaction extends Model
             'cancelled_at' => 'datetime',
             'input_by_automatic' => 'boolean',
             'handled_by_automatic' => 'boolean',
+            'is_free' => 'boolean',
         ];
     }
 
