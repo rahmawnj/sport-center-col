@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,6 +36,7 @@ class TrainerController extends Controller
                 'user_id' => $trainer->user_id,
                 'user_name' => $trainer->user?->name,
                 'user_email' => $trainer->user?->email,
+                'image_profile_url' => $trainer->user?->image_profile ? '/storage/'.ltrim($trainer->user->image_profile, '/') : null,
                 'specialty' => $trainer->specialty,
                 'facility_ids' => $trainer->facilities->pluck('id')->map(fn ($id) => (int) $id)->all(),
                 'facilities' => $trainer->facilities->pluck('name')->all(),
@@ -119,19 +121,30 @@ class TrainerController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8'],
+            'image_profile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'specialty' => ['nullable', 'string', 'max:255'],
             'facility_ids' => ['required', 'array', 'min:1'],
             'facility_ids.*' => ['integer', 'distinct', Rule::exists('facilities', 'id')->where('has_membership', true)],
         ]);
 
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($data, $request) {
             $role = Role::where('name', 'Trainer')->firstOrFail();
 
             $user = new User();
             $user->name = $data['name'];
             $user->email = $data['email'];
             $user->password = $data['password'];
+            if ($request->hasFile('image_profile')) {
+                $user->image_profile = $request->file('image_profile')->store('trainer-profiles', 'public');
+            }
             $user->role_id = $role->id;
+            if ($request->hasFile('image_profile')) {
+                $oldImage = $user->image_profile;
+                $user->image_profile = $request->file('image_profile')->store('trainer-profiles', 'public');
+                if ($oldImage) {
+                    Storage::disk('public')->delete($oldImage);
+                }
+            }
             $user->save();
 
             $trainer = Trainer::create([
@@ -151,13 +164,14 @@ class TrainerController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($trainer->user_id)],
             'password' => [Rule::requiredIf(! $trainer->user_id), 'nullable', 'string', 'min:8'],
+            'image_profile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'specialty' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'facility_ids' => ['required', 'array', 'min:1'],
             'facility_ids.*' => ['integer', 'distinct', 'exists:facilities,id'],
         ]);
 
-        DB::transaction(function () use ($data, $trainer) {
+        DB::transaction(function () use ($data, $trainer, $request) {
             $role = Role::where('name', 'Trainer')->firstOrFail();
             $user = $trainer->user;
 
