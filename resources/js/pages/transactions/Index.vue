@@ -12,6 +12,9 @@ type Transaction = {
     id: number;
     invoice_number: string | null;
     customer_name: string | null;
+    booking_source_label: string;
+    input_by_label: string;
+    handled_by_label: string;
     reference: string;
     amount: number;
     payment_method: string | null;
@@ -342,12 +345,13 @@ function formatDateTime(value: string | null) {
 
             <div class="overflow-hidden rounded-2xl border bg-card shadow-sm">
                 <div class="overflow-x-auto">
-                <table class="w-full min-w-[1250px] text-sm">
+                <table class="w-full min-w-[1400px] text-sm">
                     <thead class="border-b bg-muted/40 text-left">
                         <tr>
                             <th class="px-4 py-3 font-medium">Waktu</th>
                             <th class="px-4 py-3 font-medium">Invoice</th>
                             <th class="px-4 py-3 font-medium">Pelanggan</th>
+                            <th class="px-4 py-3 font-medium">Sumber & Petugas</th>
                             <th class="px-4 py-3 font-medium">Jenis & detail pesanan</th>
                             <th class="px-4 py-3 font-medium">Referensi</th>
                             <th class="px-4 py-3 font-medium">Jumlah Scan</th>
@@ -377,6 +381,15 @@ function formatDateTime(value: string | null) {
                             </td>
                             <td class="px-4 py-3">
                                 {{ row.customer_name || 'Umum' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" :class="row.booking_source_label === 'Cashier' ? 'bg-sky-500/10 text-sky-600' : 'bg-violet-500/10 text-violet-600'">
+                                    {{ row.booking_source_label }}
+                                </span>
+                                <div class="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
+                                    <p>Input By: <span class="font-medium text-foreground">{{ row.input_by_label }}</span></p>
+                                    <p>Handled By: <span class="font-medium text-foreground">{{ row.handled_by_label }}</span></p>
+                                </div>
                             </td>
                             <td class="min-w-[240px] px-4 py-3">
                                 <div class="font-medium">{{ row.type_label }}</div>
@@ -448,7 +461,7 @@ function formatDateTime(value: string | null) {
                         </tr>
                         <tr v-if="!props.transactions.data.length">
                             <td
-                                colspan="10"
+                                colspan="11"
                                 class="px-4 py-12 text-center text-muted-foreground"
                             >
                                 <Receipt
