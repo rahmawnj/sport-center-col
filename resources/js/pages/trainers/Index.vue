@@ -17,6 +17,7 @@ type Trainer = {
     user_id: number | null;
     user_name: string | null;
     user_email: string | null;
+    image_profile_url: string | null;
     facility_ids: number[];
     facilities: string[];
 };
@@ -153,10 +154,9 @@ function initials(value: string) {
 
             <template #name="{ row }">
                 <div class="flex items-center gap-3">
-                    <div
-                        class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary"
-                    >
-                        {{ initials(row.name) }}
+                    <div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                        <img v-if="row.image_profile_url" :src="row.image_profile_url" :alt="`Foto ${row.name}`" class="size-full object-cover" />
+                        <span v-else>{{ initials(row.name) }}</span>
                     </div>
                     <div class="min-w-0">
                         <Link
@@ -264,6 +264,16 @@ function initials(value: string) {
                 v-slot="{ errors, processing }"
             >
                 <div class="grid gap-4">
+                    <div class="grid gap-2">
+                        <Label for="trainer-image">Foto trainer</Label>
+                        <div v-if="editing?.image_profile_url" class="flex items-center gap-3">
+                            <img :src="editing.image_profile_url" :alt="`Foto ${editing.name}`" class="size-16 rounded-xl border object-cover" />
+                            <p class="text-xs text-muted-foreground">Foto saat ini. Pilih gambar baru jika ingin menggantinya.</p>
+                        </div>
+                        <Input id="trainer-image" name="image_profile" type="file" accept="image/jpeg,image/png,image/webp" class="cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1 file:text-xs file:font-medium" />
+                        <p class="text-xs text-muted-foreground">JPG, PNG, atau WEBP. Maksimal 5 MB.</p>
+                        <p v-if="errors.image_profile" class="text-xs text-destructive">{{ errors.image_profile }}</p>
+                    </div>
                     <div class="grid gap-2">
                         <Label for="trainer-name">Nama trainer</Label>
                         <Input
