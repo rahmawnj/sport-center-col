@@ -153,6 +153,11 @@ class PublicBookingController extends Controller
             Transaction::query()->create([
                 'booking_code' => $bookingCode,
                 'transactionable_type' => 'booking',
+                'booking_source' => 'website',
+                'input_by' => null,
+                'input_by_automatic' => true,
+                'handled_by' => null,
+                'handled_by_automatic' => true,
                 'user_id' => $user?->id,
                 'guest_name' => $user ? $user->name : $data['guest_name'],
                 'total_amount' => $total,
