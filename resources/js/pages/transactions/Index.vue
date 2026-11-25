@@ -388,6 +388,9 @@ function formatDateTime(value: string | null) {
                                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" :class="row.booking_source_label === 'Cashier' ? 'bg-sky-500/10 text-sky-600' : 'bg-violet-500/10 text-violet-600'">
                                     {{ row.booking_source_label }}
                                 </span>
+                                <span v-if="row.is_free" class="ml-1 inline-flex rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600" :title="row.free_reason || 'Booking gratis'">
+                                    FREE
+                                </span>
                                 <div class="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
                                     <p>Input By: <span class="font-medium text-foreground">{{ row.input_by_label }}</span></p>
                                     <p>Handled By: <span class="font-medium text-foreground">{{ row.handled_by_label }}</span></p>
