@@ -163,6 +163,14 @@ function formatDateTime(value: string | null) {
                     <p class="text-xs text-muted-foreground">Handled By</p>
                     <p class="mt-1 text-sm font-semibold">{{ meta.handled_by_label }}</p>
                 </div>
+                <div v-if="meta.is_free">
+                    <p class="text-xs text-muted-foreground">Jenis pembayaran</p>
+                    <p class="mt-1 text-sm font-semibold text-emerald-600">FREE · Rp0</p>
+                </div>
+                <div v-if="meta.is_free" class="sm:col-span-3">
+                    <p class="text-xs text-muted-foreground">Alasan FREE</p>
+                    <p class="mt-1 whitespace-pre-wrap text-sm font-semibold">{{ meta.free_reason || '—' }}</p>
+                </div>
             </div>
         </section>
 
