@@ -22,7 +22,7 @@ class TrainerController extends Controller
         $search = trim((string) $request->input('search', ''));
 
         $items = Trainer::query()
-            ->with(['facilities' => fn ($query) => $query->where('has_membership', true)->select('facilities.id', 'facilities.name'), 'user:id,name,email'])
+            ->with(['facilities' => fn ($query) => $query->where('has_membership', true)->select('facilities.id', 'facilities.name'), 'user:id,name,email,image_profile'])
             ->when($search !== '', fn ($query) => $query
                 ->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
                     ->orWhere('specialty', 'like', "%{$search}%")
@@ -138,13 +138,6 @@ class TrainerController extends Controller
                 $user->image_profile = $request->file('image_profile')->store('trainer-profiles', 'public');
             }
             $user->role_id = $role->id;
-            if ($request->hasFile('image_profile')) {
-                $oldImage = $user->image_profile;
-                $user->image_profile = $request->file('image_profile')->store('trainer-profiles', 'public');
-                if ($oldImage) {
-                    Storage::disk('public')->delete($oldImage);
-                }
-            }
             $user->save();
 
             $trainer = Trainer::create([
@@ -185,6 +178,13 @@ class TrainerController extends Controller
             $user->name = $data['name'];
             $user->email = $data['email'];
             $user->role_id = $role->id;
+            if ($request->hasFile('image_profile')) {
+                $oldImage = $user->image_profile;
+                $user->image_profile = $request->file('image_profile')->store('trainer-profiles', 'public');
+                if ($oldImage) {
+                    Storage::disk('public')->delete($oldImage);
+                }
+            }
             $user->save();
 
             $trainer->update([
