@@ -52,7 +52,7 @@ class TrainerController extends Controller
 
     public function show(Trainer $trainer): Response
     {
-        $trainer->load(['facilities:id,name', 'user:id,name,email']);
+        $trainer->load(['facilities:id,name', 'user:id,name,email,image_profile']);
 
         $memberPackages = $trainer->memberPackages()
             ->with(['user:id,name,email', 'trainerPackage:id,name,price', 'facility:id,name'])
@@ -104,6 +104,7 @@ class TrainerController extends Controller
                 'updated_at' => $trainer->updated_at?->toISOString(),
                 'user_name' => $trainer->user?->name,
                 'user_email' => $trainer->user?->email,
+                'image' => $trainer->user?->image_profile ? Storage::disk('public')->url($trainer->user->image_profile) : null,
                 'facilities' => $trainer->facilities->pluck('name')->values(),
                 'stats' => [
                     'packages_count' => $packageHistory->count(),
