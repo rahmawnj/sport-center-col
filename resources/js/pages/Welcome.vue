@@ -33,6 +33,7 @@ type TrainerItem = {
     id: number;
     name: string;
     specialty: string | null;
+    image: string | null;
     sports: string[];
 };
 
