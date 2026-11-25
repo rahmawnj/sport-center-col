@@ -6,6 +6,7 @@ type Trainer = {
     id: number;
     name: string;
     specialty: string | null;
+    image: string | null;
     sports: string[];
 };
 
@@ -42,7 +43,7 @@ const formatCurrency = (amount: number) =>
                         <i class="fa-solid fa-arrow-left"></i> Kembali ke daftar pelatih
                     </Link>
                     <div class="mt-9 flex flex-col gap-7 sm:flex-row sm:items-center">
-                        <div class="grid h-28 w-28 shrink-0 place-items-center rounded-3xl bg-white/10 text-5xl text-[#a4da01]"><i class="fa-solid fa-user-tie"></i></div>
+                        <div class="grid h-32 w-32 shrink-0 place-items-center overflow-hidden rounded-3xl bg-white/10 text-5xl text-[#a4da01]"><img v-if="trainer.image" :src="trainer.image" :alt="'Foto ' + trainer.name" class="size-full object-cover" /><i v-else class="fa-solid fa-user-tie"></i></div>
                         <div>
                             <p class="text-xs font-black uppercase tracking-[.2em] text-[#a4da01]">Profil pelatih</p>
                             <h1 class="mt-2 text-3xl font-black sm:text-5xl">{{ trainer.name }}</h1>
