@@ -127,7 +127,7 @@ function formatDateTime(value: string | null) {
                     <p class="mt-1 text-2xl font-bold tracking-tight tabular-nums">{{ formatIDR(meta.amount) }}</p>
                     <div class="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <CreditCard class="size-4 shrink-0" />
-                        {{ meta.payment_method ? (methodLabel[meta.payment_method] ?? meta.payment_method) : 'Belum ada metode' }}
+                        {{ meta.is_free ? 'FREE' : (meta.payment_method ? (methodLabel[meta.payment_method] ?? meta.payment_method) : 'Belum ada metode') }}
                     </div>
                 </div>
             </div>
