@@ -16,7 +16,7 @@ import { computed, ref } from 'vue';
 const page = usePage();
 const sidebarOpen = ref(false);
 const profileMenuOpen = ref(false);
-const user = computed(() => (page.props.auth as { user?: { name?: string; email?: string } } | undefined)?.user);
+const user = computed(() => (page.props.auth as { user?: { name?: string; email?: string; image_profile_url?: string | null } } | undefined)?.user);
 const currentPath = computed(() => page.url.split('?')[0]);
 
 const navigation = [
@@ -48,8 +48,9 @@ const navigation = [
             <div class="border-b border-slate-100 px-5 py-5">
                 <p class="text-[11px] font-bold uppercase tracking-[.16em] text-slate-400">Trainer area</p>
                 <div class="mt-3 flex items-center gap-3">
-                    <div class="grid size-11 shrink-0 place-items-center rounded-full bg-lime-100 font-bold text-lime-800">
-                        {{ (user?.name || 'M').slice(0, 1).toUpperCase() }}
+                    <div class="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full bg-lime-100 font-bold text-lime-800">
+                        <img v-if="user?.image_profile_url" :src="user.image_profile_url" :alt="user?.name || 'Foto trainer'" class="size-full object-cover" />
+                        <span v-else>{{ (user?.name || 'M').slice(0, 1).toUpperCase() }}</span>
                     </div>
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold">{{ user?.name || 'Trainer' }}</p>
@@ -104,8 +105,9 @@ const navigation = [
                             <p class="text-sm font-semibold text-slate-900">{{ user?.name || 'Trainer' }}</p>
                             <p class="text-xs text-slate-500">Akun Trainer</p>
                         </div>
-                        <div class="grid size-10 place-items-center rounded-full bg-[#a4da01]/25 font-bold text-[#304600]">
-                            {{ (user?.name || 'M').slice(0, 1).toUpperCase() }}
+                        <div class="grid size-10 place-items-center overflow-hidden rounded-full bg-[#a4da01]/25 font-bold text-[#304600]">
+                            <img v-if="user?.image_profile_url" :src="user.image_profile_url" :alt="user?.name || 'Foto trainer'" class="size-full object-cover" />
+                            <span v-else>{{ (user?.name || 'M').slice(0, 1).toUpperCase() }}</span>
                         </div>
                         <ChevronDown class="size-4 text-slate-500 transition" :class="profileMenuOpen ? 'rotate-180' : ''" />
                     </button>
