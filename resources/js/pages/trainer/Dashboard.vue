@@ -12,7 +12,7 @@ type Schedule = {
 };
 
 const props = defineProps<{
-    trainer: { name: string; specialty: string | null; facilities: string[] };
+    trainer: { name: string; specialty: string | null; photo_url: string | null; facilities: string[] };
     stats: {
         total_members: number; remaining_sessions: number;
         earned_income: number; potential_income: number;
@@ -34,8 +34,16 @@ const date = (value: string) => new Date(value + 'T00:00:00').toLocaleDateString
     <div class="space-y-7">
         <section class="relative isolate overflow-hidden rounded-3xl bg-[#001428] p-6 text-white sm:p-8 lg:p-10">
             <div class="absolute -right-10 -top-20 -z-10 size-72 rounded-full bg-[#a4da01]/20 blur-3xl" />
-            <p class="text-xs font-bold uppercase tracking-[.2em] text-[#b9ec35]">Ringkasan pekerjaan</p>
-            <h1 class="mt-3 text-2xl font-bold sm:text-3xl">Halo, {{ props.trainer.name }}!</h1>
+            <div class="flex items-center gap-4">
+                <div class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/15 bg-white/10 text-2xl font-bold text-[#b9ec35]">
+                    <img v-if="props.trainer.photo_url" :src="props.trainer.photo_url" :alt="'Foto ' + props.trainer.name" class="size-full object-cover" />
+                    <span v-else>{{ props.trainer.name.slice(0, 1).toUpperCase() }}</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[.2em] text-[#b9ec35]">Ringkasan pekerjaan</p>
+                    <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Halo, {{ props.trainer.name }}!</h1>
+                </div>
+            </div>
             <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Pantau jadwal latihan yang dibuat admin, konfirmasi kehadiran, lihat member binaan, dan cek pendapatan dari sesi yang sudah berhasil.</p>
             <div class="mt-5 flex flex-wrap gap-2">
                 <span v-if="props.trainer.specialty" class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">{{ props.trainer.specialty }}</span>
