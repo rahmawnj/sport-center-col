@@ -37,7 +37,7 @@ const formatCurrency = (amount: number) =>
     <PublicLayout>
         <main class="min-h-screen bg-[#f7f9f3] text-[#001428]">
             <section class="bg-[#001428] px-5 py-14 text-white sm:py-20">
-                <div class="mx-auto max-w-5xl">
+                <div class="mx-auto w-full max-w-7xl">
                     <Link href="/#pelatih" class="inline-flex items-center gap-2 text-sm font-bold text-slate-300 transition hover:text-[#a4da01]">
                         <i class="fa-solid fa-arrow-left"></i> Kembali ke daftar pelatih
                     </Link>
