@@ -214,6 +214,11 @@ class PublicMembershipRegistrationController extends Controller
             $transaction = Transaction::create([
                 'user_id' => $user->id,
                 'transactionable_type' => $package ? 'membership' : 'trainer_package',
+                'booking_source' => 'website',
+                'input_by' => null,
+                'input_by_automatic' => true,
+                'handled_by' => null,
+                'handled_by_automatic' => true,
                 'guest_name' => $user->name,
                 'total_amount' => (float) ($package?->price ?? 0) + (float) ($trainerPackage?->price ?? 0),
                 'payment_method' => $data['payment_method'],
