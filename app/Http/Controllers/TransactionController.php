@@ -44,6 +44,7 @@ class TransactionController extends Controller
         $dbStatus = $statusMap[$status] ?? null;
 
         $transactions = Transaction::query()
+            ->with(['inputBy:id,name', 'handledBy:id,name'])
             ->when($search !== '', fn ($query) => $query->where('guest_name', 'like', "%{$search}%"))
             ->when($dbStatus, fn ($query) => $query->where('payment_status', $dbStatus))
             ->when($from, fn ($query) => $query->whereDate('created_at', '>=', $from))
@@ -59,6 +60,10 @@ class TransactionController extends Controller
                 'amount' => (float) $transaction->amount,
                 'payment_method' => $transaction->payment_method,
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
+                'booking_source' => $transaction->booking_source,
+                'booking_source_label' => $transaction->booking_source === 'cashier' ? 'Cashier' : 'Website',
+                'input_by_label' => $transaction->inputBy?->name ?? ($transaction->input_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
+                'handled_by_label' => $transaction->handledBy?->name ?? ($transaction->handled_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
                 'type' => $transaction->transactionable_type,
                 'type_label' => $this->transactionTypeLabel($transaction->transactionable_type),
                 'item_summary' => $this->transactionItemSummary($transaction),
@@ -525,6 +530,10 @@ class TransactionController extends Controller
             $locked->paid_amount = $data['paid_amount'];
             $locked->payment_method = $data['payment_method'];
             $locked->payment_review_status = $data['payment_review_status'];
+            if ($locked->payment_review_status !== ($locked->getOriginal('payment_review_status') ?? 'pending')) {
+                $locked->handled_by = auth()->id();
+                $locked->handled_by_automatic = false;
+            }
 
             // Only verified money counts as received. A rejected or unverified
             // payment never advances the financial status.
@@ -677,7 +686,7 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction): Response
     {
-        $transaction->load(['sessionParticipants.schedule.sportClass.facility', 'sessionParticipants.schedule.trainer']);
+        $transaction->load(['inputBy:id,name', 'handledBy:id,name', 'sessionParticipants.schedule.sportClass.facility', 'sessionParticipants.schedule.trainer']);
         $details = [];
         $itemName = 'Transaksi';
 
@@ -837,6 +846,10 @@ class TransactionController extends Controller
                 'payment_status' => $this->normalizeStatus($transaction->payment_status),
                 'reference' => $this->reference($transaction),
                 'created_at' => $transaction->created_at?->toISOString(),
+                'booking_source' => $transaction->booking_source,
+                'booking_source_label' => $transaction->booking_source === 'cashier' ? 'Cashier' : 'Website',
+                'input_by_label' => $transaction->inputBy?->name ?? ($transaction->input_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
+                'handled_by_label' => $transaction->handledBy?->name ?? ($transaction->handled_by_automatic ? 'Otomatis (System)' : 'Akun dihapus'),
                 'item_name' => $itemName,
                 'details' => $details,
             ],
@@ -943,6 +956,10 @@ class TransactionController extends Controller
             // Satu transaksi kasir untuk tiket masuk selalu satu item.
             $amount = (float) $rule->price;
             Transaction::create([
+                'booking_source' => 'cashier',
+                'input_by' => auth()->id(),
+                'input_by_automatic' => false,
+                'handled_by_automatic' => true,
                 'user_id' => null,
                 'transactionable_type' => 'entry',
                 'customer_name' => $data['customer_name'] ?: 'Umum',
@@ -980,6 +997,10 @@ class TransactionController extends Controller
             $price = (float) $schedule->price;
             $paid = ($data['payment_status'] ?? 'paid') === 'paid';
             $transaction = Transaction::create([
+                'booking_source' => 'cashier',
+                'input_by' => auth()->id(),
+                'input_by_automatic' => false,
+                'handled_by_automatic' => true,
                 'transactionable_type' => 'class',
                 'customer_name' => $data['customer_name'] ?? $names->first(),
                 'amount' => $price * $names->count(),
@@ -1036,6 +1057,10 @@ class TransactionController extends Controller
             $paid = $data['payment_status'] === 'paid';
 
             $transaction = Transaction::create([
+                'booking_source' => 'cashier',
+                'input_by' => auth()->id(),
+                'input_by_automatic' => false,
+                'handled_by_automatic' => true,
                 'user_id' => $member->id,
                 'transactionable_type' => 'membership',
                 'customer_name' => $data['customer_name'] ?? null,
@@ -1192,7 +1217,15 @@ class TransactionController extends Controller
             ]);
 
             Transaction::create([
+                'booking_source' => 'cashier',
+                'input_by' => auth()->id(),
+                'input_by_automatic' => false,
+                'handled_by_automatic' => true,
                 'transactionable_type' => 'booking',
+                'booking_source' => 'cashier',
+                'input_by' => auth()->id(),
+                'input_by_automatic' => false,
+                'handled_by_automatic' => true,
                 'guest_name' => $data['customer_name'] ?: 'Umum',
                 'amount' => $amount,
                 'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
@@ -1338,7 +1371,15 @@ class TransactionController extends Controller
 
             $amount = array_sum($slotPrices) + (float) $court->price_adjustment;
             Transaction::create([
+                'booking_source' => 'cashier',
+                'input_by' => auth()->id(),
+                'input_by_automatic' => false,
+                'handled_by_automatic' => true,
                 'transactionable_type' => 'booking',
+                'booking_source' => 'cashier',
+                'input_by' => auth()->id(),
+                'input_by_automatic' => false,
+                'handled_by_automatic' => true,
                 'guest_name' => $data['customer_name'] ?: 'Umum',
                 'amount' => $amount,
                 'invoice_number' => 'BK-'.str_pad((string) $booking->id, 6, '0', STR_PAD_LEFT),
