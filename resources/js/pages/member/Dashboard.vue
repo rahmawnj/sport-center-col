@@ -8,6 +8,7 @@ type Booking = { id:number; date:string|null; start_time:string|null; end_time:s
 type ClassBooking = { id:number; transaction_id:number|null; class_name:string; facility:string|null; trainer:string|null; date:string|null; start_time:string; end_time:string; status:string; payment_status:string|null; invoice_number:string|null };
 type Membership = { id:number; package:string; facility:string|null; start_date:string|null; end_date:string|null; duration_days:number|null; status:string };
 defineProps<{
+  needsFaceRegistration:boolean;
   stats:{upcoming_bookings:number;completed_bookings:number;active_memberships:number;payments_count:number;payments_total:number};
   bookings:Booking[];
   classBookings:ClassBooking[];
@@ -30,6 +31,16 @@ const summaries = (stats:{upcoming_bookings:number;completed_bookings:number;act
 <template>
   <Head title="Dashboard Member" />
   <div class="space-y-7">
+    <section v-if="needsFaceRegistration" class="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-start gap-3">
+        <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><Clock3 class="size-5" /></div>
+        <div>
+          <p class="font-bold text-amber-950">Registrasi wajah belum selesai</p>
+          <p class="mt-1 text-sm leading-6 text-amber-900">Kamu belum memiliki foto wajah untuk akses Face Recognition. Setelah pembayaran paket berhasil, silakan hubungi petugas/Admin untuk melakukan pendaftaran wajah.</p>
+        </div>
+      </div>
+      <span class="shrink-0 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800">Perlu tindakan</span>
+    </section>
     <section class="relative isolate overflow-hidden rounded-3xl bg-[#001428] p-6 text-white sm:p-8 lg:p-10">
       <div class="absolute -right-10 -top-20 -z-10 size-72 rounded-full bg-[#a4da01]/20 blur-3xl" /><div class="absolute bottom-0 right-1/4 -z-10 size-40 rounded-full bg-sky-400/10 blur-3xl" />
       <div class="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
