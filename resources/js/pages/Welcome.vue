@@ -502,8 +502,11 @@ return 'Bangun rutinitas latihan dan capai target kebugaranmu.';
                         <Link v-for="(trainer, index) in trainers" :key="trainer.id" :href="`/pelatih/${trainer.id}`" :class="{ 'is-active': activeTrainerIndex === index }" class="trainer-card group block shrink-0 snap-center overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_12px_35px_rgba(0,20,40,0.07)] transition duration-500 hover:-translate-y-2 hover:shadow-[0_24px_55px_rgba(0,20,40,0.16)] focus:outline-none focus:ring-2 focus:ring-[#a4da01]">
                             <div class="trainer-avatar relative flex flex-col items-start justify-end p-5" :class="'trainer-avatar-' + (index % 4)">
                                 <span class="absolute left-4 top-4 rounded-full border border-white/50 bg-white/80 px-3 py-1.5 text-[10px] font-black uppercase tracking-[.16em] text-[#001428]">Personal trainer</span>
-                                <div class="trainer-avatar-icon absolute right-5 top-12 grid size-28 place-items-center rounded-full border border-white/50 bg-white/25 text-6xl text-[#001428]/80 shadow-inner transition duration-500 group-hover:scale-105 group-hover:-rotate-6">
-                                    <i class="fa-solid fa-user-tie"></i>
+                                <div class="absolute inset-0">
+                                    <img v-if="trainer.image" :src="trainer.image" :alt="'Foto ' + trainer.name" class="size-full object-cover transition duration-700 group-hover:scale-105" />
+                                    <div v-else class="trainer-avatar-icon absolute right-5 top-12 grid size-28 place-items-center rounded-full border border-white/50 bg-white/25 text-6xl text-[#001428]/80 shadow-inner transition duration-500 group-hover:scale-105 group-hover:-rotate-6">
+                                        <i class="fa-solid fa-user-tie"></i>
+                                    </div>
                                 </div>
                                 <span class="relative z-10 max-w-full truncate rounded-full bg-[#001428] px-3 py-2 text-xs font-extrabold text-white shadow-lg">{{ trainer.specialty || 'Pelatih olahraga' }}</span>
                             </div>
