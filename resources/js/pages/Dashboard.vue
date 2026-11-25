@@ -11,6 +11,7 @@ type TransactionRow = {
     id: number; invoice_number: string | null; customer: string; type: string | null;
     type_label: string; payment_method: string | null; amount: number; created_at: string | null;
 };
+type MemberMissingFacePhoto = { id:number; name:string; email:string|null; member_code:string|null; registered_at:string|null };
 
 const props = defineProps<{
     summary: Summary;
@@ -18,6 +19,8 @@ const props = defineProps<{
     dailyRows: DailyRow[];
     paymentMethods: PaymentMethod[];
     transactions: TransactionRow[];
+    membersMissingFacePhoto: MemberMissingFacePhoto[];
+    membersMissingFacePhotoCount: number;
     filters: { from: string | null; to: string | null };
 }>();
 
@@ -176,6 +179,26 @@ const periodLabel = computed(() => from.value || to.value ? `${formatDate(from.v
                 <CheckCircle2 class="size-3.5" /> Hanya transaksi lunas & terverifikasi
             </span>
         </div>
+
+        <section v-if="membersMissingFacePhotoCount > 0" class="overflow-hidden rounded-2xl border border-amber-200 bg-amber-50 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 px-5 py-4">
+                <div>
+                    <div class="flex items-center gap-2 text-amber-900"><Activity class="size-4" /><h2 class="font-semibold">Member belum registrasi wajah</h2></div>
+                    <p class="mt-1 text-sm text-amber-800">{{ membersMissingFacePhotoCount }} member belum memiliki foto wajah untuk Face Recognition.</p>
+                </div>
+                <span class="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800">Perlu tindak lanjut</span>
+            </div>
+            <div v-if="membersMissingFacePhoto.length" class="divide-y divide-amber-200/70">
+                <Link v-for="member in membersMissingFacePhoto" :key="member.id" :href="`/members/${member.id}`" class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition hover:bg-amber-100/60">
+                    <div>
+                        <p class="text-sm font-semibold text-amber-950">{{ member.name }}</p>
+                        <p class="mt-0.5 text-xs text-amber-800">{{ member.email || 'Email tidak tersedia' }}<span v-if="member.member_code"> · {{ member.member_code }}</span></p>
+                    </div>
+                    <span class="text-xs font-semibold text-amber-900">Lihat member →</span>
+                </Link>
+            </div>
+            <p v-if="membersMissingFacePhotoCount > membersMissingFacePhoto.length" class="px-5 py-3 text-xs text-amber-800">Menampilkan {{ membersMissingFacePhoto.length }} member terbaru dari {{ membersMissingFacePhotoCount }} yang belum memiliki foto wajah.</p>
+        </section>
 
         <section class="rounded-2xl border bg-card p-4 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3">
