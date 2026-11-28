@@ -1365,7 +1365,7 @@ class TransactionController extends Controller
         }
 
         DB::transaction(function () use ($facility, $data, $date, $startMinutes, $endMinutes, $turnaround, $baseAmount, $bookingType, $priceBreakdown) {
-            $court = \\App\\Models\\Court::query()
+            $court = \App\Models\Court::query()
                 ->lockForUpdate()
                 ->whereKey($data['court_id'])
                 ->where('facility_id', $facility->id)
