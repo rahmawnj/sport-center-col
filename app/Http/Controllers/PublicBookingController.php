@@ -116,17 +116,7 @@ class PublicBookingController extends Controller
             'has_operational_schedule' => $hasOperationalSchedule,
             'has_flexible_booking' => (bool) $facility->has_flexible_booking,
             'turnaround_minutes' => (int) $facility->turnaround_minutes,
-            'pricing_windows' => BookingTimeSlot::query()
-                ->where('facility_id', $facility->id)
-                ->where('day', strtolower($date->englishDayOfWeek))
-                ->where('is_active', true)
-                ->orderBy('start_time')
-                ->get(['start_time', 'end_time', 'price'])
-                ->map(fn (BookingTimeSlot $window) => [
-                    'start_time' => substr((string) $window->start_time, 0, 5),
-                    'end_time' => substr((string) $window->end_time, 0, 5),
-                    'price_per_hour' => (float) $window->price,
-                ])->values(),
+            'pricing_windows' => $this->flexiblePricingWindows($facility, $date),
             'bookings' => $bookings,
             'courts' => $courts,
         ]);
@@ -273,6 +263,40 @@ class PublicBookingController extends Controller
     }
 
     /**
+     * Expose tariff windows as continuous intervals across configured turnaround gaps.
+     * Fixed bookings keep their original windows; flexible bookings can cross tariff boundaries.
+     *
+     * @return array<int, array{start_time: string, end_time: string, price_per_hour: float}>
+     */
+    private function flexiblePricingWindows(Facility $facility, Carbon $date): array
+    {
+        $windows = BookingTimeSlot::query()
+            ->where('facility_id', $facility->id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->orderBy('start_time')
+            ->get();
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
+
+        return $windows->values()->map(function (BookingTimeSlot $window, int $index) use ($windows, $turnaround) {
+            $end = $this->toMinutes((string) $window->end_time);
+            $next = $windows->get($index + 1);
+            if ($next) {
+                $nextStart = $this->toMinutes((string) $next->start_time);
+                if ($nextStart > $end && ($nextStart - $end) <= $turnaround) {
+                    $end = $nextStart;
+                }
+            }
+
+            return [
+                'start_time' => substr((string) $window->start_time, 0, 5),
+                'end_time' => $this->toTime($end),
+                'price_per_hour' => (float) $window->price,
+            ];
+        })->all();
+    }
+
+    /**
      * Price a flexible booking minute-by-minute across the configured master rate windows.
      * Existing booking_time_slots are reused as the operating hours and hourly tariff source.
      *
@@ -284,34 +308,27 @@ class PublicBookingController extends Controller
         $start = $this->toMinutes($data['start_time']);
         $duration = (int) $data['duration_minutes'];
         $end = $start + $duration;
-        if ($duration < 30 || $duration > 960 || $duration % 30 !== 0 || $end > 1440) {
+        if ($duration < 30 || $duration > 960 || $duration % 30 !== 0 || $end >= 1440) {
             throw ValidationException::withMessages(['duration_minutes' => 'Durasi harus kelipatan 30 menit dan tidak boleh melewati tengah malam.']);
         }
         if ($date->isToday() && $start < (now()->hour * 60 + now()->minute)) {
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
 
-        $windows = BookingTimeSlot::query()
-            ->where('facility_id', $facility->id)
-            ->where('day', strtolower($date->englishDayOfWeek))
-            ->where('is_active', true)
-            ->orderBy('start_time')
-            ->get();
+        $windows = collect($this->flexiblePricingWindows($facility, $date));
 
         $cursor = $start;
         $total = 0.0;
         $segments = [];
         while ($cursor < $end) {
-            $window = $windows->first(function (BookingTimeSlot $item) use ($cursor) {
-                return $cursor >= $this->toMinutes((string) $item->start_time)
-                    && $cursor < $this->toMinutes((string) $item->end_time);
-            });
+            $window = $windows->first(fn (array $item) => $cursor >= $this->toMinutes($item['start_time'])
+                && $cursor < $this->toMinutes($item['end_time']));
             if (! $window) {
                 throw ValidationException::withMessages(['start_time' => 'Waktu booking harus berada dalam jam operasional dan tidak boleh melewati jeda tarif.']);
             }
 
-            $segmentEnd = min($end, $this->toMinutes((string) $window->end_time));
-            $rate = (float) $window->price;
+            $segmentEnd = min($end, $this->toMinutes($window['end_time']));
+            $rate = (float) $window['price_per_hour'];
             $subtotal = $rate * (($segmentEnd - $cursor) / 60);
             $segments[] = [
                 'start_time' => $this->toTime($cursor),
@@ -352,7 +369,7 @@ class PublicBookingController extends Controller
             if (! $facility->has_flexible_booking) {
                 throw ValidationException::withMessages(['booking_type' => 'Flexible Booking belum diaktifkan untuk fasilitas ini.']);
             }
-            if ($durationMinutes < 30 || $durationMinutes > 960 || $durationMinutes % 30 !== 0 || $endMinutes > 1440) {
+            if ($durationMinutes < 30 || $durationMinutes > 960 || $durationMinutes % 30 !== 0 || $endMinutes >= 1440) {
                 throw ValidationException::withMessages(['duration_minutes' => 'Durasi flexible booking harus kelipatan 30 menit dan tidak boleh melewati tengah malam.']);
             }
             $this->flexiblePrice($facility, $data);
