@@ -91,6 +91,7 @@ type Props = {
         slug: string;
         is_bookable_online: boolean;
         has_booking: boolean;
+        has_flexible_booking: boolean;
         has_session: boolean;
         has_membership: boolean;
         trainer_packages: TrainerPackage[];
@@ -287,6 +288,13 @@ const info = computed(() => [
         enabled: props.facility.has_booking,
         value: props.facility.has_booking ? 'Tersedia' : 'Tidak tersedia',
         disabled: false,
+    },
+    {
+        key: 'has_flexible_booking',
+        label: 'Flexible Booking',
+        enabled: props.facility.has_flexible_booking,
+        value: props.facility.has_flexible_booking ? 'Tersedia' : 'Tidak tersedia',
+        disabled: !props.facility.has_booking,
     },
     {
         key: 'has_membership',
