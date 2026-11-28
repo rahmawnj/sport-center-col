@@ -134,6 +134,8 @@ class PublicBookingController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['booking_type' => $request->input('booking_type', 'fixed')]);
+
         $contactRules = [
             'guest_name' => $request->user()
                 ? ['nullable', 'string', 'max:255']
