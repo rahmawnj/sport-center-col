@@ -219,7 +219,7 @@ it('prices flexible bookings proportionally across hourly rate periods', functio
 
     $this->post('/book', publicBookingPayload($facility, $court, $date, [
         'booking_type' => 'flexible',
-        'start_time' => '15:30',
+        'start_time' => '15:45',
         'duration_minutes' => 90,
     ]))->assertRedirect();
 
@@ -227,12 +227,12 @@ it('prices flexible bookings proportionally across hourly rate periods', functio
     $transaction = Transaction::sole();
 
     expect($booking->booking_type)->toBe('flexible');
-    expect(substr((string) $booking->start_time, 0, 5))->toBe('15:30');
-    expect(substr((string) $booking->end_time, 0, 5))->toBe('17:00');
-    expect((float) $transaction->total_amount)->toBe(425000.0);
+    expect(substr((string) $booking->start_time, 0, 5))->toBe('15:45');
+    expect(substr((string) $booking->end_time, 0, 5))->toBe('17:15');
+    expect((float) $transaction->total_amount)->toBe(437500.0);
     expect($booking->price_breakdown)->toHaveCount(2);
-    expect((float) $booking->price_breakdown[0]['subtotal'])->toBe(125000.0);
-    expect((float) $booking->price_breakdown[1]['subtotal'])->toBe(300000.0);
+    expect((float) $booking->price_breakdown[0]['subtotal'])->toBe(62500.0);
+    expect((float) $booking->price_breakdown[1]['subtotal'])->toBe(375000.0);
 });
 
 it('rejects a flexible booking that overlaps an existing fixed booking', function () {
