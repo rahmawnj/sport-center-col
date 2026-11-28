@@ -516,7 +516,7 @@ function formatIDR(value: number) {
                                     <div v-else-if="bookingType === 'flexible'" class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
                                         <div class="grid gap-2">
                                             <Label for="flexible-start-time">Jam mulai</Label>
-                                            <Input id="flexible-start-time" v-model="flexibleStartTime" type="time" step="1800" />
+                                            <Input id="flexible-start-time" v-model="flexibleStartTime" type="time" step="60" />
                                         </div>
                                         <div class="grid gap-2">
                                             <Label for="flexible-duration">Durasi</Label>
