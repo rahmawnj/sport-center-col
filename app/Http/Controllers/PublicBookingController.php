@@ -326,11 +326,6 @@ class PublicBookingController extends Controller
         return ['total' => round($total, 2), 'segments' => $segments];
     }
 
-    private function facilityForCourt(int $courtId): Facility
-    {
-        return Facility::query()->whereHas('courts', fn ($query) => $query->whereKey($courtId))->firstOrFail();
-    }
-
     private function courtAdjustment(mixed $courtId): float
     {
         return $courtId
@@ -382,7 +377,7 @@ class PublicBookingController extends Controller
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
 
-        return DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround) {
+        return DB::transaction(function () use ($request, $facility, $data, $date, $startMinutes, $endMinutes, $turnaround) {
             $conflict = Booking::query()
                 ->where('court_id', $data['court_id'])
                 ->whereDate('date', $date->toDateString())
@@ -414,7 +409,7 @@ class PublicBookingController extends Controller
                 'start_time' => $this->toTime($startMinutes),
                 'end_time' => $this->toTime($endMinutes),
                 'booking_type' => $bookingType,
-                'price_breakdown' => $bookingType === 'flexible' ? $this->flexiblePrice($this->facilityForCourt($data['court_id']), $data)['segments'] : null,
+                'price_breakdown' => $bookingType === 'flexible' ? $this->flexiblePrice($facility, $data)['segments'] : null,
                 'status' => 'pending',
             ]);
         });
