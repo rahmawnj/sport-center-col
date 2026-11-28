@@ -231,8 +231,8 @@ it('prices flexible bookings proportionally across hourly rate periods', functio
     expect(substr((string) $booking->end_time, 0, 5))->toBe('17:00');
     expect((float) $transaction->total_amount)->toBe(425000.0);
     expect($booking->price_breakdown)->toHaveCount(2);
-    expect($booking->price_breakdown[0]['subtotal'])->toBe(125000.0);
-    expect($booking->price_breakdown[1]['subtotal'])->toBe(300000.0);
+    expect((float) $booking->price_breakdown[0]['subtotal'])->toBe(125000.0);
+    expect((float) $booking->price_breakdown[1]['subtotal'])->toBe(300000.0);
 });
 
 it('rejects a flexible booking that overlaps an existing fixed booking', function () {
