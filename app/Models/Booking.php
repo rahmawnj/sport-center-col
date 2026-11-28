@@ -18,6 +18,8 @@ class Booking extends Model
         'date',
         'start_time',
         'end_time',
+        'booking_type',
+        'price_breakdown',
         'status',
     ];
 
@@ -25,6 +27,7 @@ class Booking extends Model
     {
         return [
             'date' => 'date',
+            'price_breakdown' => 'array',
         ];
     }
 
