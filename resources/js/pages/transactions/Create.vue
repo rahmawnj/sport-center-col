@@ -438,7 +438,7 @@ watch(memberId, (value) => {
     }
 });
 
-watch(date, () => {
+watch([date, facilityId, activeService, selected], () => {
     // This watcher also runs during Inertia SSR. Relative fetch URLs only work
     // in the browser, so defer availability requests until client hydration.
     if (typeof window === 'undefined') {
