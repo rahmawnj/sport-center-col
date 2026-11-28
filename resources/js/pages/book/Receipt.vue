@@ -16,6 +16,8 @@ type ReceiptData = {
     date: string | null;
     startTime: string;
     endTime: string;
+    bookingType?: 'fixed' | 'flexible';
+    priceBreakdown?: { start_time: string; end_time: string; price_per_hour: number; subtotal: number }[];
     status: string;
     total: number;
 };
@@ -113,9 +115,23 @@ async function shareLink() {
                                     <p class="text-sm text-slate-500">Jam</p>
                                     <p class="mt-1 font-semibold">{{ receipt.startTime }}–{{ receipt.endTime }}</p>
                                 </div>
+                                <div class="rounded-xl bg-slate-50 p-4">
+                                    <p class="text-sm text-slate-500">Jenis booking</p>
+                                    <p class="mt-1 font-semibold">{{ receipt.bookingType === 'flexible' ? 'Flexible Booking' : 'Fixed Booking' }}</p>
+                                </div>
                                 <div class="rounded-xl bg-slate-50 p-4 sm:col-span-2">
                                     <p class="flex items-center gap-2 text-sm text-slate-500"><MapPin class="size-4" /> Lapangan</p>
                                     <p class="mt-1 font-semibold">{{ receipt.court }}</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section v-if="receipt.bookingType === 'flexible' && receipt.priceBreakdown?.length" class="border-t border-dashed border-slate-200 pt-6">
+                            <h3 class="text-sm font-bold uppercase tracking-wide text-slate-500">Rincian tarif</h3>
+                            <div class="mt-4 space-y-2">
+                                <div v-for="segment in receipt.priceBreakdown" :key="segment.start_time" class="flex justify-between gap-3 text-sm">
+                                    <span class="text-slate-500">{{ segment.start_time }}–{{ segment.end_time }} · {{ formatIDR(segment.price_per_hour) }}/jam</span>
+                                    <span class="font-medium">{{ formatIDR(segment.subtotal) }}</span>
                                 </div>
                             </div>
                         </section>
