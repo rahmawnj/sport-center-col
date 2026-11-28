@@ -35,6 +35,7 @@ class FacilityController extends Controller
                 'is_bookable_online' => (bool) $facility->is_bookable_online,
                 'has_membership' => (bool) $facility->has_membership,
                 'has_booking' => (bool) $facility->has_booking,
+                'has_flexible_booking' => (bool) $facility->has_flexible_booking,
                 'has_session' => (bool) $facility->has_session,
                 'turnaround_minutes' => $facility->turnaround_minutes,
                 'status' => $facility->status,
@@ -76,6 +77,7 @@ class FacilityController extends Controller
                 'slug' => $facility->slug,
                 'is_bookable_online' => (bool) $facility->is_bookable_online,
                 'has_booking' => (bool) $facility->has_booking,
+                'has_flexible_booking' => (bool) $facility->has_flexible_booking,
                 'has_session' => (bool) $facility->has_session,
                 'has_membership' => (bool) $facility->has_membership,
                 'turnaround_minutes' => $facility->turnaround_minutes,
@@ -188,6 +190,7 @@ class FacilityController extends Controller
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
         $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
         $data['has_booking'] = (bool) ($data['has_booking'] ?? false);
+        $data['has_flexible_booking'] = (bool) ($data['has_flexible_booking'] ?? false);
         $data['has_session'] = (bool) ($data['has_session'] ?? false);
 
         Facility::create($data);
@@ -212,7 +215,7 @@ class FacilityController extends Controller
     public function updateCapabilities(Request $request, Facility $facility): RedirectResponse
     {
         $data = $request->validate([
-            'capability' => ['required', Rule::in(['has_booking', 'has_membership', 'has_session', 'status'])],
+            'capability' => ['required', Rule::in(['has_booking', 'has_flexible_booking', 'has_membership', 'has_session', 'status'])],
             'enabled' => ['required', 'boolean'],
         ]);
 
@@ -252,6 +255,7 @@ class FacilityController extends Controller
             'is_bookable_online' => ['boolean'],
             'has_membership' => ['boolean'],
             'has_booking' => ['boolean'],
+            'has_flexible_booking' => ['boolean'],
             'has_session' => ['boolean'],
             'turnaround_minutes' => ['required', 'integer', 'min:0', 'max:120'],
         ];
