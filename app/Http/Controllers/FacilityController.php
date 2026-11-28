@@ -190,7 +190,7 @@ class FacilityController extends Controller
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
         $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
         $data['has_booking'] = (bool) ($data['has_booking'] ?? false);
-        $data['has_flexible_booking'] = (bool) ($data['has_flexible_booking'] ?? false);
+        $data['has_flexible_booking'] = (bool) ($data['has_flexible_booking'] ?? false) && $data['has_booking'];
         $data['has_session'] = (bool) ($data['has_session'] ?? false);
 
         Facility::create($data);
@@ -205,7 +205,7 @@ class FacilityController extends Controller
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
         $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
         $data['has_booking'] = (bool) ($data['has_booking'] ?? false);
-        $data['has_flexible_booking'] = (bool) ($data['has_flexible_booking'] ?? false);
+        $data['has_flexible_booking'] = (bool) ($data['has_flexible_booking'] ?? $facility->has_flexible_booking) && $data['has_booking'];
         $data['has_session'] = (bool) ($data['has_session'] ?? false);
 
         $facility->update($data);
@@ -221,6 +221,7 @@ class FacilityController extends Controller
         ]);
 
         $enabled = (bool) $data['enabled'];
+        abort_if($data['capability'] === 'has_flexible_booking' && $enabled && ! $facility->has_booking, 422, 'Aktifkan Booking terlebih dahulu sebelum mengaktifkan Flexible Booking.');
 
         if ($data['capability'] === 'status') {
             $facility->update(['status' => $enabled ? 'active' : 'inactive']);
