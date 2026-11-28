@@ -30,6 +30,7 @@ type Facility = {
     id: number;
     name: string;
     has_booking: boolean;
+    has_flexible_booking: boolean;
     has_session: boolean;
     has_membership: boolean;
     packages: SellPackage[];
@@ -43,6 +44,7 @@ type Slot = {
     price: number;
     courts: { id: number; name: string; price_adjustment?: number; is_available?: boolean }[];
 };
+type RateWindow = { start_time: string; end_time: string; price_per_hour: number };
 type ExistingBooking = {
     court_id: number;
     court_name: string | null;
@@ -104,6 +106,12 @@ const selectedClassId = ref<number | null>(null);
 const date = ref(today);
 const slots = ref<Slot[]>([]);
 const existingBookings = ref<ExistingBooking[]>([]);
+const pricingWindows = ref<RateWindow[]>([]);
+const facilityCourts = ref<{ id: number; name: string; price_adjustment: number; is_available: boolean }[]>([]);
+const turnaroundMinutes = ref(0);
+const bookingType = ref<'fixed' | 'flexible'>('fixed');
+const flexibleStartTime = ref('09:00');
+const flexibleDurationMinutes = ref(60);
 const loadingSlots = ref(false);
 const selectedSlot = ref<Slot | null>(null);
 const selectedSlots = ref<Slot[]>([]);
@@ -126,6 +134,8 @@ const form = useForm({
     membership_start_date: '',
     start_time: '',
     end_time: '',
+    booking_type: 'fixed' as 'fixed' | 'flexible',
+    duration_minutes: 60,
     selected_slots: [] as { start_time: string; end_time: string }[],
     user_id: null as number | null,
     membership_member_type: 'existing' as 'existing' | 'new',
@@ -260,8 +270,41 @@ const membershipPeriod = computed(() => {
 
     return { start: formatDate(start), end: formatDate(end) };
 });
+const flexibleSelection = computed(() => {
+    if (!isBooking.value || bookingType.value !== 'flexible') return null;
+    const start = toMinutes(flexibleStartTime.value);
+    const end = start + flexibleDurationMinutes.value;
+    if (end >= 1440 || (date.value === today && start < clock.value.getHours() * 60 + clock.value.getMinutes())) return null;
+    let cursor = start;
+    let total = 0;
+    const segments: { start_time: string; end_time: string; price_per_hour: number; subtotal: number }[] = [];
+    while (cursor < end) {
+        const window = pricingWindows.value.find((item) => cursor >= toMinutes(item.start_time) && cursor < toMinutes(item.end_time));
+        if (!window) return null;
+        const segmentEnd = Math.min(end, toMinutes(window.end_time));
+        const subtotal = window.price_per_hour * ((segmentEnd - cursor) / 60);
+        segments.push({ start_time: minutesToTime(cursor), end_time: minutesToTime(segmentEnd), price_per_hour: window.price_per_hour, subtotal });
+        total += subtotal;
+        cursor = segmentEnd;
+    }
+    const courts = facilityCourts.value.map((court) => ({
+        ...court,
+        is_available: !existingBookings.value.some((booking) => booking.court_id === court.id
+            && start < toMinutes(booking.end_time) + turnaroundMinutes.value
+            && end + turnaroundMinutes.value > toMinutes(booking.start_time)),
+    }));
+    return { start_time: flexibleStartTime.value, end_time: minutesToTime(end), price: total, segments, courts };
+});
 const unitPrice = computed(() => {
-    if (isBooking.value) return selectedSlots.value.reduce((sum, slot) => sum + slot.price, 0) + (selectedSlots.value[0]?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0);
+    if (isBooking.value) {
+        const base = bookingType.value === 'flexible'
+            ? (flexibleSelection.value?.price ?? 0)
+            : selectedSlots.value.reduce((sum, slot) => sum + slot.price, 0);
+        const courtAdjustment = bookingType.value === 'flexible'
+            ? (flexibleSelection.value?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0)
+            : (selectedSlots.value[0]?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0);
+        return base + courtAdjustment;
+    }
     if (activeService.value === 'session' && isClassFacility.value) return selectedClassSchedule.value?.price ?? 0;
     if (isSession.value) return (selectedSlot.value?.price ?? 0) + (selectedSlot.value?.courts.find((court) => court.id === courtId.value)?.price_adjustment ?? 0);
     if (isMembership.value) return selected.value?.price ?? 0;
@@ -275,7 +318,7 @@ const checkoutTotal = computed(() => form.is_free ? 0 : total.value);
 const isEntryPackage = computed(() => selected.value?.type === 'entry');
 const isClassRegistration = computed(() => activeService.value === 'session' && isClassFacility.value && !isEntryPackage.value);
 const canSubmit = computed(() => {
-    if (isBooking.value) return !!date.value && selectedSlots.value.length > 0 && !!courtId.value;
+    if (isBooking.value) return !!date.value && !!courtId.value && (bookingType.value === 'flexible' ? !!flexibleSelection.value?.courts.some((court) => court.id === courtId.value && court.is_available) : selectedSlots.value.length > 0);
     if (isClassRegistration.value) return !!classScheduleId.value && !!classDate.value && classRemaining.value >= 1;
     if (!selected.value) return false;
 
@@ -309,6 +352,9 @@ watch(facilityId, () => {
     classScheduleId.value = null;
     selectedClassId.value = null;
     classDate.value = today
+    bookingType.value = 'fixed';
+    flexibleStartTime.value = '09:00';
+    flexibleDurationMinutes.value = 60;
     ruleId.value = '';
     memberId.value = '';
     membershipMemberType.value = 'existing';
@@ -345,6 +391,7 @@ watch(activeService, () => {
     classScheduleId.value = null;
     selectedClassId.value = null;
     classDate.value = today
+    bookingType.value = 'fixed';
 });
 
 function chooseClass(id: number) {
@@ -391,7 +438,7 @@ watch(memberId, (value) => {
     }
 });
 
-watch(date, () => {
+watch([date, facilityId, activeService, selected], () => {
     // This watcher also runs during Inertia SSR. Relative fetch URLs only work
     // in the browser, so defer availability requests until client hydration.
     if (typeof window === 'undefined') {
@@ -403,6 +450,8 @@ watch(date, () => {
     courtId.value = null;
     slots.value = [];
     existingBookings.value = [];
+    pricingWindows.value = [];
+    facilityCourts.value = [];
 
     if ((!isBooking.value && (!isSession.value || !selected.value)) || !date.value) {
         return;
@@ -426,6 +475,9 @@ watch(date, () => {
         .then((data) => {
             slots.value = data.slots ?? [];
             existingBookings.value = data.bookings ?? [];
+            pricingWindows.value = data.pricing_windows ?? [];
+            facilityCourts.value = data.courts ?? [];
+            turnaroundMinutes.value = Number(data.turnaround_minutes ?? 0);
         })
         .catch((error: unknown) => {
             console.error('[KASIR] Gagal memuat ketersediaan:', error);
@@ -498,9 +550,12 @@ function chooseSlot(slot: Slot) {
     courtId.value = null;
 }
 
-const bookingCourts = computed(() => selectedSlots.value[0]?.courts ?? []);
+const bookingCourts = computed(() => bookingType.value === 'flexible' ? (flexibleSelection.value?.courts ?? []) : (selectedSlots.value[0]?.courts ?? []));
 
 function isCourtAvailable(id: number) {
+    if (isBooking.value && bookingType.value === 'flexible') {
+        return flexibleSelection.value?.courts.some((court) => court.id === id && court.is_available) ?? false;
+    }
     if (isBooking.value) {
         return selectedSlots.value.length > 0 && selectedSlots.value.every((slot) =>
             slot.courts.some((court) => court.id === id && court.is_available !== false)
@@ -509,8 +564,17 @@ function isCourtAvailable(id: number) {
 
     return selectedSlot.value?.courts.some((court) => court.id === id && court.is_available !== false) ?? false;
 }
-const bookingStartTime = computed(() => selectedSlots.value[0]?.start_time ?? '');
-const bookingEndTime = computed(() => selectedSlots.value[selectedSlots.value.length - 1]?.end_time ?? '');
+const bookingStartTime = computed(() => bookingType.value === 'flexible' ? (flexibleSelection.value?.start_time ?? '') : (selectedSlots.value[0]?.start_time ?? ''));
+const bookingEndTime = computed(() => bookingType.value === 'flexible' ? (flexibleSelection.value?.end_time ?? '') : (selectedSlots.value[selectedSlots.value.length - 1]?.end_time ?? ''));
+
+function toMinutes(time: string) {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+function minutesToTime(minutes: number) {
+    return String(Math.floor(minutes / 60) % 24).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
+}
 
 
 function chooseCourt(id: number) {
@@ -522,7 +586,9 @@ function submit() {
         form.package_id = null;
         form.facility_id = facilityId.value;
         form.end_time = bookingEndTime.value;
-        form.selected_slots = selectedSlots.value.map(({ start_time, end_time }) => ({ start_time, end_time }));
+        form.booking_type = bookingType.value;
+        form.duration_minutes = flexibleDurationMinutes.value;
+        form.selected_slots = bookingType.value === 'fixed' ? selectedSlots.value.map(({ start_time, end_time }) => ({ start_time, end_time })) : [];
         form.class_schedule_id = null;
         form.participants = [];
         form.quantity = 1;
@@ -806,6 +872,10 @@ function formatDate(value: Date) {
                         />
                     </div>
 
+                    <div v-if="isBooking && activeFacility?.has_flexible_booking" class="flex w-fit rounded-xl bg-muted p-1">
+                        <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold" :class="bookingType === 'fixed' ? 'bg-background shadow-sm' : 'text-muted-foreground'" @click="bookingType = 'fixed'; selectedSlots = []; courtId = null">Jam tetap</button>
+                        <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold" :class="bookingType === 'flexible' ? 'bg-background shadow-sm' : 'text-muted-foreground'" @click="bookingType = 'flexible'; selectedSlots = []; courtId = null">Flexible</button>
+                    </div>
                     <div
                         v-if="loadingSlots"
                         class="flex items-center gap-2 text-sm text-muted-foreground"
@@ -815,7 +885,7 @@ function formatDate(value: Date) {
                     </div>
 
                     <template v-else-if="date">
-                        <div v-if="slots.length" class="space-y-3">
+                        <div v-if="slots.length && (!isBooking || bookingType === 'fixed')" class="space-y-3">
                             <p class="text-sm text-muted-foreground">Pilih jam. Jam di antaranya otomatis ikut dipilih.</p>
                             <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                 <label
@@ -851,15 +921,38 @@ function formatDate(value: Date) {
                             </div>
                             <p v-if="slotSelectionError" class="text-xs text-destructive">{{ slotSelectionError }}</p>
                         </div>
-                        <p v-else class="text-sm text-muted-foreground">
+                        <p v-else-if="!isBooking || bookingType === 'fixed'" class="text-sm text-muted-foreground">
                             Tidak ada jadwal tersedia pada tanggal ini.
                         </p>
-                        <p v-if="isBooking && selectedSlots.length" class="text-xs text-muted-foreground">
+                        <div v-if="isBooking && bookingType === 'flexible'" class="grid gap-3 rounded-xl border bg-muted/20 p-3 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="pos-flexible-start">Jam mulai</Label>
+                                <Input id="pos-flexible-start" v-model="flexibleStartTime" type="time" step="60" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="pos-flexible-duration">Durasi</Label>
+                                <select id="pos-flexible-duration" v-model.number="flexibleDurationMinutes" class="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                                    <option v-for="minutes in [30, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960]" :key="minutes" :value="minutes">{{ minutes >= 60 ? Math.floor(minutes / 60) + ' jam' + (minutes % 60 ? ' ' + (minutes % 60) + ' menit' : '') : minutes + ' menit' }}</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <p class="text-xs text-muted-foreground">Tarif dihitung prorata berdasarkan periode harga Master Jam Booking. Durasi dapat dipilih per 30 menit.</p>
+                                <p v-if="!flexibleSelection" class="mt-2 text-sm text-destructive">Jam mulai atau durasi berada di luar jam operasional, melewati jeda tarif, atau sudah lewat.</p>
+                                <div v-else class="mt-3 space-y-1 rounded-lg bg-background p-3 text-sm">
+                                    <div v-for="segment in flexibleSelection.segments" :key="segment.start_time" class="flex justify-between gap-3">
+                                        <span class="text-muted-foreground">{{ segment.start_time }}–{{ segment.end_time }} · {{ formatIDR(segment.price_per_hour) }}/jam</span>
+                                        <span class="font-medium">{{ formatIDR(segment.subtotal) }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-t pt-2 font-semibold"><span>Subtotal tarif</span><span>{{ formatIDR(flexibleSelection.price) }}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p v-if="isBooking && bookingType === 'fixed' && selectedSlots.length" class="text-xs text-muted-foreground">
                             {{ selectedSlots.length }} slot dipilih · {{ bookingStartTime }}–{{ bookingEndTime }}. Pilih slot berikutnya untuk menambah durasi.
                         </p>
 
                         <div
-                            v-if="isBooking ? selectedSlots.length > 0 : !!selectedSlot"
+                            v-if="isBooking ? (bookingType === 'flexible' ? !!flexibleSelection : selectedSlots.length > 0) : !!selectedSlot"
                             class="space-y-3 rounded-xl border-2 p-4 transition-colors"
                             :class="
                                 courtId === null

@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 
-type Facility = { id: number; name: string; slug: string };
+type Facility = { id: number; name: string; slug: string; has_flexible_booking: boolean };
+type RateWindow = { start_time: string; end_time: string; price_per_hour: number };
+type ExistingBooking = { court_id: number; start_time: string; end_time: string };
 type Court = {
     id: number;
     name: string;
@@ -62,6 +64,12 @@ const calendarMonths = computed(() => [0, 1].map((offset) => {
 }));
 const slots = ref<Slot[]>([]);
 const courts = ref<Court[]>([]);
+const pricingWindows = ref<RateWindow[]>([]);
+const existingBookings = ref<ExistingBooking[]>([]);
+const turnaroundMinutes = ref(0);
+const bookingType = ref<'fixed' | 'flexible'>('fixed');
+const flexibleStartTime = ref('09:00');
+const flexibleDurationMinutes = ref(60);
 const loadingSlots = ref(false);
 const hasOperationalSchedule = ref(false);
 const availabilityError = ref(false);
@@ -76,6 +84,8 @@ const form = useForm({
     date: '',
     start_time: '',
     duration_hours: 1,
+    duration_minutes: 60,
+    booking_type: 'fixed' as 'fixed' | 'flexible',
     guest_name: props.currentUser?.name ?? '',
     guest_email: props.currentUser?.email ?? '',
     guest_phone: '',
@@ -91,8 +101,13 @@ const steps = [
     { id: 5, label: 'Pembayaran' },
 ];
 
-const selectedDurationHours = computed(() => selectedSlots.value.length);
-const selectedDurationLabel = computed(() => selectedDurationHours.value === 1 ? '1 jam' : `${selectedDurationHours.value} jam`);
+const selectedDurationHours = computed(() => bookingType.value === 'flexible' ? flexibleDurationMinutes.value / 60 : selectedSlots.value.length);
+const selectedDurationLabel = computed(() => {
+    const minutes = bookingType.value === 'flexible' ? flexibleDurationMinutes.value : selectedSlots.value.length * 60;
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    return [hours ? `${hours} jam` : '', remainder ? `${remainder} menit` : ''].filter(Boolean).join(' ') || '—';
+});
 const displayCourts = computed(() => courts.value.map((court) => ({
     ...court,
     is_available: !!slot.value && !!slot.value.courts.find((option) => option.id === court.id)?.is_available,
@@ -105,7 +120,7 @@ const displayPrice = computed(() => slot.value
 const canNext = computed(() => {
     switch (step.value) {
         case 1: return !!facility.value;
-        case 2: return !!date.value && !!slot.value && selectedSlots.value.length > 0 && !!courtId.value;
+        case 2: return !!date.value && !!slot.value && (bookingType.value === 'flexible' || selectedSlots.value.length > 0) && !!courtId.value;
         case 3:
             return !!form.guest_phone.trim() && (props.currentUser !== null || (
                 !!form.guest_name.trim()
@@ -147,6 +162,8 @@ function loadAvailability() {
     courtId.value = null;
     slots.value = [];
     courts.value = [];
+    pricingWindows.value = [];
+    existingBookings.value = [];
 
     if (!facility.value || !date.value) return;
 
@@ -161,7 +178,11 @@ function loadAvailability() {
         .then((data) => {
             slots.value = data.slots ?? [];
             courts.value = data.courts ?? [];
+            pricingWindows.value = data.pricing_windows ?? [];
+            existingBookings.value = data.bookings ?? [];
+            turnaroundMinutes.value = Number(data.turnaround_minutes ?? 0);
             hasOperationalSchedule.value = !!data.has_operational_schedule;
+            if (bookingType.value === 'flexible') refreshFlexibleSelection();
         })
         .catch(() => {
             slots.value = [];
@@ -182,6 +203,7 @@ function chooseFacility(item: Facility) {
     slot.value = null;
     selectedSlots.value = [];
     courtId.value = null;
+    bookingType.value = 'fixed';
     step.value = 2;
     loadAvailability();
 }
@@ -191,6 +213,45 @@ function toMinutes(time: string) {
     return hours * 60 + minutes;
 }
 
+function refreshFlexibleSelection() {
+    if (bookingType.value !== 'flexible' || !facility.value?.has_flexible_booking) return;
+    slot.value = null;
+    courtId.value = null;
+    selectedSlots.value = [];
+    const start = toMinutes(flexibleStartTime.value);
+    const end = start + flexibleDurationMinutes.value;
+    if (end > 1440 || (date.value === today && start < now.getHours() * 60 + now.getMinutes())) return;
+    let cursor = start;
+    let total = 0;
+    while (cursor < end) {
+        const window = pricingWindows.value.find((item) => cursor >= toMinutes(item.start_time) && cursor < toMinutes(item.end_time));
+        if (!window) return;
+        const segmentEnd = Math.min(end, toMinutes(window.end_time));
+        total += window.price_per_hour * ((segmentEnd - cursor) / 60);
+        cursor = segmentEnd;
+    }
+    const availableCourts = courts.value.map((court) => {
+        const conflict = existingBookings.value.some((booking) => booking.court_id === court.id
+            && start < toMinutes(booking.end_time) + turnaroundMinutes.value
+            && end + turnaroundMinutes.value > toMinutes(booking.start_time));
+        return { ...court, is_available: !conflict };
+    });
+    const endTime = String(Math.floor(end / 60) % 24).padStart(2, '0') + ':' + String(end % 60).padStart(2, '0');
+    slot.value = { window_id: 0, start_time: flexibleStartTime.value, end_time: endTime, price: total, courts: availableCourts };
+}
+
+function chooseBookingType(type: 'fixed' | 'flexible') {
+    bookingType.value = type;
+    form.booking_type = type;
+    selectedSlots.value = [];
+    courtId.value = null;
+    slot.value = null;
+    if (type === 'flexible') refreshFlexibleSelection();
+}
+
+watch([flexibleStartTime, flexibleDurationMinutes], () => {
+    if (bookingType.value === 'flexible') refreshFlexibleSelection();
+});
 function chooseSlot(item: Slot) {
     const selected = new Set(selectedSlots.value);
     const clickedIndex = slots.value.findIndex((entry) => entry.start_time === item.start_time);
@@ -262,12 +323,14 @@ function next() {
     if (step.value === 2) {
         form.facility_id = facility.value?.id ?? null;
         form.date = date.value;
+        form.booking_type = bookingType.value;
         form.start_time = slot.value?.start_time ?? '';
         form.duration_hours = selectedSlots.value.length;
-        form.selected_slots = selectedSlots.value.map((time) => {
+        form.duration_minutes = flexibleDurationMinutes.value;
+        form.selected_slots = bookingType.value === 'fixed' ? selectedSlots.value.map((time) => {
             const item = slots.value.find((entry) => entry.start_time === time)!;
             return { start_time: item.start_time, end_time: item.end_time };
-        });
+        }) : [];
         form.court_id = courtId.value;
     }
     step.value = Math.min(5, step.value + 1);
@@ -281,12 +344,14 @@ function submit() {
     form.terms_accepted = termsAccepted.value;
     form.facility_id = facility.value?.id ?? null;
     form.date = date.value;
+    form.booking_type = bookingType.value;
     form.start_time = slot.value?.start_time ?? '';
     form.duration_hours = selectedSlots.value.length;
-    form.selected_slots = selectedSlots.value.map((time) => {
+    form.duration_minutes = flexibleDurationMinutes.value;
+    form.selected_slots = bookingType.value === 'fixed' ? selectedSlots.value.map((time) => {
         const item = slots.value.find((entry) => entry.start_time === time)!;
         return { start_time: item.start_time, end_time: item.end_time };
-    });
+    }) : [];
     form.court_id = courtId.value;
     form.post('/book', { preserveScroll: true });
 }
@@ -402,12 +467,16 @@ function formatIDR(value: number) {
                                         </div>
                                     </div>
                                 </div>
+                                <div v-if="facility?.has_flexible_booking" class="flex w-fit rounded-xl bg-slate-100 p-1">
+                                    <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors" :class="bookingType === 'fixed' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'" @click="chooseBookingType('fixed')">Jam tetap</button>
+                                    <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors" :class="bookingType === 'flexible' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'" @click="chooseBookingType('flexible')">Flexible</button>
+                                </div>
                                 <div v-if="loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
                                 <template v-else-if="date">
                                     <div v-if="availabilityError" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
                                         Gagal memuat ketersediaan. Silakan coba pilih tanggal kembali.
                                     </div>
-                                    <div v-else-if="!hasOperationalSchedule" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <div v-else-if="bookingType === 'fixed' && !hasOperationalSchedule" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                                         <div class="flex items-start gap-3">
                                             <span class="mt-0.5 size-2.5 shrink-0 rounded-full bg-slate-400"></span>
                                             <div>
@@ -416,10 +485,10 @@ function formatIDR(value: number) {
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-else-if="!slots.length" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                    <div v-else-if="bookingType === 'fixed' && !slots.length" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
                                         Tidak ada jam booking tersisa pada tanggal ini.
                                     </div>
-                                    <div v-else class="space-y-3">
+                                    <div v-else-if="bookingType === 'fixed'" class="space-y-3">
                                         <div class="flex flex-wrap gap-3 text-xs">
                                             <span class="inline-flex items-center gap-2 rounded-full bg-lime-50 px-3 py-1.5 font-medium text-emerald-800"><span class="size-2 rounded-full bg-[#a4da01]"></span>Tersedia</span>
                                             <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-medium text-rose-700"><span class="size-2 rounded-full bg-rose-500"></span>Penuh</span>
@@ -444,8 +513,22 @@ function formatIDR(value: number) {
                                             </label>
                                         </div>
                                     </div>
+                                    <div v-else-if="bookingType === 'flexible'" class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+                                        <div class="grid gap-2">
+                                            <Label for="flexible-start-time">Jam mulai</Label>
+                                            <Input id="flexible-start-time" v-model="flexibleStartTime" type="time" step="60" />
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label for="flexible-duration">Durasi</Label>
+                                            <select id="flexible-duration" v-model.number="flexibleDurationMinutes" class="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                                                <option v-for="minutes in [30, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960]" :key="minutes" :value="minutes">{{ minutes >= 60 ? Math.floor(minutes / 60) + ' jam' + (minutes % 60 ? ' ' + (minutes % 60) + ' menit' : '') : minutes + ' menit' }}</option>
+                                            </select>
+                                        </div>
+                                        <p class="text-xs text-slate-500 sm:col-span-2">Durasi dapat dipilih per 30 menit. Harga dihitung prorata mengikuti tarif pada setiap periode waktu.</p>
+                                        <p v-if="!pricingWindows.length" class="text-sm text-rose-600 sm:col-span-2">Belum ada tarif Master Jam Booking untuk hari ini.</p>
+                                        <p v-else-if="!slot" class="text-sm text-rose-600 sm:col-span-2">Waktu yang dipilih di luar jam operasional, melewati jeda tarif, atau sudah lewat.</p>
+                                    </div>
                                 </template>
-
                                 <div class="space-y-3 border-t border-slate-100 pt-5">
                                     <div><h3 class="font-semibold">Pilih lapangan</h3><p v-if="slot" class="mt-1 text-sm text-slate-500">{{ slot.start_time }}–{{ slot.end_time }}</p></div>
                                     <div v-if="displayCourts.length" class="grid gap-3 sm:grid-cols-2">

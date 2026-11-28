@@ -160,3 +160,91 @@ it('generates an invoice number and qr code for a transaction', function () {
 
     $this->get('/verify?code='.$transaction->qr_code)->assertOk();
 });
+
+it('creates a flexible booking from the cashier with prorated tariff', function () {
+    $user = User::factory()->create();
+    [$facility, $court] = makeFacilityWithPackage('session');
+    $facility->update(['has_booking' => true, 'has_flexible_booking' => true]);
+    $day = strtolower(Carbon::parse('next monday')->englishDayOfWeek);
+
+    \App\Models\BookingTimeSlot::create([
+        'facility_id' => $facility->id,
+        'day' => $day,
+        'start_time' => '09:00',
+        'end_time' => '16:00',
+        'price' => 10000,
+        'is_active' => true,
+    ]);
+    \App\Models\BookingTimeSlot::create([
+        'facility_id' => $facility->id,
+        'day' => $day,
+        'start_time' => '16:00',
+        'end_time' => '23:00',
+        'price' => 20000,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user)->post('/transactions', [
+        'facility_id' => $facility->id,
+        'booking_type' => 'flexible',
+        'duration_minutes' => 90,
+        'quantity' => 1,
+        'customer_name' => 'Budi',
+        'payment_method' => 'cash',
+        'payment_status' => 'paid',
+        'amount' => 35000,
+        'court_id' => $court->id,
+        'date' => Carbon::parse('next monday')->toDateString(),
+        'start_time' => '15:30',
+        'end_time' => '17:00',
+        'selected_slots' => [],
+    ])->assertRedirect(route('transactions.index'));
+
+    $booking = Booking::sole();
+    $transaction = Transaction::sole();
+
+    expect($booking->booking_type)->toBe('flexible');
+    expect(substr((string) $booking->end_time, 0, 5))->toBe('17:00');
+    expect((float) $transaction->amount)->toBe(35000.0);
+    expect($booking->price_breakdown)->toHaveCount(2);
+});
+
+it('rejects a flexible cashier booking when the selected court is occupied', function () {
+    $user = User::factory()->create();
+    [$facility, $court] = makeFacilityWithPackage('session');
+    $facility->update(['has_booking' => true, 'has_flexible_booking' => true]);
+    $day = strtolower(Carbon::parse('next monday')->englishDayOfWeek);
+    \App\Models\BookingTimeSlot::create([
+        'facility_id' => $facility->id,
+        'day' => $day,
+        'start_time' => '09:00',
+        'end_time' => '23:00',
+        'price' => 10000,
+        'is_active' => true,
+    ]);
+    Booking::create([
+        'court_id' => $court->id,
+        'date' => Carbon::parse('next monday')->toDateString(),
+        'start_time' => '15:00',
+        'end_time' => '16:00',
+        'status' => 'confirmed',
+    ]);
+
+    $this->actingAs($user)->post('/transactions', [
+        'facility_id' => $facility->id,
+        'booking_type' => 'flexible',
+        'duration_minutes' => 60,
+        'quantity' => 1,
+        'customer_name' => 'Budi',
+        'payment_method' => 'cash',
+        'payment_status' => 'paid',
+        'amount' => 10000,
+        'court_id' => $court->id,
+        'date' => Carbon::parse('next monday')->toDateString(),
+        'start_time' => '15:30',
+        'end_time' => '16:30',
+        'selected_slots' => [],
+    ])->assertSessionHasErrors('start_time');
+
+    expect(Booking::count())->toBe(1);
+});

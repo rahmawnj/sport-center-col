@@ -37,6 +37,7 @@ class PublicBookingController extends Controller
                 'id' => $facility->id,
                 'name' => $facility->name,
                 'slug' => $facility->slug,
+                'has_flexible_booking' => (bool) $facility->has_flexible_booking,
             ]);
 
         $requestedFacility = (string) $request->query('facility', '');
@@ -64,6 +65,9 @@ class PublicBookingController extends Controller
             'package_id' => ['nullable', 'required_without:facility_id', 'integer', 'exists:packages,id'],
             'date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:16'],
+            'booking_type' => ['nullable', 'in:fixed,flexible'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'duration_minutes' => ['nullable', 'integer', 'min:30', 'max:960', 'multiple_of:30'],
         ]);
 
         // Availability can be requested by facility and duration without a package.
@@ -110,6 +114,9 @@ class PublicBookingController extends Controller
         return response()->json([
             'slots' => $this->buildSlots($facility, $date, $slotDuration),
             'has_operational_schedule' => $hasOperationalSchedule,
+            'has_flexible_booking' => (bool) $facility->has_flexible_booking,
+            'turnaround_minutes' => (int) $facility->turnaround_minutes,
+            'pricing_windows' => $this->flexiblePricingWindows($facility, $date),
             'bookings' => $bookings,
             'courts' => $courts,
         ]);
@@ -117,6 +124,8 @@ class PublicBookingController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['booking_type' => $request->input('booking_type', 'fixed')]);
+
         $contactRules = [
             'guest_name' => $request->user()
                 ? ['nullable', 'string', 'max:255']
@@ -132,16 +141,20 @@ class PublicBookingController extends Controller
             'court_id' => ['required', 'integer', 'exists:courts,id'],
             'date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
             'start_time' => ['required', 'date_format:H:i'],
-            'duration_hours' => ['required', 'integer', 'min:1', 'max:16'],
-            'selected_slots' => ['required', 'array', 'min:1', 'max:16'],
+            'booking_type' => ['nullable', 'in:fixed,flexible'],
+            'duration_hours' => ['required_if:booking_type,fixed', 'integer', 'min:1', 'max:16'],
+            'duration_minutes' => ['required_if:booking_type,flexible', 'integer', 'min:30', 'max:960', 'multiple_of:30'],
+            'selected_slots' => ['required_if:booking_type,fixed', 'array', 'min:1', 'max:16'],
             'selected_slots.*.start_time' => ['required', 'date_format:H:i'],
             'selected_slots.*.end_time' => ['required', 'date_format:H:i'],
             'payment_method' => ['nullable', 'in:cash,bank_transfer'],
             'terms_accepted' => ['required', 'accepted'],
         ], $contactRules));
 
+        $data['booking_type'] = $data['booking_type'] ?? 'fixed';
         $facility = Facility::query()->findOrFail($data['facility_id']);
         abort_unless($facility->status === 'active' && $facility->has_booking && $facility->is_bookable_online, 422, 'Olahraga ini tidak tersedia untuk booking online.');
+        abort_if($data['booking_type'] === 'flexible' && ! $facility->has_flexible_booking, 422, 'Flexible Booking belum diaktifkan untuk fasilitas ini.');
 
         $total = (int) round($this->bookingPrice($facility, $data));
 
@@ -195,6 +208,8 @@ class PublicBookingController extends Controller
                 'date' => $booking->date?->format('d M Y'),
                 'startTime' => substr((string) $booking->start_time, 0, 5),
                 'endTime' => substr((string) $booking->end_time, 0, 5),
+                'bookingType' => $booking->booking_type ?? 'fixed',
+                'priceBreakdown' => $booking->price_breakdown ?? [],
                 'status' => (string) $booking->status,
                 'total' => (int) ($receiptDetails['total'] ?? 0),
             ],
@@ -208,6 +223,11 @@ class PublicBookingController extends Controller
      */
     private function bookingPrice(Facility $facility, array $data): float
     {
+        if (($data['booking_type'] ?? 'fixed') === 'flexible') {
+            $quote = $this->flexiblePrice($facility, $data);
+            return $quote['total'] + $this->courtAdjustment($data['court_id'] ?? null);
+        }
+
         $date = Carbon::parse($data['date']);
         $selectedSlots = collect($data['selected_slots'] ?? [])->sortBy('start_time')->values();
         $turnaround = max(0, (int) $facility->turnaround_minutes);
@@ -242,6 +262,87 @@ class PublicBookingController extends Controller
         return $total + $this->courtAdjustment($data['court_id'] ?? null);
     }
 
+    /**
+     * Expose tariff windows as continuous intervals across configured turnaround gaps.
+     * Fixed bookings keep their original windows; flexible bookings can cross tariff boundaries.
+     *
+     * @return array<int, array{start_time: string, end_time: string, price_per_hour: float}>
+     */
+    private function flexiblePricingWindows(Facility $facility, Carbon $date): array
+    {
+        $windows = BookingTimeSlot::query()
+            ->where('facility_id', $facility->id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->orderBy('start_time')
+            ->get();
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
+
+        return $windows->values()->map(function (BookingTimeSlot $window, int $index) use ($windows, $turnaround) {
+            $end = $this->toMinutes((string) $window->end_time);
+            $next = $windows->get($index + 1);
+            if ($next) {
+                $nextStart = $this->toMinutes((string) $next->start_time);
+                if ($nextStart > $end && ($nextStart - $end) <= $turnaround) {
+                    $end = $nextStart;
+                }
+            }
+
+            return [
+                'start_time' => substr((string) $window->start_time, 0, 5),
+                'end_time' => $this->toTime($end),
+                'price_per_hour' => (float) $window->price,
+            ];
+        })->all();
+    }
+
+    /**
+     * Price a flexible booking minute-by-minute across the configured master rate windows.
+     * Existing booking_time_slots are reused as the operating hours and hourly tariff source.
+     *
+     * @return array{total: float, segments: array<int, array{start_time: string, end_time: string, price_per_hour: float, subtotal: float}>}
+     */
+    private function flexiblePrice(Facility $facility, array $data): array
+    {
+        $date = Carbon::parse($data['date']);
+        $start = $this->toMinutes($data['start_time']);
+        $duration = (int) $data['duration_minutes'];
+        $end = $start + $duration;
+        if ($duration < 30 || $duration > 960 || $duration % 30 !== 0 || $end >= 1440) {
+            throw ValidationException::withMessages(['duration_minutes' => 'Durasi harus kelipatan 30 menit dan tidak boleh melewati tengah malam.']);
+        }
+        if ($date->isToday() && $start < (now()->hour * 60 + now()->minute)) {
+            throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
+        }
+
+        $windows = collect($this->flexiblePricingWindows($facility, $date));
+
+        $cursor = $start;
+        $total = 0.0;
+        $segments = [];
+        while ($cursor < $end) {
+            $window = $windows->first(fn (array $item) => $cursor >= $this->toMinutes($item['start_time'])
+                && $cursor < $this->toMinutes($item['end_time']));
+            if (! $window) {
+                throw ValidationException::withMessages(['start_time' => 'Waktu booking harus berada dalam jam operasional dan tidak boleh melewati jeda tarif.']);
+            }
+
+            $segmentEnd = min($end, $this->toMinutes($window['end_time']));
+            $rate = (float) $window['price_per_hour'];
+            $subtotal = $rate * (($segmentEnd - $cursor) / 60);
+            $segments[] = [
+                'start_time' => $this->toTime($cursor),
+                'end_time' => $this->toTime($segmentEnd),
+                'price_per_hour' => $rate,
+                'subtotal' => round($subtotal, 2),
+            ];
+            $total += $subtotal;
+            $cursor = $segmentEnd;
+        }
+
+        return ['total' => round($total, 2), 'segments' => $segments];
+    }
+
     private function courtAdjustment(mixed $courtId): float
     {
         return $courtId
@@ -255,11 +356,24 @@ class PublicBookingController extends Controller
     private function storeBooking(Request $request, Facility $facility, array $data): Booking
     {
         $date = Carbon::parse($data['date']);
+        $bookingType = $data['booking_type'] ?? 'fixed';
         $selectedSlots = collect($data['selected_slots'] ?? [])->sortBy('start_time')->values();
-        $startMinutes = $this->toMinutes($selectedSlots->first()['start_time'] ?? $data['start_time']);
-        $endMinutes = $this->toMinutes($selectedSlots->last()['end_time'] ?? $data['start_time']);
-        $durationMinutes = $endMinutes - $startMinutes;
+        $startMinutes = $this->toMinutes($data['start_time'] ?? ($selectedSlots->first()['start_time'] ?? '00:00'));
+        $durationMinutes = $bookingType === 'flexible'
+            ? (int) ($data['duration_minutes'] ?? 0)
+            : ($this->toMinutes($selectedSlots->last()['end_time'] ?? '00:00') - $startMinutes);
+        $endMinutes = $startMinutes + $durationMinutes;
         $turnaround = max(0, (int) $facility->turnaround_minutes);
+
+        if ($bookingType === 'flexible') {
+            if (! $facility->has_flexible_booking) {
+                throw ValidationException::withMessages(['booking_type' => 'Flexible Booking belum diaktifkan untuk fasilitas ini.']);
+            }
+            if ($durationMinutes < 30 || $durationMinutes > 960 || $durationMinutes % 30 !== 0 || $endMinutes >= 1440) {
+                throw ValidationException::withMessages(['duration_minutes' => 'Durasi flexible booking harus kelipatan 30 menit dan tidak boleh melewati tengah malam.']);
+            }
+            $this->flexiblePrice($facility, $data);
+        }
 
         $courtIsBookable = $facility->courts()
             ->whereKey($data['court_id'])
@@ -272,7 +386,7 @@ class PublicBookingController extends Controller
             ]);
         }
 
-        if ($selectedSlots->isEmpty() || $selectedSlots->count() !== (int) $data['duration_hours']) {
+        if ($bookingType === 'fixed' && ($selectedSlots->isEmpty() || $selectedSlots->count() !== (int) $data['duration_hours'])) {
             throw ValidationException::withMessages(['selected_slots' => 'Pilih minimal satu jam booking.']);
         }
 
@@ -280,7 +394,7 @@ class PublicBookingController extends Controller
             throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
         }
 
-        return DB::transaction(function () use ($request, $data, $date, $startMinutes, $endMinutes, $turnaround) {
+        return DB::transaction(function () use ($request, $facility, $data, $date, $startMinutes, $endMinutes, $turnaround) {
             $conflict = Booking::query()
                 ->where('court_id', $data['court_id'])
                 ->whereDate('date', $date->toDateString())
@@ -311,6 +425,8 @@ class PublicBookingController extends Controller
                 'date' => $date->toDateString(),
                 'start_time' => $this->toTime($startMinutes),
                 'end_time' => $this->toTime($endMinutes),
+                'booking_type' => $bookingType,
+                'price_breakdown' => $bookingType === 'flexible' ? $this->flexiblePrice($facility, $data)['segments'] : null,
                 'status' => 'pending',
             ]);
         });

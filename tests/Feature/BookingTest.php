@@ -50,12 +50,28 @@ function makeBookableFacility(int $turnaround = 0): array
 
 function publicBookingPayload(Facility $facility, Court $court, string $date, array $overrides = []): array
 {
+    $startTime = $overrides['start_time'] ?? '09:00';
+    $durationHours = (int) ($overrides['duration_hours'] ?? 1);
+    [$startHour, $startMinute] = array_map('intval', explode(':', $startTime));
+    $cursor = ($startHour * 60) + $startMinute;
+    $step = 60 + max(0, (int) $facility->turnaround_minutes);
+    $selectedSlots = [];
+
+    for ($index = 0; $index < $durationHours; $index++) {
+        $selectedSlots[] = [
+            'start_time' => sprintf('%02d:%02d', intdiv($cursor, 60), $cursor % 60),
+            'end_time' => sprintf('%02d:%02d', intdiv($cursor + 60, 60), ($cursor + 60) % 60),
+        ];
+        $cursor += $step;
+    }
+
     return array_merge([
         'facility_id' => $facility->id,
         'court_id' => $court->id,
         'date' => $date,
-        'start_time' => '09:00',
-        'duration_hours' => 1,
+        'start_time' => $startTime,
+        'duration_hours' => $durationHours,
+        'selected_slots' => $selectedSlots,
         'terms_accepted' => true,
         'guest_name' => 'Budi',
         'guest_email' => 'budi@example.com',
@@ -192,6 +208,66 @@ it('allows selecting multiple consecutive hours from the same master rate window
     $booking = Booking::sole();
     $transaction = Transaction::sole();
 
-    expect(substr((string) $booking->end_time, 0, 5))->toBe('11:00');
+    expect(substr((string) $booking->end_time, 0, 5))->toBe('11:05');
     expect((float) $transaction->total_amount)->toBe(500000.0);
+});
+
+it('prices flexible bookings proportionally across hourly rate periods', function () {
+    [$facility, $court] = makeBookableFacility();
+    $facility->update(['has_flexible_booking' => true]);
+    BookingTimeSlot::query()->where('facility_id', $facility->id)->where('start_time', '09:00')->update(['price' => 10000]);
+    BookingTimeSlot::query()->where('facility_id', $facility->id)->where('start_time', '16:00')->update(['price' => 20000]);
+    $date = Carbon::parse('next monday')->toDateString();
+
+    $this->post('/book', publicBookingPayload($facility, $court, $date, [
+        'booking_type' => 'flexible',
+        'start_time' => '15:45',
+        'duration_minutes' => 90,
+    ]))->assertRedirect();
+
+    $booking = Booking::sole();
+    $transaction = Transaction::sole();
+
+    expect($booking->booking_type)->toBe('flexible');
+    expect(substr((string) $booking->start_time, 0, 5))->toBe('15:45');
+    expect(substr((string) $booking->end_time, 0, 5))->toBe('17:15');
+    expect((float) $transaction->total_amount)->toBe(27500.0);
+    expect($booking->price_breakdown)->toHaveCount(2);
+    expect((float) $booking->price_breakdown[0]['subtotal'])->toBe(2500.0);
+    expect((float) $booking->price_breakdown[1]['subtotal'])->toBe(25000.0);
+});
+
+it('rejects a flexible booking that overlaps an existing fixed booking', function () {
+    [$facility, $court] = makeBookableFacility();
+    $facility->update(['has_flexible_booking' => true]);
+    $date = Carbon::parse('next monday')->toDateString();
+
+    Booking::create([
+        'court_id' => $court->id,
+        'date' => $date,
+        'start_time' => '15:00',
+        'end_time' => '16:00',
+        'status' => 'confirmed',
+    ]);
+
+    $this->post('/book', publicBookingPayload($facility, $court, $date, [
+        'booking_type' => 'flexible',
+        'start_time' => '15:30',
+        'duration_minutes' => 60,
+    ]))->assertSessionHasErrors('start_time');
+
+    expect(Booking::count())->toBe(1);
+});
+
+it('rejects flexible booking when the facility has not enabled it', function () {
+    [$facility, $court] = makeBookableFacility();
+    $date = Carbon::parse('next monday')->toDateString();
+
+    $this->post('/book', publicBookingPayload($facility, $court, $date, [
+        'booking_type' => 'flexible',
+        'start_time' => '10:00',
+        'duration_minutes' => 60,
+    ]))->assertStatus(422);
+
+    expect(Booking::count())->toBe(0);
 });

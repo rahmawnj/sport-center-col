@@ -183,6 +183,7 @@ class TransactionController extends Controller
                 'id' => $facility->id,
                 'name' => $facility->name,
                 'has_booking' => (bool) $facility->has_booking,
+                'has_flexible_booking' => (bool) $facility->has_flexible_booking,
                 'turnaround_minutes' => max(0, (int) $facility->turnaround_minutes),
                 'has_session' => (bool) $facility->has_session,
                 'has_membership' => (bool) $facility->has_membership,
@@ -865,14 +866,17 @@ class TransactionController extends Controller
         $isCashierBooking = $request->filled('facility_id')
             && ! $request->filled('package_id')
             && ! $request->filled('class_schedule_id');
+        $request->merge(['booking_type' => $request->input('booking_type', 'fixed')]);
 
         $data = $request->validate([
             'package_id' => ['nullable', 'required_without_all:class_schedule_id,facility_id', 'integer', 'exists:packages,id'],
             'facility_id' => ['nullable', 'required_without_all:package_id,class_schedule_id', 'integer', 'exists:facilities,id'],
             'end_time' => ['nullable', 'date_format:H:i'],
+            'booking_type' => ['nullable', Rule::in(['fixed', 'flexible'])],
+            'duration_minutes' => ['required_if:booking_type,flexible', 'integer', 'min:30', 'max:960', 'multiple_of:30'],
             // Slot hanya diwajibkan untuk transaksi booking. Form kasir
             // mengirim array kosong pada transaksi kelas dan membership.
-            'selected_slots' => $isCashierBooking
+            'selected_slots' => $isCashierBooking && $request->input('booking_type') !== 'flexible'
                 ? ['required', 'array', 'min:1']
                 : ['nullable', 'array'],
             'selected_slots.*.start_time' => ['required_with:selected_slots', 'date_format:H:i'],
@@ -1269,93 +1273,98 @@ class TransactionController extends Controller
     {
         abort_unless($facility->status === 'active' && $facility->has_booking, 422, 'Booking untuk olahraga ini sedang dinonaktifkan.');
 
-        $selectedSlots = collect($data['selected_slots'] ?? []);
-        if (empty($data['court_id']) || empty($data['date']) || $selectedSlots->isEmpty()) {
-            throw ValidationException::withMessages(['court_id' => 'Pilih minimal satu slot jam dan lapangan.']);
-        }
-
-        $selectedSlots = $selectedSlots
-            ->sortBy('start_time')
-            ->values();
-
+        $bookingType = $data['booking_type'] ?? 'fixed';
         $date = Carbon::parse($data['date']);
         $turnaround = max(0, (int) $facility->turnaround_minutes);
-        $slotDuration = 60;
-        $step = $slotDuration + $turnaround;
-        $startMinutes = $this->toMinutes($selectedSlots->first()['start_time']);
-        $endMinutes = $this->toMinutes($selectedSlots->last()['end_time']);
+        $priceBreakdown = null;
 
-        if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
-            throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
-        }
-
-        $windows = BookingTimeSlot::query()
-            ->where('facility_id', $facility->id)
-            ->where('day', strtolower($date->englishDayOfWeek))
-            ->where('is_active', true)
-            ->get();
-
-        $slotPrices = [];
-        $validSlotStarts = [];
-
-        // Build the real sequence of one-hour slots from the active master schedule.
-        foreach ($windows as $window) {
-            $windowStart = $this->toMinutes((string) $window->start_time);
-            $windowEnd = $this->toMinutes((string) $window->end_time);
-
-            for ($cursor = $windowStart; $cursor + $slotDuration <= $windowEnd; $cursor += $step) {
-                $validSlotStarts[] = $cursor;
-            }
-        }
-
-        $validSlotStarts = array_values(array_unique($validSlotStarts));
-        sort($validSlotStarts);
-
-        $selectedIndexes = [];
-        foreach ($selectedSlots as $slot) {
-            $slotStart = $this->toMinutes((string) $slot['start_time']);
-            $slotEnd = $this->toMinutes((string) $slot['end_time']);
-
-            if ($slotEnd - $slotStart !== $slotDuration) {
-                throw ValidationException::withMessages([
-                    'selected_slots' => 'Setiap slot booking harus berdurasi 1 jam.',
-                ]);
+        if ($bookingType === 'flexible') {
+            abort_unless($facility->has_flexible_booking, 422, 'Flexible Booking belum diaktifkan untuk fasilitas ini.');
+            if (empty($data['court_id']) || empty($data['date']) || empty($data['start_time'])) {
+                throw ValidationException::withMessages(['court_id' => 'Pilih tanggal, jam mulai, durasi, dan lapangan.']);
             }
 
-            $slotIndex = array_search($slotStart, $validSlotStarts, true);
-            if ($slotIndex === false) {
-                throw ValidationException::withMessages([
-                    'selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.',
-                ]);
+            $startMinutes = $this->toMinutes($data['start_time']);
+            $durationMinutes = (int) $data['duration_minutes'];
+            $endMinutes = $startMinutes + $durationMinutes;
+            if ($durationMinutes < 30 || $durationMinutes > 960 || $durationMinutes % 30 !== 0 || $endMinutes >= 1440) {
+                throw ValidationException::withMessages(['duration_minutes' => 'Durasi harus kelipatan 30 menit dan tidak boleh melewati tengah malam.']);
+            }
+            if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
+                throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
             }
 
-            $window = $windows->first(function (BookingTimeSlot $window) use ($slotStart, $slotEnd) {
+            $quote = $this->cashierFlexiblePrice($facility, $date, $startMinutes, $durationMinutes);
+            $baseAmount = $quote['total'];
+            $priceBreakdown = $quote['segments'];
+            $selectedSlots = collect();
+        } else {
+            $selectedSlots = collect($data['selected_slots'] ?? []);
+            if (empty($data['court_id']) || empty($data['date']) || $selectedSlots->isEmpty()) {
+                throw ValidationException::withMessages(['court_id' => 'Pilih minimal satu slot jam dan lapangan.']);
+            }
+
+            $selectedSlots = $selectedSlots->sortBy('start_time')->values();
+            $slotDuration = 60;
+            $step = $slotDuration + $turnaround;
+            $startMinutes = $this->toMinutes($selectedSlots->first()['start_time']);
+            $endMinutes = $this->toMinutes($selectedSlots->last()['end_time']);
+
+            if ($date->isToday() && $startMinutes < (now()->hour * 60 + now()->minute)) {
+                throw ValidationException::withMessages(['start_time' => 'Jam yang dipilih sudah lewat.']);
+            }
+
+            $windows = BookingTimeSlot::query()
+                ->where('facility_id', $facility->id)
+                ->where('day', strtolower($date->englishDayOfWeek))
+                ->where('is_active', true)
+                ->get();
+
+            $slotPrices = [];
+            $validSlotStarts = [];
+            foreach ($windows as $window) {
                 $windowStart = $this->toMinutes((string) $window->start_time);
                 $windowEnd = $this->toMinutes((string) $window->end_time);
-
-                return $slotStart >= $windowStart && $slotEnd <= $windowEnd;
-            });
-
-            if (! $window) {
-                throw ValidationException::withMessages([
-                    'selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.',
-                ]);
+                for ($cursor = $windowStart; $cursor + $slotDuration <= $windowEnd; $cursor += $step) {
+                    $validSlotStarts[] = $cursor;
+                }
             }
 
-            $selectedIndexes[] = $slotIndex;
-            $slotPrices[] = (float) $window->price;
-        }
+            $validSlotStarts = array_values(array_unique($validSlotStarts));
+            sort($validSlotStarts);
+            $selectedIndexes = [];
 
-        // Slots must be adjacent in the actual master-slot sequence.
-        for ($index = 1; $index < count($selectedIndexes); $index++) {
-            if ($selectedIndexes[$index] !== $selectedIndexes[$index - 1] + 1) {
-                throw ValidationException::withMessages([
-                    'selected_slots' => 'Pilih slot yang berurutan tanpa melewati jeda antar-slot.',
-                ]);
+            foreach ($selectedSlots as $slot) {
+                $slotStart = $this->toMinutes((string) $slot['start_time']);
+                $slotEnd = $this->toMinutes((string) $slot['end_time']);
+                if ($slotEnd - $slotStart !== $slotDuration) {
+                    throw ValidationException::withMessages(['selected_slots' => 'Setiap slot booking harus berdurasi 1 jam.']);
+                }
+                $slotIndex = array_search($slotStart, $validSlotStarts, true);
+                if ($slotIndex === false) {
+                    throw ValidationException::withMessages(['selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.']);
+                }
+                $window = $windows->first(function (BookingTimeSlot $window) use ($slotStart, $slotEnd) {
+                    $windowStart = $this->toMinutes((string) $window->start_time);
+                    $windowEnd = $this->toMinutes((string) $window->end_time);
+                    return $slotStart >= $windowStart && $slotEnd <= $windowEnd;
+                });
+                if (! $window) {
+                    throw ValidationException::withMessages(['selected_slots' => 'Ada slot yang tidak sesuai Master Jam Booking.']);
+                }
+                $selectedIndexes[] = $slotIndex;
+                $slotPrices[] = (float) $window->price;
             }
+
+            for ($index = 1; $index < count($selectedIndexes); $index++) {
+                if ($selectedIndexes[$index] !== $selectedIndexes[$index - 1] + 1) {
+                    throw ValidationException::withMessages(['selected_slots' => 'Pilih slot yang berurutan tanpa melewati jeda antar-slot.']);
+                }
+            }
+            $baseAmount = array_sum($slotPrices);
         }
 
-        DB::transaction(function () use ($facility, $data, $date, $startMinutes, $endMinutes, $turnaround, $slotPrices) {
+        DB::transaction(function () use ($facility, $data, $date, $startMinutes, $endMinutes, $turnaround, $baseAmount, $bookingType, $priceBreakdown) {
             $court = \App\Models\Court::query()
                 ->lockForUpdate()
                 ->whereKey($data['court_id'])
@@ -1390,10 +1399,12 @@ class TransactionController extends Controller
                 'date' => $date->toDateString(),
                 'start_time' => $this->toTime($startMinutes),
                 'end_time' => $this->toTime($endMinutes),
+                'booking_type' => $bookingType,
+                'price_breakdown' => $priceBreakdown,
                 'status' => $paid ? 'confirmed' : 'pending',
             ]);
 
-            $amount = $isFree ? 0 : array_sum($slotPrices) + (float) $court->price_adjustment;
+            $amount = $isFree ? 0 : $baseAmount + (float) $court->price_adjustment;
             Transaction::create([
                 'transactionable_type' => 'booking',
                 'booking_source' => 'cashier',
@@ -1413,6 +1424,64 @@ class TransactionController extends Controller
                 'paid_amount' => $isFree ? 0 : null,
             ]);
         });
+    }
+
+    /**
+     * Calculate flexible cashier booking price using the same facility tariff windows as online booking.
+     *
+     * @return array{total: float, segments: array<int, array{start_time: string, end_time: string, price_per_hour: float, subtotal: float}>}
+     */
+    private function cashierFlexiblePrice(Facility $facility, Carbon $date, int $start, int $duration): array
+    {
+        $end = $start + $duration;
+        $turnaround = max(0, (int) $facility->turnaround_minutes);
+        $windows = BookingTimeSlot::query()
+            ->where('facility_id', $facility->id)
+            ->where('day', strtolower($date->englishDayOfWeek))
+            ->where('is_active', true)
+            ->orderBy('start_time')
+            ->get()
+            ->values();
+
+        $effectiveWindows = $windows->map(function (BookingTimeSlot $window, int $index) use ($windows, $turnaround) {
+            $windowEnd = $this->toMinutes((string) $window->end_time);
+            $next = $windows->get($index + 1);
+            if ($next) {
+                $nextStart = $this->toMinutes((string) $next->start_time);
+                if ($nextStart > $windowEnd && ($nextStart - $windowEnd) <= $turnaround) {
+                    $windowEnd = $nextStart;
+                }
+            }
+
+            return [
+                'start' => $this->toMinutes((string) $window->start_time),
+                'end' => $windowEnd,
+                'rate' => (float) $window->price,
+            ];
+        });
+
+        $cursor = $start;
+        $total = 0.0;
+        $segments = [];
+        while ($cursor < $end) {
+            $window = $effectiveWindows->first(fn (array $item) => $cursor >= $item['start'] && $cursor < $item['end']);
+            if (! $window) {
+                throw ValidationException::withMessages(['start_time' => 'Waktu booking harus berada dalam jam operasional dan tidak boleh melewati jeda tarif.']);
+            }
+
+            $segmentEnd = min($end, $window['end']);
+            $subtotal = $window['rate'] * (($segmentEnd - $cursor) / 60);
+            $segments[] = [
+                'start_time' => $this->toTime($cursor),
+                'end_time' => $this->toTime($segmentEnd),
+                'price_per_hour' => $window['rate'],
+                'subtotal' => round($subtotal, 2),
+            ];
+            $total += $subtotal;
+            $cursor = $segmentEnd;
+        }
+
+        return ['total' => round($total, 2), 'segments' => $segments];
     }
 
     private function windowsOverlap(int $start, int $end, int $otherStart, int $otherEnd, int $turnaround): bool
