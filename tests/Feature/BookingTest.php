@@ -215,6 +215,8 @@ it('allows selecting multiple consecutive hours from the same master rate window
 it('prices flexible bookings proportionally across hourly rate periods', function () {
     [$facility, $court] = makeBookableFacility();
     $facility->update(['has_flexible_booking' => true]);
+    BookingTimeSlot::query()->where('facility_id', $facility->id)->where('start_time', '09:00')->update(['price' => 10000]);
+    BookingTimeSlot::query()->where('facility_id', $facility->id)->where('start_time', '16:00')->update(['price' => 20000]);
     $date = Carbon::parse('next monday')->toDateString();
 
     $this->post('/book', publicBookingPayload($facility, $court, $date, [
@@ -229,10 +231,10 @@ it('prices flexible bookings proportionally across hourly rate periods', functio
     expect($booking->booking_type)->toBe('flexible');
     expect(substr((string) $booking->start_time, 0, 5))->toBe('15:45');
     expect(substr((string) $booking->end_time, 0, 5))->toBe('17:15');
-    expect((float) $transaction->total_amount)->toBe(437500.0);
+    expect((float) $transaction->total_amount)->toBe(27500.0);
     expect($booking->price_breakdown)->toHaveCount(2);
-    expect((float) $booking->price_breakdown[0]['subtotal'])->toBe(62500.0);
-    expect((float) $booking->price_breakdown[1]['subtotal'])->toBe(375000.0);
+    expect((float) $booking->price_breakdown[0]['subtotal'])->toBe(2500.0);
+    expect((float) $booking->price_breakdown[1]['subtotal'])->toBe(25000.0);
 });
 
 it('rejects a flexible booking that overlaps an existing fixed booking', function () {
