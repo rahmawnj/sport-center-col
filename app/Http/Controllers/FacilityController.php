@@ -205,6 +205,7 @@ class FacilityController extends Controller
         $data['is_bookable_online'] = (bool) ($data['is_bookable_online'] ?? false);
         $data['has_membership'] = (bool) ($data['has_membership'] ?? false);
         $data['has_booking'] = (bool) ($data['has_booking'] ?? false);
+        $data['has_flexible_booking'] = (bool) ($data['has_flexible_booking'] ?? false);
         $data['has_session'] = (bool) ($data['has_session'] ?? false);
 
         $facility->update($data);
