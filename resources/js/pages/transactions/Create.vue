@@ -872,6 +872,10 @@ function formatDate(value: Date) {
                         />
                     </div>
 
+                    <div v-if="isBooking && activeFacility?.has_flexible_booking" class="flex w-fit rounded-xl bg-muted p-1">
+                        <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold" :class="bookingType === 'fixed' ? 'bg-background shadow-sm' : 'text-muted-foreground'" @click="bookingType = 'fixed'; selectedSlots = []; courtId = null">Jam tetap</button>
+                        <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold" :class="bookingType === 'flexible' ? 'bg-background shadow-sm' : 'text-muted-foreground'" @click="bookingType = 'flexible'; selectedSlots = []; courtId = null">Flexible</button>
+                    </div>
                     <div
                         v-if="loadingSlots"
                         class="flex items-center gap-2 text-sm text-muted-foreground"
@@ -881,7 +885,7 @@ function formatDate(value: Date) {
                     </div>
 
                     <template v-else-if="date">
-                        <div v-if="slots.length" class="space-y-3">
+                        <div v-if="slots.length && (!isBooking || bookingType === 'fixed')" class="space-y-3">
                             <p class="text-sm text-muted-foreground">Pilih jam. Jam di antaranya otomatis ikut dipilih.</p>
                             <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                 <label
@@ -917,15 +921,38 @@ function formatDate(value: Date) {
                             </div>
                             <p v-if="slotSelectionError" class="text-xs text-destructive">{{ slotSelectionError }}</p>
                         </div>
-                        <p v-else class="text-sm text-muted-foreground">
+                        <p v-else-if="!isBooking || bookingType === 'fixed'" class="text-sm text-muted-foreground">
                             Tidak ada jadwal tersedia pada tanggal ini.
                         </p>
-                        <p v-if="isBooking && selectedSlots.length" class="text-xs text-muted-foreground">
+                        <div v-if="isBooking && bookingType === 'flexible'" class="grid gap-3 rounded-xl border bg-muted/20 p-3 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="pos-flexible-start">Jam mulai</Label>
+                                <Input id="pos-flexible-start" v-model="flexibleStartTime" type="time" step="1800" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="pos-flexible-duration">Durasi</Label>
+                                <select id="pos-flexible-duration" v-model.number="flexibleDurationMinutes" class="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                                    <option v-for="minutes in [30, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960]" :key="minutes" :value="minutes">{{ minutes >= 60 ? Math.floor(minutes / 60) + ' jam' + (minutes % 60 ? ' ' + (minutes % 60) + ' menit' : '') : minutes + ' menit' }}</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <p class="text-xs text-muted-foreground">Tarif dihitung prorata berdasarkan periode harga Master Jam Booking. Durasi dapat dipilih per 30 menit.</p>
+                                <p v-if="!flexibleSelection" class="mt-2 text-sm text-destructive">Jam mulai atau durasi berada di luar jam operasional, melewati jeda tarif, atau sudah lewat.</p>
+                                <div v-else class="mt-3 space-y-1 rounded-lg bg-background p-3 text-sm">
+                                    <div v-for="segment in flexibleSelection.segments" :key="segment.start_time" class="flex justify-between gap-3">
+                                        <span class="text-muted-foreground">{{ segment.start_time }}–{{ segment.end_time }} · {{ formatIDR(segment.price_per_hour) }}/jam</span>
+                                        <span class="font-medium">{{ formatIDR(segment.subtotal) }}</span>
+                                    </div>
+                                    <div class="flex justify-between border-t pt-2 font-semibold"><span>Subtotal tarif</span><span>{{ formatIDR(flexibleSelection.price) }}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p v-if="isBooking && bookingType === 'fixed' && selectedSlots.length" class="text-xs text-muted-foreground">
                             {{ selectedSlots.length }} slot dipilih · {{ bookingStartTime }}–{{ bookingEndTime }}. Pilih slot berikutnya untuk menambah durasi.
                         </p>
 
                         <div
-                            v-if="isBooking ? selectedSlots.length > 0 : !!selectedSlot"
+                            v-if="isBooking ? (bookingType === 'flexible' ? !!flexibleSelection : selectedSlots.length > 0) : !!selectedSlot"
                             class="space-y-3 rounded-xl border-2 p-4 transition-colors"
                             :class="
                                 courtId === null
