@@ -167,7 +167,7 @@ it('creates a flexible booking from the cashier with prorated tariff', function 
     $facility->update(['has_booking' => true, 'has_flexible_booking' => true]);
     $day = strtolower(Carbon::parse('next monday')->englishDayOfWeek);
 
-    \\App\\Models\\BookingTimeSlot::create([
+    \App\Models\BookingTimeSlot::create([
         'facility_id' => $facility->id,
         'day' => $day,
         'start_time' => '09:00',
@@ -175,7 +175,7 @@ it('creates a flexible booking from the cashier with prorated tariff', function 
         'price' => 10000,
         'is_active' => true,
     ]);
-    \\App\\Models\\BookingTimeSlot::create([
+    \App\Models\BookingTimeSlot::create([
         'facility_id' => $facility->id,
         'day' => $day,
         'start_time' => '16:00',
@@ -214,7 +214,7 @@ it('rejects a flexible cashier booking when the selected court is occupied', fun
     [$facility, $court] = makeFacilityWithPackage('session');
     $facility->update(['has_booking' => true, 'has_flexible_booking' => true]);
     $day = strtolower(Carbon::parse('next monday')->englishDayOfWeek);
-    \\App\\Models\\BookingTimeSlot::create([
+    \App\Models\BookingTimeSlot::create([
         'facility_id' => $facility->id,
         'day' => $day,
         'start_time' => '09:00',
