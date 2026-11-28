@@ -513,8 +513,6 @@ function formatIDR(value: number) {
                                             </label>
                                         </div>
                                     </div>
-                                </template>
-
                                     <div v-else-if="bookingType === 'flexible'" class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
                                         <div class="grid gap-2">
                                             <Label for="flexible-start-time">Jam mulai</Label>
@@ -523,13 +521,14 @@ function formatIDR(value: number) {
                                         <div class="grid gap-2">
                                             <Label for="flexible-duration">Durasi</Label>
                                             <select id="flexible-duration" v-model.number="flexibleDurationMinutes" class="h-10 rounded-md border border-input bg-background px-3 text-sm">
-                                                <option v-for="minutes in [30, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480]" :key="minutes" :value="minutes">{{ minutes >= 60 ? Math.floor(minutes / 60) + ' jam' + (minutes % 60 ? ' ' + (minutes % 60) + ' menit' : '') : minutes + ' menit' }}</option>
+                                                <option v-for="minutes in [30, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960]" :key="minutes" :value="minutes">{{ minutes >= 60 ? Math.floor(minutes / 60) + ' jam' + (minutes % 60 ? ' ' + (minutes % 60) + ' menit' : '') : minutes + ' menit' }}</option>
                                             </select>
                                         </div>
                                         <p class="text-xs text-slate-500 sm:col-span-2">Durasi dapat dipilih per 30 menit. Harga dihitung prorata mengikuti tarif pada setiap periode waktu.</p>
                                         <p v-if="!pricingWindows.length" class="text-sm text-rose-600 sm:col-span-2">Belum ada tarif Master Jam Booking untuk hari ini.</p>
                                         <p v-else-if="!slot" class="text-sm text-rose-600 sm:col-span-2">Waktu yang dipilih di luar jam operasional, melewati jeda tarif, atau sudah lewat.</p>
                                     </div>
+                                </template>
                                 <div class="space-y-3 border-t border-slate-100 pt-5">
                                     <div><h3 class="font-semibold">Pilih lapangan</h3><p v-if="slot" class="mt-1 text-sm text-slate-500">{{ slot.start_time }}–{{ slot.end_time }}</p></div>
                                     <div v-if="displayCourts.length" class="grid gap-3 sm:grid-cols-2">
