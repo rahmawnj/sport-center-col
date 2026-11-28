@@ -927,7 +927,7 @@ function formatDate(value: Date) {
                         <div v-if="isBooking && bookingType === 'flexible'" class="grid gap-3 rounded-xl border bg-muted/20 p-3 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="pos-flexible-start">Jam mulai</Label>
-                                <Input id="pos-flexible-start" v-model="flexibleStartTime" type="time" step="1800" />
+                                <Input id="pos-flexible-start" v-model="flexibleStartTime" type="time" step="60" />
                             </div>
                             <div class="grid gap-2">
                                 <Label for="pos-flexible-duration">Durasi</Label>
