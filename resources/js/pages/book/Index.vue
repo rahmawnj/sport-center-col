@@ -467,12 +467,16 @@ function formatIDR(value: number) {
                                         </div>
                                     </div>
                                 </div>
+                                <div v-if="facility?.has_flexible_booking" class="flex w-fit rounded-xl bg-slate-100 p-1">
+                                    <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors" :class="bookingType === 'fixed' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'" @click="chooseBookingType('fixed')">Jam tetap</button>
+                                    <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors" :class="bookingType === 'flexible' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'" @click="chooseBookingType('flexible')">Flexible</button>
+                                </div>
                                 <div v-if="loadingSlots" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" /> Memuat jadwal...</div>
                                 <template v-else-if="date">
                                     <div v-if="availabilityError" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
                                         Gagal memuat ketersediaan. Silakan coba pilih tanggal kembali.
                                     </div>
-                                    <div v-else-if="!hasOperationalSchedule" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <div v-else-if="bookingType === 'fixed' && !hasOperationalSchedule" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                                         <div class="flex items-start gap-3">
                                             <span class="mt-0.5 size-2.5 shrink-0 rounded-full bg-slate-400"></span>
                                             <div>
@@ -481,10 +485,10 @@ function formatIDR(value: number) {
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-else-if="!slots.length" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                    <div v-else-if="bookingType === 'fixed' && !slots.length" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
                                         Tidak ada jam booking tersisa pada tanggal ini.
                                     </div>
-                                    <div v-else class="space-y-3">
+                                    <div v-else-if="bookingType === 'fixed'" class="space-y-3">
                                         <div class="flex flex-wrap gap-3 text-xs">
                                             <span class="inline-flex items-center gap-2 rounded-full bg-lime-50 px-3 py-1.5 font-medium text-emerald-800"><span class="size-2 rounded-full bg-[#a4da01]"></span>Tersedia</span>
                                             <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-medium text-rose-700"><span class="size-2 rounded-full bg-rose-500"></span>Penuh</span>
@@ -511,6 +515,21 @@ function formatIDR(value: number) {
                                     </div>
                                 </template>
 
+                                    <div v-else-if="bookingType === 'flexible'" class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+                                        <div class="grid gap-2">
+                                            <Label for="flexible-start-time">Jam mulai</Label>
+                                            <Input id="flexible-start-time" v-model="flexibleStartTime" type="time" step="1800" />
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label for="flexible-duration">Durasi</Label>
+                                            <select id="flexible-duration" v-model.number="flexibleDurationMinutes" class="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                                                <option v-for="minutes in [30, 60, 90, 120, 150, 180, 210, 240, 300, 360, 420, 480]" :key="minutes" :value="minutes">{{ minutes >= 60 ? Math.floor(minutes / 60) + ' jam' + (minutes % 60 ? ' ' + (minutes % 60) + ' menit' : '') : minutes + ' menit' }}</option>
+                                            </select>
+                                        </div>
+                                        <p class="text-xs text-slate-500 sm:col-span-2">Durasi dapat dipilih per 30 menit. Harga dihitung prorata mengikuti tarif pada setiap periode waktu.</p>
+                                        <p v-if="!pricingWindows.length" class="text-sm text-rose-600 sm:col-span-2">Belum ada tarif Master Jam Booking untuk hari ini.</p>
+                                        <p v-else-if="!slot" class="text-sm text-rose-600 sm:col-span-2">Waktu yang dipilih di luar jam operasional, melewati jeda tarif, atau sudah lewat.</p>
+                                    </div>
                                 <div class="space-y-3 border-t border-slate-100 pt-5">
                                     <div><h3 class="font-semibold">Pilih lapangan</h3><p v-if="slot" class="mt-1 text-sm text-slate-500">{{ slot.start_time }}–{{ slot.end_time }}</p></div>
                                     <div v-if="displayCourts.length" class="grid gap-3 sm:grid-cols-2">
