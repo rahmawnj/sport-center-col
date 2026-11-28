@@ -195,3 +195,61 @@ it('allows selecting multiple consecutive hours from the same master rate window
     expect(substr((string) $booking->end_time, 0, 5))->toBe('11:00');
     expect((float) $transaction->total_amount)->toBe(500000.0);
 });
+
+it('prices flexible bookings proportionally across hourly rate periods', function () {
+    [$facility, $court] = makeBookableFacility();
+    $facility->update(['has_flexible_booking' => true]);
+    $date = Carbon::parse('next monday')->toDateString();
+
+    $this->post('/book', publicBookingPayload($facility, $court, $date, [
+        'booking_type' => 'flexible',
+        'start_time' => '15:30',
+        'duration_minutes' => 90,
+    ]))->assertRedirect();
+
+    $booking = Booking::sole();
+    $transaction = Transaction::sole();
+
+    expect($booking->booking_type)->toBe('flexible');
+    expect(substr((string) $booking->start_time, 0, 5))->toBe('15:30');
+    expect(substr((string) $booking->end_time, 0, 5))->toBe('17:00');
+    expect((float) $transaction->total_amount)->toBe(425000.0);
+    expect($booking->price_breakdown)->toHaveCount(2);
+    expect($booking->price_breakdown[0]['subtotal'])->toBe(125000.0);
+    expect($booking->price_breakdown[1]['subtotal'])->toBe(300000.0);
+});
+
+it('rejects a flexible booking that overlaps an existing fixed booking', function () {
+    [$facility, $court] = makeBookableFacility();
+    $facility->update(['has_flexible_booking' => true]);
+    $date = Carbon::parse('next monday')->toDateString();
+
+    Booking::create([
+        'court_id' => $court->id,
+        'date' => $date,
+        'start_time' => '15:00',
+        'end_time' => '16:00',
+        'status' => 'confirmed',
+    ]);
+
+    $this->post('/book', publicBookingPayload($facility, $court, $date, [
+        'booking_type' => 'flexible',
+        'start_time' => '15:30',
+        'duration_minutes' => 60,
+    ]))->assertSessionHasErrors('start_time');
+
+    expect(Booking::count())->toBe(1);
+});
+
+it('rejects flexible booking when the facility has not enabled it', function () {
+    [$facility, $court] = makeBookableFacility();
+    $date = Carbon::parse('next monday')->toDateString();
+
+    $this->post('/book', publicBookingPayload($facility, $court, $date, [
+        'booking_type' => 'flexible',
+        'start_time' => '10:00',
+        'duration_minutes' => 60,
+    ]))->assertStatus(422);
+
+    expect(Booking::count())->toBe(0);
+});
